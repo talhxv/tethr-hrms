@@ -1,0 +1,8 @@
+{
+  "// note": "Root tsconfig anchors editor defaults. Each package has its own tsconfig and is built independently (see root package.json scripts). Not a project-references solution file.",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "files": []
+}

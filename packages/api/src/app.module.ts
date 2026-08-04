@@ -1,0 +1,77 @@
+import { ApolloDriver, type ApolloDriverConfig } from '@nestjs/apollo';
+import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
+import { GraphQLModule } from '@nestjs/graphql';
+
+import { AuditModule } from './core/audit/audit.module';
+import { AuthModule } from './core/auth/auth.module';
+import { AuthzModule } from './core/authz/authz.module';
+import { ConfigModule } from './core/config/config.module';
+import { ConfigService } from './core/config/config.service';
+import { DatabaseModule } from './core/database/database.module';
+import { DocumentsModule } from './core/documents/documents.module';
+import { EventsModule } from './core/events/events.module';
+import { NotificationModule } from './core/notifications/notification.module';
+import { TenancyModule } from './core/tenancy/tenancy.module';
+import { TenantContextMiddleware } from './core/tenancy/tenant-context.middleware';
+import { WorkflowModule } from './core/workflow/workflow.module';
+import { HealthResolver } from './health/health.resolver';
+import { AccountModule } from './modules/account/account.module';
+import { AssignmentModule } from './modules/assignment/assignment.module';
+import { AttendanceModule } from './modules/attendance/attendance.module';
+import { CompensationModule } from './modules/compensation/compensation.module';
+import { EmployeeModule } from './modules/employee/employee.module';
+import { EmployeeRecordsModule } from './modules/employee-records/employee-records.module';
+import { EngagementModule } from './modules/engagement/engagement.module';
+import { LeaveModule } from './modules/leave/leave.module';
+import { OrganizationModule } from './modules/organization/organization.module';
+import { PositionModule } from './modules/position/position.module';
+import { RecruitmentModule } from './modules/recruitment/recruitment.module';
+
+@Module({
+  imports: [
+    // Platform layer (core/) — order is not significant; @Global modules export
+    // to all. DatabaseModule must be configured before modules that use entities.
+    ConfigModule,
+    DatabaseModule,
+    TenancyModule,
+    EventsModule,
+    AuditModule,
+    AuthModule,
+    AuthzModule,
+    WorkflowModule,
+    NotificationModule,
+    DocumentsModule,
+    // Code-first GraphQL. Schema is generated in memory at boot from the
+    // decorators on resolvers and types (architecture.md §2.5, §11).
+    GraphQLModule.forRootAsync<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        // Generate the schema in memory at boot — no filesystem dependency.
+        autoSchemaFile: true,
+        sortSchema: true,
+        playground: config.get('GRAPHQL_PLAYGROUND'),
+        context: ({ req }: { req: unknown }) => ({ req }),
+      }),
+    }),
+    // HR domain (modules/) — depend on core/, never the reverse.
+    OrganizationModule,
+    PositionModule,
+    EmployeeModule,
+    AssignmentModule,
+    LeaveModule,
+    AttendanceModule,
+    CompensationModule,
+    RecruitmentModule,
+    EngagementModule,
+    EmployeeRecordsModule,
+    AccountModule,
+  ],
+  providers: [HealthResolver],
+})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    // Establish tenant context for every request before any resolver runs.
+    consumer.apply(TenantContextMiddleware).forRoutes('*');
+  }
+}

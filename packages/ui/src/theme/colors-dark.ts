@@ -1,0 +1,72 @@
+import { tagPalette, type ColorTokens } from './colors';
+
+// Dark-mode color bindings (design.md §4, §8). Co-designed, not an afterthought —
+// it is typed `ColorTokens`, so it must define exactly the same tokens as light.
+export const darkColors: ColorTokens = {
+  grayScale: {
+    gray1: '#161616',
+    gray2: '#1c1c1c',
+    gray3: '#232323',
+    gray4: '#282828',
+    gray5: '#2e2e2e',
+    gray6: '#343434',
+    gray7: '#3e3e3e',
+    gray8: '#505050',
+    gray9: '#707070',
+    gray10: '#7e7e7e',
+    gray11: '#a0a0a0',
+    gray12: '#ededed',
+  },
+  accent: {
+    accent1: '#11131f',
+    accent2: '#141726',
+    accent3: '#182449',
+    accent4: '#1d2e62',
+    accent5: '#243974',
+    accent6: '#2f4385',
+    accent7: '#3a4f97',
+    accent8: '#435db1',
+    accent9: '#3e63dd',
+    accent10: '#5472e4',
+    accent11: '#9eb1ff',
+    accent12: '#d6e1ff',
+  },
+  text: {
+    primary: '#ededed',
+    secondary: '#a0a0a0',
+    tertiary: '#707070',
+    light: '#505050',
+    extraLight: '#3e3e3e',
+    inverted: '#161616',
+    danger: '#ff6369',
+  },
+  background: {
+    primary: '#161616',
+    secondary: '#1c1c1c',
+    tertiary: '#282828',
+    quaternary: '#2e2e2e',
+    invertedPrimary: '#ededed',
+    invertedSecondary: '#a0a0a0',
+    danger: '#3b1219',
+    overlayPrimary: 'rgba(0, 0, 0, 0.7)',
+    transparentLight: 'rgba(255, 255, 255, 0.04)',
+    transparentMedium: 'rgba(255, 255, 255, 0.08)',
+    transparentStrong: 'rgba(255, 255, 255, 0.16)',
+  },
+  border: {
+    strong: '#3e3e3e',
+    medium: '#2e2e2e',
+    light: '#282828',
+    inverted: '#ededed',
+    danger: '#5e2a2a',
+    blue: '#435db1',
+  },
+  boxShadow: {
+    light: '0 2px 4px rgba(0, 0, 0, 0.2), 0 0 4px rgba(0, 0, 0, 0.3)',
+    strong: '2px 4px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3)',
+    underline: '0 1px 0 rgba(255, 255, 255, 0.2)',
+    superHeavy:
+      '0 8px 16px rgba(0, 0, 0, 0.5), 0 64px 64px rgba(0, 0, 0, 0.4), 0 56px 56px rgba(0, 0, 0, 0.3)',
+  },
+  tag: tagPalette,
+};

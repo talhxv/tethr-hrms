@@ -1,0 +1,518 @@
+import {
+  toId,
+  type DataClassification,
+  type DocumentId,
+  type DocumentSignatureStatus,
+  type EmployeeAssessmentId,
+  type EmployeeDocumentCategory,
+  type EmployeeDocumentLinkId,
+  type EmployeeDocumentVisibility,
+  type EmployeeId,
+  type EmployeeOnboardingTaskKey,
+  type EmployeeOnboardingTaskStatus,
+  type PortalKind,
+  type UserId,
+} from '@hrms/shared';
+import { Inject, Injectable } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource, type FindOptionsWhere } from 'typeorm';
+
+import { NotFoundError } from '../../common/errors';
+import { AuditService } from '../../core/audit/audit.service';
+import {
+  DocumentService,
+  type DocumentAccessDescriptor,
+  type DocumentRecord,
+  type DocumentSignatureRequest,
+} from '../../core/documents';
+import { DomainEventPublisher } from '../../core/events/domain-event-publisher.service';
+import { TenantContextService } from '../../core/tenancy/tenant-context.service';
+import { TenantScopedRepository } from '../../core/tenancy/tenant-scoped.repository';
+import { EmployeeDirectoryService, EmployeeService } from '../employee';
+
+import {
+  EMPLOYEE_ASSESSMENT_REPOSITORY,
+  EMPLOYEE_DOCUMENT_LINK_REPOSITORY,
+  EMPLOYEE_HR_RECORD_REPOSITORY,
+  EMPLOYEE_ONBOARDING_TASK_REPOSITORY,
+} from './employee-records.tokens';
+import { EmployeeAssessment } from './entities/employee-assessment.entity';
+import { EmployeeDocumentLink } from './entities/employee-document-link.entity';
+import { EmployeeHrRecord } from './entities/employee-hr-record.entity';
+import { EmployeeOnboardingTask } from './entities/employee-onboarding-task.entity';
+
+const ONBOARDING_TASK_DEFINITIONS: readonly {
+  readonly taskKey: EmployeeOnboardingTaskKey;
+  readonly title: string;
+}[] = [
+  { taskKey: 'profile', title: 'Profile and personal details' },
+  { taskKey: 'contract', title: 'Contract document' },
+  { taskKey: 'nda', title: 'NDA document' },
+  { taskKey: 'resume', title: 'Resume on file' },
+  { taskKey: 'bankDetails', title: 'Bank details' },
+  { taskKey: 'hardware', title: 'Hardware allocation' },
+  { taskKey: 'employeeRecordForm', title: 'Employee record form' },
+];
+
+export type RecordEmployeeAssessmentData = {
+  readonly employeeId: EmployeeId;
+  readonly title: string;
+  readonly assessmentDate: string;
+  readonly score?: number | null;
+  readonly assessorName?: string | null;
+  readonly notes?: string | null;
+  readonly createdByUserId: UserId;
+};
+
+export type AttachEmployeeDocumentData = {
+  readonly employeeId: EmployeeId;
+  readonly name: string;
+  readonly contentType: string;
+  readonly storageKey: string;
+  readonly sizeBytes: number;
+  readonly category: EmployeeDocumentCategory;
+  readonly visibility: EmployeeDocumentVisibility;
+  readonly classification?: DataClassification | null;
+  readonly signatureStatus?: DocumentSignatureStatus | null;
+  readonly signedAt?: Date | null;
+  readonly signatureProvider?: string | null;
+  readonly externalEnvelopeId?: string | null;
+  readonly attachedByUserId: UserId;
+};
+
+export type AddEmployeeDocumentVersionData = {
+  readonly employeeDocumentLinkId: EmployeeDocumentLinkId;
+  readonly contentType: string;
+  readonly storageKey: string;
+  readonly sizeBytes: number;
+  readonly signatureStatus?: DocumentSignatureStatus | null;
+  readonly signedAt?: Date | null;
+  readonly signatureProvider?: string | null;
+  readonly externalEnvelopeId?: string | null;
+  readonly createdByUserId: UserId;
+};
+
+export type PrepareEmployeeDocumentUploadData = {
+  readonly employeeId: EmployeeId;
+  readonly name: string;
+  readonly contentType: string;
+};
+
+export type RequestEmployeeDocumentSignatureData = {
+  readonly employeeDocumentLinkId: EmployeeDocumentLinkId;
+  readonly signerEmail: string;
+  readonly signerName?: string | null;
+  readonly provider?: string | null;
+  readonly requestedByUserId: UserId;
+};
+
+export type EmployeeDocumentSignatureRequestRecord = {
+  readonly link: EmployeeDocumentLink;
+} & DocumentSignatureRequest;
+
+export type EmployeeOnboardingTaskRecord = {
+  readonly id: string | null;
+  readonly employeeId: EmployeeId;
+  readonly taskKey: EmployeeOnboardingTaskKey;
+  readonly title: string;
+  readonly status: EmployeeOnboardingTaskStatus;
+  readonly dueDate: string | null;
+  readonly completedAt: Date | null;
+  readonly notes: string | null;
+};
+
+export type UpdateEmployeeOnboardingTaskData = {
+  readonly employeeId: EmployeeId;
+  readonly taskKey: EmployeeOnboardingTaskKey;
+  readonly status: EmployeeOnboardingTaskStatus;
+  readonly dueDate?: string | null;
+  readonly notes?: string | null;
+  readonly updatedByUserId: UserId;
+};
+
+export type UpdateEmployeeHrRecordData = {
+  readonly employeeId: EmployeeId;
+  readonly roleTitle?: string | null;
+  readonly salaryBreakdown?: string | null;
+  readonly bankName?: string | null;
+  readonly bankAccountTitle?: string | null;
+  readonly bankAccountNumber?: string | null;
+  readonly bankIban?: string | null;
+  readonly hardwareInfo?: string | null;
+  readonly employeeRecordForm?: string | null;
+  readonly updatedByUserId: UserId;
+};
+
+export type EmployeeDocumentRecord = {
+  readonly link: EmployeeDocumentLink;
+} & DocumentRecord;
+
+@Injectable()
+export class EmployeeRecordsService {
+  constructor(
+    @Inject(EMPLOYEE_ASSESSMENT_REPOSITORY)
+    private readonly assessments: TenantScopedRepository<EmployeeAssessment>,
+    @Inject(EMPLOYEE_DOCUMENT_LINK_REPOSITORY)
+    private readonly documentLinks: TenantScopedRepository<EmployeeDocumentLink>,
+    @Inject(EMPLOYEE_HR_RECORD_REPOSITORY)
+    private readonly hrRecords: TenantScopedRepository<EmployeeHrRecord>,
+    @Inject(EMPLOYEE_ONBOARDING_TASK_REPOSITORY)
+    private readonly onboardingTasks: TenantScopedRepository<EmployeeOnboardingTask>,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly documents: DocumentService,
+    private readonly employeeDirectory: EmployeeDirectoryService,
+    private readonly employeeService: EmployeeService,
+    private readonly publisher: DomainEventPublisher,
+    private readonly tenantContext: TenantContextService,
+    private readonly audit: AuditService,
+  ) {}
+
+  async recordAssessment(input: RecordEmployeeAssessmentData): Promise<EmployeeAssessment> {
+    if (!(await this.employeeDirectory.exists(input.employeeId))) {
+      throw new NotFoundError('Employee not found', { id: input.employeeId });
+    }
+    const organizationId = this.tenantContext.getOrganizationId();
+    const assessment = await this.dataSource.transaction(async (manager) => {
+      const entity = manager.create(EmployeeAssessment, {
+        organizationId,
+        employeeId: input.employeeId,
+        title: input.title,
+        assessmentDate: input.assessmentDate,
+        score: input.score ?? null,
+        assessorName: input.assessorName ?? null,
+        notes: input.notes ?? null,
+        createdByUserId: input.createdByUserId,
+      });
+      const saved = await manager.save(entity);
+      await this.publisher.publishWithin(manager, {
+        name: 'employeeAssessment.recorded',
+        payload: {
+          employeeAssessmentId: toId<EmployeeAssessmentId>(saved.id),
+          employeeId: saved.employeeId,
+          title: saved.title,
+        },
+      });
+      return saved;
+    });
+
+    await this.audit.record({
+      action: 'record',
+      resourceType: 'employee_assessment',
+      resourceId: assessment.id,
+      after: { employeeId: assessment.employeeId, title: assessment.title },
+    });
+    return assessment;
+  }
+
+  getHrRecord(employeeId: EmployeeId): Promise<EmployeeHrRecord | null> {
+    return this.hrRecords.findOne({
+      where: { employeeId } as FindOptionsWhere<EmployeeHrRecord>,
+    });
+  }
+
+  async updateHrRecord(input: UpdateEmployeeHrRecordData): Promise<EmployeeHrRecord> {
+    if (!(await this.employeeDirectory.exists(input.employeeId))) {
+      throw new NotFoundError('Employee not found', { id: input.employeeId });
+    }
+    const existing = await this.getHrRecord(input.employeeId);
+    const record =
+      existing ??
+      this.hrRecords.create({
+        employeeId: input.employeeId,
+      });
+
+    const patch = {
+      roleTitle: input.roleTitle,
+      salaryBreakdown: input.salaryBreakdown,
+      bankName: input.bankName,
+      bankAccountTitle: input.bankAccountTitle,
+      bankAccountNumber: input.bankAccountNumber,
+      bankIban: input.bankIban,
+      hardwareInfo: input.hardwareInfo,
+      employeeRecordForm: input.employeeRecordForm,
+    };
+    for (const [key, value] of Object.entries(patch)) {
+      if (value !== undefined) {
+        (record as unknown as Record<string, string | null>)[key] = value;
+      }
+    }
+    record.updatedByUserId = input.updatedByUserId;
+
+    const saved = await this.hrRecords.save(record);
+    if (input.roleTitle !== undefined) {
+      await this.employeeService.updateRoleTitle(
+        input.employeeId,
+        input.roleTitle,
+        input.updatedByUserId,
+      );
+    }
+    await this.audit.record({
+      action: existing ? 'update' : 'create',
+      resourceType: 'employee_hr_record',
+      resourceId: saved.id,
+      after: { employeeId: saved.employeeId },
+    });
+    return saved;
+  }
+
+  listAssessments(employeeId: EmployeeId): Promise<EmployeeAssessment[]> {
+    return this.assessments.find({
+      where: { employeeId } as FindOptionsWhere<EmployeeAssessment>,
+      order: { assessmentDate: 'DESC', createdAt: 'DESC' },
+    });
+  }
+
+  async listOnboardingTasks(employeeId: EmployeeId): Promise<EmployeeOnboardingTaskRecord[]> {
+    if (!(await this.employeeDirectory.exists(employeeId))) {
+      throw new NotFoundError('Employee not found', { id: employeeId });
+    }
+    const existing = await this.onboardingTasks.find({
+      where: { employeeId } as FindOptionsWhere<EmployeeOnboardingTask>,
+      order: { createdAt: 'ASC' },
+    });
+    const byTaskKey = new Map(existing.map((task) => [task.taskKey, task]));
+    return ONBOARDING_TASK_DEFINITIONS.map((definition) => {
+      const task = byTaskKey.get(definition.taskKey);
+      return {
+        id: task?.id ?? null,
+        employeeId,
+        taskKey: definition.taskKey,
+        title: task?.title ?? definition.title,
+        status: task?.status ?? 'notStarted',
+        dueDate: task?.dueDate ?? null,
+        completedAt: task?.completedAt ?? null,
+        notes: task?.notes ?? null,
+      };
+    });
+  }
+
+  async updateOnboardingTask(
+    input: UpdateEmployeeOnboardingTaskData,
+  ): Promise<EmployeeOnboardingTaskRecord> {
+    if (!(await this.employeeDirectory.exists(input.employeeId))) {
+      throw new NotFoundError('Employee not found', { id: input.employeeId });
+    }
+    const definition = ONBOARDING_TASK_DEFINITIONS.find(
+      (candidate) => candidate.taskKey === input.taskKey,
+    );
+    if (!definition) {
+      throw new NotFoundError('Onboarding task not found', { taskKey: input.taskKey });
+    }
+    const existing = await this.onboardingTasks.findOne({
+      where: {
+        employeeId: input.employeeId,
+        taskKey: input.taskKey,
+      } as FindOptionsWhere<EmployeeOnboardingTask>,
+    });
+    const task =
+      existing ??
+      this.onboardingTasks.create({
+        employeeId: input.employeeId,
+        taskKey: input.taskKey,
+        title: definition.title,
+      });
+
+    task.status = input.status;
+    task.dueDate = input.dueDate ?? null;
+    task.notes = input.notes ?? null;
+    task.updatedByUserId = input.updatedByUserId;
+    if (input.status === 'completed') {
+      task.completedAt = task.completedAt ?? new Date();
+      task.completedByUserId = task.completedByUserId ?? input.updatedByUserId;
+    } else {
+      task.completedAt = null;
+      task.completedByUserId = null;
+    }
+
+    const saved = await this.onboardingTasks.save(task);
+    await this.audit.record({
+      action: existing ? 'update' : 'create',
+      resourceType: 'employee_onboarding_task',
+      resourceId: saved.id,
+      after: {
+        employeeId: saved.employeeId,
+        taskKey: saved.taskKey,
+        status: saved.status,
+      },
+    });
+    return {
+      id: saved.id,
+      employeeId: saved.employeeId,
+      taskKey: saved.taskKey,
+      title: saved.title,
+      status: saved.status,
+      dueDate: saved.dueDate,
+      completedAt: saved.completedAt,
+      notes: saved.notes,
+    };
+  }
+
+  async attachDocument(input: AttachEmployeeDocumentData): Promise<EmployeeDocumentRecord> {
+    if (!(await this.employeeDirectory.exists(input.employeeId))) {
+      throw new NotFoundError('Employee not found', { id: input.employeeId });
+    }
+    const document = await this.documents.register({
+      name: input.name,
+      contentType: input.contentType,
+      storageKey: input.storageKey,
+      sizeBytes: input.sizeBytes,
+      classification: input.classification ?? 'internal',
+      signatureStatus: input.signatureStatus ?? null,
+      signedAt: input.signedAt ?? null,
+      signatureProvider: input.signatureProvider ?? null,
+      externalEnvelopeId: input.externalEnvelopeId ?? null,
+      createdByUserId: input.attachedByUserId,
+    });
+    const organizationId = this.tenantContext.getOrganizationId();
+    const link = await this.dataSource.transaction(async (manager) => {
+      const entity = manager.create(EmployeeDocumentLink, {
+        organizationId,
+        employeeId: input.employeeId,
+        documentId: toId<DocumentId>(document.id),
+        category: input.category,
+        visibility: input.visibility,
+        attachedByUserId: input.attachedByUserId,
+      });
+      const saved = await manager.save(entity);
+      await this.publisher.publishWithin(manager, {
+        name: 'employeeDocument.attached',
+        payload: {
+          employeeDocumentLinkId: toId<EmployeeDocumentLinkId>(saved.id),
+          employeeId: saved.employeeId,
+          documentId: saved.documentId,
+          visibility: saved.visibility,
+        },
+      });
+      return saved;
+    });
+
+    await this.audit.record({
+      action: 'attach',
+      resourceType: 'employee_document',
+      resourceId: link.id,
+      after: {
+        employeeId: link.employeeId,
+        documentId: link.documentId,
+        visibility: link.visibility,
+      },
+    });
+    return { link, ...(await this.documents.getRecordById(document.id)) };
+  }
+
+  async prepareDocumentUpload(
+    input: PrepareEmployeeDocumentUploadData,
+  ): Promise<DocumentAccessDescriptor> {
+    if (!(await this.employeeDirectory.exists(input.employeeId))) {
+      throw new NotFoundError('Employee not found', { id: input.employeeId });
+    }
+    return this.documents.prepareUpload({
+      name: input.name,
+      contentType: input.contentType,
+      storagePrefix: `employees/${input.employeeId}`,
+    });
+  }
+
+  async getDocumentDownloadAccess(
+    employeeDocumentLinkId: EmployeeDocumentLinkId,
+    portal: PortalKind,
+  ): Promise<DocumentAccessDescriptor> {
+    const link = await this.getVisibleDocumentLink(employeeDocumentLinkId, portal);
+    return this.documents.prepareDownload(link.documentId);
+  }
+
+  async requestDocumentSignature(
+    input: RequestEmployeeDocumentSignatureData,
+  ): Promise<EmployeeDocumentSignatureRequestRecord> {
+    const link = await this.documentLinks.findById(input.employeeDocumentLinkId);
+    if (!link) {
+      throw new NotFoundError('Employee document link not found', {
+        id: input.employeeDocumentLinkId,
+      });
+    }
+    const signatureRequest = await this.documents.requestSignature({
+      documentId: link.documentId,
+      signerEmail: input.signerEmail,
+      signerName: input.signerName ?? null,
+      provider: input.provider ?? null,
+      requestedByUserId: input.requestedByUserId,
+    });
+    await this.audit.record({
+      action: 'signature_request',
+      resourceType: 'employee_document',
+      resourceId: link.id,
+      after: {
+        employeeId: link.employeeId,
+        documentId: link.documentId,
+        externalEnvelopeId: signatureRequest.externalEnvelopeId,
+        signatureProvider: signatureRequest.signatureProvider,
+      },
+    });
+    return { link, ...signatureRequest };
+  }
+
+  async addDocumentVersion(input: AddEmployeeDocumentVersionData): Promise<EmployeeDocumentRecord> {
+    const link = await this.documentLinks.findById(input.employeeDocumentLinkId);
+    if (!link) {
+      throw new NotFoundError('Employee document link not found', {
+        id: input.employeeDocumentLinkId,
+      });
+    }
+    const documentRecord = await this.documents.addVersion({
+      documentId: link.documentId,
+      contentType: input.contentType,
+      storageKey: input.storageKey,
+      sizeBytes: input.sizeBytes,
+      signatureStatus: input.signatureStatus ?? null,
+      signedAt: input.signedAt ?? null,
+      signatureProvider: input.signatureProvider ?? null,
+      externalEnvelopeId: input.externalEnvelopeId ?? null,
+      createdByUserId: input.createdByUserId,
+    });
+
+    await this.audit.record({
+      action: 'version',
+      resourceType: 'employee_document',
+      resourceId: link.id,
+      after: {
+        employeeId: link.employeeId,
+        documentId: link.documentId,
+        versionCount: documentRecord.versionCount,
+      },
+    });
+    return { link, ...documentRecord };
+  }
+
+  async listDocuments(
+    employeeId: EmployeeId,
+    portal: PortalKind,
+  ): Promise<EmployeeDocumentRecord[]> {
+    const visible = this.visibleDocumentVisibilities(portal);
+    const links = await this.documentLinks.find({
+      where: { employeeId } as FindOptionsWhere<EmployeeDocumentLink>,
+      order: { createdAt: 'DESC' },
+    });
+    const records: EmployeeDocumentRecord[] = [];
+    for (const link of links.filter((candidate) => visible.has(candidate.visibility))) {
+      records.push({ link, ...(await this.documents.getRecordById(link.documentId)) });
+    }
+    return records;
+  }
+
+  private async getVisibleDocumentLink(
+    employeeDocumentLinkId: EmployeeDocumentLinkId,
+    portal: PortalKind,
+  ): Promise<EmployeeDocumentLink> {
+    const link = await this.documentLinks.findById(employeeDocumentLinkId);
+    if (!link || !this.visibleDocumentVisibilities(portal).has(link.visibility)) {
+      throw new NotFoundError('Employee document link not found', { id: employeeDocumentLinkId });
+    }
+    return link;
+  }
+
+  private visibleDocumentVisibilities(portal: PortalKind): ReadonlySet<EmployeeDocumentVisibility> {
+    if (portal === 'tethr') return new Set(['all', 'client', 'employee', 'tethr']);
+    if (portal === 'client') return new Set(['all', 'client']);
+    if (portal === 'employee') return new Set(['all', 'employee']);
+    return new Set(['all']);
+  }
+}

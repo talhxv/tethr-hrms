@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Generated code (regenerated from source — see README)
+**/src/generated/
+schema.gql
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Env & secrets — never commit real values
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+Thumbs.db
+
+# Local AI/editor config
+.codex/
+.claude/

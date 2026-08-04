@@ -1,0 +1,31 @@
+{
+  "name": "@hrms/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "HRMS web client — React + Vite + Jotai-style atoms. Feature module per HR module.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "vite",
+    "preview": "vite preview",
+    "test": "echo \"(no web unit tests yet)\""
+  },
+  "dependencies": {
+    "@apollo/client": "^3.11.0",
+    "@hrms/shared": "*",
+    "@hrms/ui": "*",
+    "@tabler/icons-react": "^3.44.0",
+    "graphql": "^16.9.0",
+    "jotai": "^2.9.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}

@@ -1,0 +1,46 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
+import { AuthModule } from '../../core/auth/auth.module';
+import { AuthzModule } from '../../core/authz/authz.module';
+import { DocumentsModule } from '../../core/documents';
+import { provideTenantScopedRepository } from '../../core/tenancy/tenant-repository.provider';
+import { EmployeeModule } from '../employee';
+
+import { EmployeeRecordsResolver } from './employee-records.resolver';
+import { EmployeeRecordsService } from './employee-records.service';
+import {
+  EMPLOYEE_ASSESSMENT_REPOSITORY,
+  EMPLOYEE_DOCUMENT_LINK_REPOSITORY,
+  EMPLOYEE_HR_RECORD_REPOSITORY,
+  EMPLOYEE_ONBOARDING_TASK_REPOSITORY,
+} from './employee-records.tokens';
+import { EmployeeAssessment } from './entities/employee-assessment.entity';
+import { EmployeeDocumentLink } from './entities/employee-document-link.entity';
+import { EmployeeHrRecord } from './entities/employee-hr-record.entity';
+import { EmployeeOnboardingTask } from './entities/employee-onboarding-task.entity';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      EmployeeAssessment,
+      EmployeeDocumentLink,
+      EmployeeHrRecord,
+      EmployeeOnboardingTask,
+    ]),
+    AuthModule,
+    AuthzModule,
+    DocumentsModule,
+    EmployeeModule,
+  ],
+  providers: [
+    EmployeeRecordsService,
+    EmployeeRecordsResolver,
+    provideTenantScopedRepository(EMPLOYEE_ASSESSMENT_REPOSITORY, EmployeeAssessment),
+    provideTenantScopedRepository(EMPLOYEE_DOCUMENT_LINK_REPOSITORY, EmployeeDocumentLink),
+    provideTenantScopedRepository(EMPLOYEE_HR_RECORD_REPOSITORY, EmployeeHrRecord),
+    provideTenantScopedRepository(EMPLOYEE_ONBOARDING_TASK_REPOSITORY, EmployeeOnboardingTask),
+  ],
+  exports: [EmployeeRecordsService],
+})
+export class EmployeeRecordsModule {}
