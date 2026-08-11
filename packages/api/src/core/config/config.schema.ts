@@ -23,6 +23,9 @@ export const configSchema = z.object({
   DATABASE_NAME: z.string().min(1),
   DATABASE_SYNCHRONIZE: envBoolean(false),
   DATABASE_LOGGING: envBoolean(false),
+  // Managed Postgres providers (Supabase, RDS, etc.) require TLS; local Docker
+  // Postgres does not speak TLS at all, so this must stay opt-in per environment.
+  DATABASE_SSL: envBoolean(false),
 
   REDIS_HOST: z.string().min(1).default('localhost'),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),

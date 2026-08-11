@@ -20,6 +20,7 @@ import { ConfigService } from '../config/config.service';
         database: config.get('DATABASE_NAME'),
         synchronize: config.get('DATABASE_SYNCHRONIZE'),
         logging: config.get('DATABASE_LOGGING'),
+        ssl: config.get('DATABASE_SSL') ? { rejectUnauthorized: false } : false,
         autoLoadEntities: true,
         migrationsRun: false,
       }),

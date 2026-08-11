@@ -19,6 +19,7 @@ export const buildDataSourceOptions = (config: AppConfig = loadConfig()): DataSo
   database: config.DATABASE_NAME,
   synchronize: config.DATABASE_SYNCHRONIZE,
   logging: config.DATABASE_LOGGING,
+  ssl: config.DATABASE_SSL ? { rejectUnauthorized: false } : false,
   entities: [`${toGlob(__dirname, '..', '..')}/**/*.entity.{ts,js}`],
   migrations: [`${toGlob(__dirname, 'migrations')}/*.{ts,js}`],
 });
