@@ -17,6 +17,19 @@ export const LOGIN_MUTATION = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       ${AUTH_PAYLOAD}
+      workspaceSelectionToken
+      workspaces {
+        organizationId
+        organizationName
+      }
+    }
+  }
+`;
+
+export const SELECT_WORKSPACE_MUTATION = gql`
+  mutation SelectWorkspace($input: SelectWorkspaceInput!) {
+    selectWorkspace(input: $input) {
+      ${AUTH_PAYLOAD}
     }
   }
 `;

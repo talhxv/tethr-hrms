@@ -36,4 +36,13 @@ export class OnboardClientInput {
   @MinLength(8)
   @MaxLength(128)
   adminPassword!: string;
+
+  @Field()
+  @IsEmail()
+  hrAdminEmail!: string;
+
+  @Field()
+  @MinLength(8)
+  @MaxLength(128)
+  hrAdminPassword!: string;
 }

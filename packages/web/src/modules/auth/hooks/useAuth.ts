@@ -1,11 +1,33 @@
 import { useApolloClient, useMutation } from '@apollo/client';
 import { useAtom } from 'jotai';
 
-import { LOGIN_MUTATION, SIGN_UP_MUTATION } from '../graphql/auth.operations';
+import { LOGIN_MUTATION, SELECT_WORKSPACE_MUTATION, SIGN_UP_MUTATION } from '../graphql/auth.operations';
 import { authState, type AuthSession } from '../states/authState';
 
+export type WorkspaceOption = {
+  readonly organizationId: string;
+  readonly organizationName: string;
+};
+
+export type LoginOutcome =
+  | { readonly kind: 'authenticated'; readonly session: AuthSession }
+  | {
+      readonly kind: 'selectWorkspace';
+      readonly selectionToken: string;
+      readonly workspaces: readonly WorkspaceOption[];
+    };
+
 type LoginVars = { input: { email: string; password: string } };
-type LoginData = { login: AuthSession };
+type LoginData = {
+  login: {
+    readonly token: string | null;
+    readonly user: AuthSession['user'] | null;
+    readonly workspaceSelectionToken: string | null;
+    readonly workspaces: readonly WorkspaceOption[] | null;
+  };
+};
+type SelectWorkspaceVars = { input: { selectionToken: string; organizationId: string } };
+type SelectWorkspaceData = { selectWorkspace: AuthSession };
 type SignUpVars = { input: { organizationName: string; email: string; password: string } };
 type SignUpData = { signUp: AuthSession };
 
@@ -13,17 +35,46 @@ export const useAuth = () => {
   const [session, setSession] = useAtom(authState);
   const apollo = useApolloClient();
   const [loginMutation, { loading: loggingIn }] = useMutation<LoginData, LoginVars>(LOGIN_MUTATION);
+  const [selectWorkspaceMutation, { loading: selectingWorkspace }] = useMutation<
+    SelectWorkspaceData,
+    SelectWorkspaceVars
+  >(SELECT_WORKSPACE_MUTATION);
   const [signUpMutation, { loading: signingUp }] = useMutation<SignUpData, SignUpVars>(
     SIGN_UP_MUTATION,
   );
 
-  const login = async (email: string, password: string): Promise<AuthSession> => {
+  const login = async (email: string, password: string): Promise<LoginOutcome> => {
     const { data } = await loginMutation({ variables: { input: { email, password } } });
-    if (data) {
-      setSession(data.login);
-      return data.login;
+    if (!data) {
+      throw new Error('Sign in did not return a result');
+    }
+    if (data.login.workspaceSelectionToken && data.login.workspaces) {
+      return {
+        kind: 'selectWorkspace',
+        selectionToken: data.login.workspaceSelectionToken,
+        workspaces: data.login.workspaces,
+      };
+    }
+    if (data.login.token && data.login.user) {
+      const authenticatedSession: AuthSession = { token: data.login.token, user: data.login.user };
+      setSession(authenticatedSession);
+      return { kind: 'authenticated', session: authenticatedSession };
     }
     throw new Error('Sign in did not return a session');
+  };
+
+  const selectWorkspace = async (
+    selectionToken: string,
+    organizationId: string,
+  ): Promise<AuthSession> => {
+    const { data } = await selectWorkspaceMutation({
+      variables: { input: { selectionToken, organizationId } },
+    });
+    if (data) {
+      setSession(data.selectWorkspace);
+      return data.selectWorkspace;
+    }
+    throw new Error('Workspace selection did not return a session');
   };
 
   const signUp = async (
@@ -49,8 +100,9 @@ export const useAuth = () => {
   return {
     user: session?.user ?? null,
     isAuthenticated: Boolean(session?.token),
-    isBusy: loggingIn || signingUp,
+    isBusy: loggingIn || signingUp || selectingWorkspace,
     login,
+    selectWorkspace,
     signUp,
     logout,
   };

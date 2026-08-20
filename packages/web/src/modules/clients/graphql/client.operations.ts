@@ -34,6 +34,14 @@ export const ONBOARD_CLIENT_MUTATION = gql`
         roleKeys
         portal
       }
+      initialHrAdmin {
+        id
+        email
+        organizationId
+        status
+        roleKeys
+        portal
+      }
     }
   }
 `;

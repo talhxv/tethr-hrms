@@ -12,7 +12,7 @@ import { AuthService } from './auth.service';
 import { AuthPayload } from './dto/auth-payload.output';
 import { CreateWorkspaceUserInput } from './dto/create-workspace-user.input';
 import { CurrentUserView, toCurrentUserView } from './dto/current-user.output';
-import { LoginInput } from './dto/login.input';
+import { SelectWorkspaceInput } from './dto/select-workspace.input';
 import { UpdateWorkspaceUserRoleInput } from './dto/update-workspace-user-role.input';
 
 @Resolver()
@@ -22,14 +22,19 @@ export class AuthResolver {
     private readonly authorization: AuthorizationService,
   ) {}
 
+  // Redeems the short-lived token from a multi-workspace login (AccountService)
+  // for a real session, once the user has picked which workspace to enter.
   @Mutation(() => AuthPayload)
-  async login(@Args('input') input: LoginInput): Promise<AuthPayload> {
-    const { user, token } = await this.authService.login(input.email, input.password);
+  async selectWorkspace(@Args('input') input: SelectWorkspaceInput): Promise<AuthPayload> {
+    const user = await this.authService.resolveWorkspaceSelection(
+      input.selectionToken,
+      input.organizationId,
+    );
     const access = await this.authorization.getAccessForUserInOrganization(
       user.id,
       user.organizationId,
     );
-    return { token, user: toCurrentUserView(user, access) };
+    return { token: this.authService.issueToken(user), user: toCurrentUserView(user, access) };
   }
 
   @Query(() => CurrentUserView)

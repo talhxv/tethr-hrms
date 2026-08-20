@@ -33,4 +33,7 @@ export class OnboardClientPayload {
 
   @Field(() => CurrentUserView)
   initialAdmin!: CurrentUserView;
+
+  @Field(() => CurrentUserView)
+  initialHrAdmin!: CurrentUserView;
 }

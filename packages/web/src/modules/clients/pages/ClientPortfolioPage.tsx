@@ -32,6 +32,8 @@ const emptyForm = {
   defaultCurrency: 'USD',
   adminEmail: '',
   adminPassword: '',
+  hrAdminEmail: '',
+  hrAdminPassword: '',
 };
 
 const formatDate = (value: string): string =>
@@ -68,13 +70,20 @@ export const ClientPortfolioPage = () => {
             defaultCurrency: form.defaultCurrency.trim().toUpperCase(),
             adminEmail: form.adminEmail.trim(),
             adminPassword: form.adminPassword,
+            hrAdminEmail: form.hrAdminEmail.trim(),
+            hrAdminPassword: form.hrAdminPassword,
           },
         },
       });
       const adminEmail = result.data?.onboardClient.initialAdmin.email;
+      const hrAdminEmail = result.data?.onboardClient.initialHrAdmin.email;
       setForm(emptyForm);
       setShowForm(false);
-      setNotice(adminEmail ? `Client onboarded with admin ${adminEmail}` : 'Client onboarded');
+      setNotice(
+        adminEmail && hrAdminEmail
+          ? `Client onboarded with admin ${adminEmail} and Tethr HR ${hrAdminEmail}`
+          : 'Client onboarded',
+      );
       await refetch();
     } catch (caught) {
       setFormError(caught instanceof Error ? caught.message : 'Could not onboard this client');
@@ -193,6 +202,27 @@ export const ClientPortfolioPage = () => {
                   onChange={(event) => setField('adminPassword', event.target.value)}
                 />
               </div>
+              <div className="field">
+                <label htmlFor="client-hr-admin-email">Tethr HR email</label>
+                <input
+                  id="client-hr-admin-email"
+                  required
+                  type="email"
+                  value={form.hrAdminEmail}
+                  onChange={(event) => setField('hrAdminEmail', event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="client-hr-admin-password">Tethr HR initial password</label>
+                <input
+                  id="client-hr-admin-password"
+                  minLength={8}
+                  required
+                  type="password"
+                  value={form.hrAdminPassword}
+                  onChange={(event) => setField('hrAdminPassword', event.target.value)}
+                />
+              </div>
             </div>
             <div className="page-actions">
               <button className="button button-primary" disabled={onboarding} type="submit">
@@ -275,12 +305,16 @@ export const ClientPortfolioPage = () => {
           </div>
           <div className="field-list">
             <div className="field-row">
-              <span className="field-label">First user</span>
-              <span className="field-value">Client administrator</span>
+              <span className="field-label">Client user</span>
+              <span className="field-value">Client administrator (view + approve)</span>
+            </div>
+            <div className="field-row">
+              <span className="field-label">Tethr user</span>
+              <span className="field-value">Tethr administrator (runs HR ops)</span>
             </div>
             <div className="field-row">
               <span className="field-label">Portal</span>
-              <span className="field-value">Client</span>
+              <span className="field-value">Client + Tethr</span>
             </div>
             <div className="field-row">
               <span className="field-label">Next step</span>

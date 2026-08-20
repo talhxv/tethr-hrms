@@ -53,7 +53,14 @@ export class TenantContextMiddleware implements NestMiddleware {
       return null;
     }
     try {
-      return this.jwtService.verify<JwtClaims>(value.slice('Bearer '.length));
+      const claims = this.jwtService.verify<Partial<JwtClaims>>(value.slice('Bearer '.length));
+      // A workspace-selection token verifies fine (same secret) but carries no
+      // `sub`/`org` — reject anything not shaped like a real session token
+      // rather than letting it fall through as an unscoped/undefined tenant.
+      if (typeof claims.sub !== 'string' || typeof claims.org !== 'string') {
+        return null;
+      }
+      return claims as JwtClaims;
     } catch {
       return null;
     }

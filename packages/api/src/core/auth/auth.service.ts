@@ -9,9 +9,13 @@ import { TenantContextService } from '../tenancy/tenant-context.service';
 import { TenantScopedRepository } from '../tenancy/tenant-scoped.repository';
 
 import { USER_REPOSITORY } from './auth.tokens';
-import type { JwtClaims } from './jwt-claims';
+import type { JwtClaims, WorkspaceSelectionClaims } from './jwt-claims';
 import { PasswordService } from './password.service';
 import { User } from './user.entity';
+
+// Short enough that a stale "pick a workspace" screen can't be used as a
+// lingering credential; long enough for a human to actually pick one.
+const WORKSPACE_SELECTION_TOKEN_TTL = '5m';
 
 export type CreateUserData = {
   readonly email: string;
@@ -64,26 +68,60 @@ export class AuthService {
     return this.users.save(user);
   }
 
-  // Login lookup is intentionally NOT tenant-scoped: at login no tenant is known
-  // yet. This is the one legitimate cross-tenant read (the auth boundary). The
-  // issued token then pins the tenant for every later request.
-  async login(email: string, password: string): Promise<AuthResult> {
-    const user = await this.userRepository.findOne({
+  // Email is unique per organization, not globally — the same person can hold
+  // a distinct account (and password) in every workspace they belong to. This
+  // lookup is intentionally NOT tenant-scoped: at login no tenant is known
+  // yet, and finding every candidate is the whole point. It's the one
+  // legitimate cross-tenant read (the auth boundary); nothing past it ever
+  // spans organizations. Zero, one, or many rows may verify.
+  async findVerifiedUsers(email: string, password: string): Promise<User[]> {
+    const candidates = await this.userRepository.find({
       where: { email: email.toLowerCase() } as FindOptionsWhere<User>,
     });
-    if (!user || user.status === 'disabled') {
-      throw new UnauthenticatedError('Invalid email or password');
+    const verified: User[] = [];
+    for (const candidate of candidates) {
+      if (candidate.status === 'disabled') continue;
+      if (await this.passwords.verify(password, candidate.passwordHash)) {
+        verified.push(candidate);
+      }
     }
-    const valid = await this.passwords.verify(password, user.passwordHash);
-    if (!valid) {
-      throw new UnauthenticatedError('Invalid email or password');
-    }
-    return { user, token: this.issueToken(user) };
+    return verified;
   }
 
   issueToken(user: User): string {
     const claims: JwtClaims = { sub: user.id, org: user.organizationId, email: user.email };
     return this.jwtService.sign(claims);
+  }
+
+  // Stands in for a session token while the caller picks which of several
+  // verified workspaces to enter. Binds the exact org ids that already passed
+  // a password check at login, so redeeming it never re-touches credentials.
+  issueWorkspaceSelectionToken(email: string, organizationIds: readonly string[]): string {
+    const claims: WorkspaceSelectionClaims = {
+      type: 'workspace-selection',
+      email: email.toLowerCase(),
+      organizationIds,
+    };
+    return this.jwtService.sign(claims, { expiresIn: WORKSPACE_SELECTION_TOKEN_TTL });
+  }
+
+  async resolveWorkspaceSelection(selectionToken: string, organizationId: string): Promise<User> {
+    let claims: WorkspaceSelectionClaims;
+    try {
+      claims = this.jwtService.verify<WorkspaceSelectionClaims>(selectionToken);
+    } catch {
+      throw new UnauthenticatedError('This workspace selection has expired');
+    }
+    if (claims.type !== 'workspace-selection' || !claims.organizationIds.includes(organizationId)) {
+      throw new UnauthenticatedError('That workspace was not part of this sign-in');
+    }
+    const user = await this.userRepository.findOne({
+      where: { email: claims.email, organizationId } as FindOptionsWhere<User>,
+    });
+    if (!user || user.status === 'disabled') {
+      throw new UnauthenticatedError('That workspace was not part of this sign-in');
+    }
+    return user;
   }
 
   // The authenticated user, from the principal the middleware set from the JWT.
