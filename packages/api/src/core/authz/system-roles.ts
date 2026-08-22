@@ -58,6 +58,7 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
     permissions: [
       PERMISSIONS.employeeRead,
       PERMISSIONS.userManage,
+      PERMISSIONS.organizationManage,
       PERMISSIONS.hiringRequestRead,
       PERMISSIONS.hiringRequestWrite,
       PERMISSIONS.assessmentRead,

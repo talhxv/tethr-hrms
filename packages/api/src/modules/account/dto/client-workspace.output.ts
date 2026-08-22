@@ -23,6 +23,9 @@ export class ClientWorkspaceView {
   defaultCurrency!: string;
 
   @Field()
+  brandColor!: string;
+
+  @Field()
   createdAt!: string;
 }
 

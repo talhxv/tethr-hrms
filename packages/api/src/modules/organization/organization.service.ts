@@ -1,8 +1,15 @@
-import { toId, type OrganizationId, type OrganizationKind } from '@hrms/shared';
+import {
+  toId,
+  WORKSPACE_BRAND_COLORS,
+  type OrganizationId,
+  type OrganizationKind,
+  type WorkspaceBrandColor,
+} from '@hrms/shared';
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, ILike, Repository } from 'typeorm';
 
+import { ValidationFailedError } from '../../common/errors';
 import { DomainEventPublisher } from '../../core/events/domain-event-publisher.service';
 import { TenantContextService } from '../../core/tenancy/tenant-context.service';
 
@@ -15,6 +22,9 @@ export type CreateOrganizationInput = {
   readonly defaultLocale?: string;
   readonly defaultCurrency?: string;
 };
+
+const randomBrandColor = (): WorkspaceBrandColor =>
+  WORKSPACE_BRAND_COLORS[Math.floor(Math.random() * WORKSPACE_BRAND_COLORS.length)];
 
 @Injectable()
 export class OrganizationService {
@@ -37,6 +47,7 @@ export class OrganizationService {
         defaultLocale: input.defaultLocale ?? 'en',
         defaultCurrency: input.defaultCurrency ?? 'USD',
         settings: {},
+        brandColor: randomBrandColor(),
       });
       const saved = await manager.save(organization);
       const organizationId = toId<OrganizationId>(saved.id);
@@ -56,6 +67,18 @@ export class OrganizationService {
 
   listClients(): Promise<Organization[]> {
     return this.organizations.find({ where: { kind: 'client' }, order: { createdAt: 'DESC' } });
+  }
+
+  async updateBrandColor(id: OrganizationId, brandColor: string): Promise<Organization> {
+    if (!WORKSPACE_BRAND_COLORS.includes(brandColor as WorkspaceBrandColor)) {
+      throw new ValidationFailedError('Unknown brand color', { brandColor });
+    }
+    const organization = await this.getById(id);
+    if (!organization) {
+      throw new ValidationFailedError('Organization not found', { id });
+    }
+    organization.brandColor = brandColor as WorkspaceBrandColor;
+    return this.organizations.save(organization);
   }
 
   // Precheck for signup/onboarding: same non-blocking-warning pattern as the

@@ -1,4 +1,4 @@
-import type { OrganizationKind } from '@hrms/shared';
+import type { OrganizationKind, WorkspaceBrandColor } from '@hrms/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { BaseEntity } from '../../../core/database/entities/base.entity';
@@ -26,4 +26,10 @@ export class Organization extends BaseEntity {
 
   @Column({ type: 'jsonb', default: () => "'{}'" })
   settings!: Record<string, unknown>;
+
+  // Auto-assigned at creation, user-configurable after (see
+  // WORKSPACE_BRAND_COLORS in @hrms/shared). Cosmetic only — never used for
+  // identity or access decisions.
+  @Column({ type: 'varchar', length: 16, default: 'iris' })
+  brandColor!: WorkspaceBrandColor;
 }

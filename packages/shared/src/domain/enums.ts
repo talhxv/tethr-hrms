@@ -41,6 +41,20 @@ export type PortalKind = 'tethr' | 'client' | 'employee' | 'none';
 
 export type OrganizationKind = 'tethr' | 'client';
 
+// The 25-hue set a workspace's brand color is drawn from — auto-assigned at
+// creation, user-configurable after. Deliberately mirrors @hrms/ui's
+// MainColorName/tagPalette (design.md §4.3) rather than importing it: api
+// depends only on @hrms/shared (never on ui, a presentation-layer package),
+// so this is the shared source of truth for validation on the backend while
+// the frontend renders swatches from the matching @hrms/ui palette. Keep the
+// two lists in sync if the palette ever changes.
+export const WORKSPACE_BRAND_COLORS = [
+  'red', 'ruby', 'crimson', 'tomato', 'orange', 'amber', 'yellow', 'lime',
+  'grass', 'green', 'jade', 'mint', 'turquoise', 'cyan', 'sky', 'blue',
+  'iris', 'violet', 'purple', 'plum', 'pink', 'bronze', 'gold', 'brown', 'gray',
+] as const;
+export type WorkspaceBrandColor = (typeof WORKSPACE_BRAND_COLORS)[number];
+
 export type HiringRequestStatus =
   'submitted' | 'inReview' | 'sourcing' | 'interviewing' | 'offer' | 'filled' | 'cancelled';
 

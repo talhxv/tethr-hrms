@@ -23,6 +23,7 @@ const toClientWorkspaceView = (organization: Organization): ClientWorkspaceView 
   kind: organization.kind,
   defaultLocale: organization.defaultLocale,
   defaultCurrency: organization.defaultCurrency,
+  brandColor: organization.brandColor,
   createdAt: organization.createdAt.toISOString(),
 });
 
