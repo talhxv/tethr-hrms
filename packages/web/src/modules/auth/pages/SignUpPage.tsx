@@ -1,5 +1,5 @@
 import { useApolloClient } from '@apollo/client';
-import { useState, type FocusEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type FocusEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { portalHome } from '../../../app/portal';
@@ -29,10 +29,24 @@ export const SignUpPage = () => {
   // instance; a one-off promise sidesteps that entirely.
   const [registeredEmailWarning, setRegisteredEmailWarning] = useState<string | null>(null);
   const [usedNameWarning, setUsedNameWarning] = useState<string | null>(null);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [checkingName, setCheckingName] = useState(false);
+  const [acknowledged, setAcknowledged] = useState(false);
+
+  const onEmailChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setEmail(event.target.value);
+    setAcknowledged(false);
+  };
+
+  const onOrganizationNameChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    setOrganizationName(event.target.value);
+    setAcknowledged(false);
+  };
 
   const onEmailBlur = async (event: FocusEvent<HTMLInputElement>): Promise<void> => {
     const value = event.target.value.trim();
     if (!value || !event.target.validity.valid) return;
+    setCheckingEmail(true);
     try {
       const { data } = await apollo.query<EmailCheckData, EmailCheckVars>({
         query: EMAIL_IS_ALREADY_REGISTERED_QUERY,
@@ -42,12 +56,15 @@ export const SignUpPage = () => {
       setRegisteredEmailWarning(data.emailIsAlreadyRegistered ? value : null);
     } catch {
       setRegisteredEmailWarning(null);
+    } finally {
+      setCheckingEmail(false);
     }
   };
 
   const onOrganizationNameBlur = async (event: FocusEvent<HTMLInputElement>): Promise<void> => {
     const value = event.target.value.trim();
     if (!value) return;
+    setCheckingName(true);
     try {
       const { data } = await apollo.query<NameCheckData, NameCheckVars>({
         query: LEGAL_NAME_IS_ALREADY_USED_QUERY,
@@ -57,12 +74,15 @@ export const SignUpPage = () => {
       setUsedNameWarning(data.legalNameIsAlreadyUsed ? value : null);
     } catch {
       setUsedNameWarning(null);
+    } finally {
+      setCheckingName(false);
     }
   };
 
   const emailAlreadyRegistered =
     registeredEmailWarning !== null && registeredEmailWarning === email.trim();
   const legalNameAlreadyUsed = usedNameWarning !== null && usedNameWarning === organizationName.trim();
+  const hasWarning = emailAlreadyRegistered || legalNameAlreadyUsed;
 
   const onSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -97,11 +117,13 @@ export const SignUpPage = () => {
             id="signup-org"
             type="text"
             value={organizationName}
-            onChange={(event) => setOrganizationName(event.target.value)}
+            onChange={onOrganizationNameChange}
             onBlur={onOrganizationNameBlur}
             required
           />
-          {legalNameAlreadyUsed ? (
+          {checkingName ? (
+            <div className="field-skeleton" aria-label="Checking workspace name…" />
+          ) : legalNameAlreadyUsed ? (
             <p className="field-hint field-hint-warning">
               A workspace named &quot;{organizationName.trim()}&quot; already exists. If that&apos;s
               you, submitting here still creates a separate, brand-new workspace with this same
@@ -116,11 +138,13 @@ export const SignUpPage = () => {
             type="email"
             autoComplete="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={onEmailChange}
             onBlur={onEmailBlur}
             required
           />
-          {emailAlreadyRegistered ? (
+          {checkingEmail ? (
+            <div className="field-skeleton" aria-label="Checking email…" />
+          ) : emailAlreadyRegistered ? (
             <p className="field-hint field-hint-warning">
               This email already has an account. If you&apos;re joining an existing company,{' '}
               <Link to="/login">sign in</Link> instead — submitting here creates a brand-new,
@@ -140,7 +164,21 @@ export const SignUpPage = () => {
             required
           />
         </div>
-        <button className="button button-primary button-full" type="submit" disabled={isBusy}>
+        {hasWarning ? (
+          <label className="field-checkbox-row">
+            <input
+              type="checkbox"
+              checked={acknowledged}
+              onChange={(event) => setAcknowledged(event.target.checked)}
+            />
+            I understand this creates a separate, brand-new workspace.
+          </label>
+        ) : null}
+        <button
+          className="button button-primary button-full"
+          type="submit"
+          disabled={isBusy || (hasWarning && !acknowledged)}
+        >
           {isBusy ? 'Creating…' : 'Create workspace'}
         </button>
         <p className="auth-switch">

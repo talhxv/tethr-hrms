@@ -809,6 +809,51 @@ button {
   color: var(--hrms-color-accent-accent9);
 }
 
+.field-skeleton {
+  margin: var(--hrms-space-2) 0 0;
+  height: 14px;
+  width: 65%;
+  border-radius: var(--hrms-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--hrms-color-background-tertiary) 25%,
+    var(--hrms-color-background-quaternary) 37%,
+    var(--hrms-color-background-tertiary) 63%
+  );
+  background-size: 400% 100%;
+  animation: field-skeleton-shimmer 1.4s ease infinite;
+}
+
+@keyframes field-skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-skeleton {
+    animation: none;
+  }
+}
+
+.field-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--hrms-space-2);
+  margin: var(--hrms-space-1) 0 var(--hrms-space-2);
+  font-size: var(--hrms-font-size-xs);
+  color: var(--hrms-color-text-secondary);
+  cursor: pointer;
+}
+
+.field-checkbox-row input[type='checkbox'] {
+  margin-top: 2px;
+  accent-color: var(--hrms-color-accent-accent9);
+}
+
 @media (max-width: 1100px) {
   .page-frame {
     grid-template-columns: minmax(0, 1fr);
