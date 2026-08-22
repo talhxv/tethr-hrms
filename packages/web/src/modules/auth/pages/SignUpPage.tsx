@@ -3,11 +3,16 @@ import { useState, type FocusEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { portalHome } from '../../../app/portal';
-import { EMAIL_IS_ALREADY_REGISTERED_QUERY } from '../graphql/auth.operations';
+import {
+  EMAIL_IS_ALREADY_REGISTERED_QUERY,
+  LEGAL_NAME_IS_ALREADY_USED_QUERY,
+} from '../graphql/auth.operations';
 import { useAuth } from '../hooks/useAuth';
 
 type EmailCheckData = { readonly emailIsAlreadyRegistered: boolean };
 type EmailCheckVars = { readonly email: string };
+type NameCheckData = { readonly legalNameIsAlreadyUsed: boolean };
+type NameCheckVars = { readonly legalName: string };
 
 export const SignUpPage = () => {
   const navigate = useNavigate();
@@ -17,12 +22,13 @@ export const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  // The email this warning applies to — plain state, checked imperatively via
+  // The value each warning applies to — plain state, checked imperatively via
   // client.query() rather than a subscribed useQuery. A query fired mid-
   // lifecycle (on blur, not at mount) can race React 18 StrictMode's dev-only
   // mount/unmount/remount and never deliver its result to the "wrong" hook
   // instance; a one-off promise sidesteps that entirely.
   const [registeredEmailWarning, setRegisteredEmailWarning] = useState<string | null>(null);
+  const [usedNameWarning, setUsedNameWarning] = useState<string | null>(null);
 
   const onEmailBlur = async (event: FocusEvent<HTMLInputElement>): Promise<void> => {
     const value = event.target.value.trim();
@@ -39,8 +45,24 @@ export const SignUpPage = () => {
     }
   };
 
+  const onOrganizationNameBlur = async (event: FocusEvent<HTMLInputElement>): Promise<void> => {
+    const value = event.target.value.trim();
+    if (!value) return;
+    try {
+      const { data } = await apollo.query<NameCheckData, NameCheckVars>({
+        query: LEGAL_NAME_IS_ALREADY_USED_QUERY,
+        variables: { legalName: value },
+        fetchPolicy: 'network-only',
+      });
+      setUsedNameWarning(data.legalNameIsAlreadyUsed ? value : null);
+    } catch {
+      setUsedNameWarning(null);
+    }
+  };
+
   const emailAlreadyRegistered =
     registeredEmailWarning !== null && registeredEmailWarning === email.trim();
+  const legalNameAlreadyUsed = usedNameWarning !== null && usedNameWarning === organizationName.trim();
 
   const onSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -76,8 +98,16 @@ export const SignUpPage = () => {
             type="text"
             value={organizationName}
             onChange={(event) => setOrganizationName(event.target.value)}
+            onBlur={onOrganizationNameBlur}
             required
           />
+          {legalNameAlreadyUsed ? (
+            <p className="field-hint field-hint-warning">
+              A workspace named &quot;{organizationName.trim()}&quot; already exists. If that&apos;s
+              you, submitting here still creates a separate, brand-new workspace with this same
+              name.
+            </p>
+          ) : null}
         </div>
         <div className="field">
           <label htmlFor="signup-email">Work email</label>

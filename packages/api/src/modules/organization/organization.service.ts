@@ -1,7 +1,7 @@
 import { toId, type OrganizationId, type OrganizationKind } from '@hrms/shared';
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, ILike, Repository } from 'typeorm';
 
 import { DomainEventPublisher } from '../../core/events/domain-event-publisher.service';
 import { TenantContextService } from '../../core/tenancy/tenant-context.service';
@@ -56,5 +56,16 @@ export class OrganizationService {
 
   listClients(): Promise<Organization[]> {
     return this.organizations.find({ where: { kind: 'client' }, order: { createdAt: 'DESC' } });
+  }
+
+  // Precheck for signup/onboarding: same non-blocking-warning pattern as the
+  // email check (AuthService.emailIsAlreadyRegistered) — legalName has no DB
+  // uniqueness constraint (two real companies can legitimately share a name),
+  // so this only ever informs, never enforces.
+  async legalNameExists(legalName: string): Promise<boolean> {
+    const count = await this.organizations.count({
+      where: { legalName: ILike(legalName.trim()) },
+    });
+    return count > 0;
   }
 }

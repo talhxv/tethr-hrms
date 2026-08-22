@@ -48,6 +48,12 @@ export const EMAIL_IS_ALREADY_REGISTERED_QUERY = gql`
   }
 `;
 
+export const LEGAL_NAME_IS_ALREADY_USED_QUERY = gql`
+  query LegalNameIsAlreadyUsed($legalName: String!) {
+    legalNameIsAlreadyUsed(legalName: $legalName)
+  }
+`;
+
 export const WORKSPACE_USERS_QUERY = gql`
   query WorkspaceUsers {
     workspaceUsers {

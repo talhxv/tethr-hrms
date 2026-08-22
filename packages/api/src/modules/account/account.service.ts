@@ -72,6 +72,10 @@ export class AccountService {
     return { user, token: this.authService.issueToken(user) };
   }
 
+  legalNameIsAlreadyUsed(legalName: string): Promise<boolean> {
+    return this.organizationService.legalNameExists(legalName);
+  }
+
   listClientWorkspaces(): Promise<Organization[]> {
     return this.organizationService.listClients();
   }

@@ -69,6 +69,14 @@ export class AccountResolver {
     };
   }
 
+  // Public precheck, same trust boundary as signUp/login: warns "a workspace
+  // with this name already exists" without blocking — legalName isn't (and
+  // shouldn't be) a unique key, so this only ever informs.
+  @Query(() => Boolean)
+  legalNameIsAlreadyUsed(@Args('legalName') legalName: string): Promise<boolean> {
+    return this.accountService.legalNameIsAlreadyUsed(legalName);
+  }
+
   @Query(() => [ClientWorkspaceView])
   @UseGuards(PermissionsGuard)
   @RequirePermissions(PERMISSIONS.clientManage)
