@@ -1,16 +1,46 @@
-import { useState, type FormEvent } from 'react';
+import { useApolloClient } from '@apollo/client';
+import { useState, type FocusEvent, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { useAuth } from '../hooks/useAuth';
 import { portalHome } from '../../../app/portal';
+import { EMAIL_IS_ALREADY_REGISTERED_QUERY } from '../graphql/auth.operations';
+import { useAuth } from '../hooks/useAuth';
+
+type EmailCheckData = { readonly emailIsAlreadyRegistered: boolean };
+type EmailCheckVars = { readonly email: string };
 
 export const SignUpPage = () => {
   const navigate = useNavigate();
   const { signUp, isBusy } = useAuth();
+  const apollo = useApolloClient();
   const [organizationName, setOrganizationName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // The email this warning applies to — plain state, checked imperatively via
+  // client.query() rather than a subscribed useQuery. A query fired mid-
+  // lifecycle (on blur, not at mount) can race React 18 StrictMode's dev-only
+  // mount/unmount/remount and never deliver its result to the "wrong" hook
+  // instance; a one-off promise sidesteps that entirely.
+  const [registeredEmailWarning, setRegisteredEmailWarning] = useState<string | null>(null);
+
+  const onEmailBlur = async (event: FocusEvent<HTMLInputElement>): Promise<void> => {
+    const value = event.target.value.trim();
+    if (!value || !event.target.validity.valid) return;
+    try {
+      const { data } = await apollo.query<EmailCheckData, EmailCheckVars>({
+        query: EMAIL_IS_ALREADY_REGISTERED_QUERY,
+        variables: { email: value },
+        fetchPolicy: 'network-only',
+      });
+      setRegisteredEmailWarning(data.emailIsAlreadyRegistered ? value : null);
+    } catch {
+      setRegisteredEmailWarning(null);
+    }
+  };
+
+  const emailAlreadyRegistered =
+    registeredEmailWarning !== null && registeredEmailWarning === email.trim();
 
   const onSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -57,8 +87,16 @@ export const SignUpPage = () => {
             autoComplete="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            onBlur={onEmailBlur}
             required
           />
+          {emailAlreadyRegistered ? (
+            <p className="field-hint field-hint-warning">
+              This email already has an account. If you&apos;re joining an existing company,{' '}
+              <Link to="/login">sign in</Link> instead — submitting here creates a brand-new,
+              separate workspace.
+            </p>
+          ) : null}
         </div>
         <div className="field">
           <label htmlFor="signup-password">Password</label>

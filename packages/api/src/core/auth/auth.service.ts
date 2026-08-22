@@ -88,6 +88,17 @@ export class AuthService {
     return verified;
   }
 
+  // Public-facing precheck for signup: does any workspace already have an
+  // account for this email? Deliberately returns only a boolean — never org
+  // names or a count — so an unauthenticated caller can't enumerate which
+  // companies exist or who's registered where.
+  async emailIsAlreadyRegistered(email: string): Promise<boolean> {
+    const count = await this.userRepository.count({
+      where: { email: email.toLowerCase() } as FindOptionsWhere<User>,
+    });
+    return count > 0;
+  }
+
   issueToken(user: User): string {
     const claims: JwtClaims = { sub: user.id, org: user.organizationId, email: user.email };
     return this.jwtService.sign(claims);

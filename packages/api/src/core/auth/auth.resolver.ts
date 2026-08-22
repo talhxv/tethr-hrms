@@ -37,6 +37,14 @@ export class AuthResolver {
     return { token: this.authService.issueToken(user), user: toCurrentUserView(user, access) };
   }
 
+  // Public precheck for the signup form: warns "you may already have an
+  // account" without revealing anything about which workspace(s) — no auth
+  // required, same trust boundary as login/signUp themselves.
+  @Query(() => Boolean)
+  emailIsAlreadyRegistered(@Args('email') email: string): Promise<boolean> {
+    return this.authService.emailIsAlreadyRegistered(email);
+  }
+
   @Query(() => CurrentUserView)
   async me(): Promise<CurrentUserView> {
     const user = await this.authService.getCurrentUser();

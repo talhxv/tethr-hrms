@@ -42,6 +42,12 @@ export const SIGN_UP_MUTATION = gql`
   }
 `;
 
+export const EMAIL_IS_ALREADY_REGISTERED_QUERY = gql`
+  query EmailIsAlreadyRegistered($email: String!) {
+    emailIsAlreadyRegistered(email: $email)
+  }
+`;
+
 export const WORKSPACE_USERS_QUERY = gql`
   query WorkspaceUsers {
     workspaceUsers {
