@@ -1,38 +1,16 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType } from '@nestjs/graphql';
 
 import { CurrentUserView } from '../../../core/auth/dto/current-user.output';
-
-@ObjectType('ClientWorkspace')
-export class ClientWorkspaceView {
-  @Field(() => ID)
-  id!: string;
-
-  @Field()
-  legalName!: string;
-
-  @Field()
-  displayName!: string;
-
-  @Field()
-  kind!: string;
-
-  @Field()
-  defaultLocale!: string;
-
-  @Field()
-  defaultCurrency!: string;
-
-  @Field()
-  brandColor!: string;
-
-  @Field()
-  createdAt!: string;
-}
+import { ClientView } from '../../clients/dto/client.output';
+import { WorkspaceSummaryView } from '../../organization/dto/workspace-summary.output';
 
 @ObjectType('OnboardClientPayload')
 export class OnboardClientPayload {
-  @Field(() => ClientWorkspaceView)
-  client!: ClientWorkspaceView;
+  @Field(() => ClientView)
+  client!: ClientView;
+
+  @Field(() => WorkspaceSummaryView)
+  workspace!: WorkspaceSummaryView;
 
   @Field(() => CurrentUserView)
   initialAdmin!: CurrentUserView;

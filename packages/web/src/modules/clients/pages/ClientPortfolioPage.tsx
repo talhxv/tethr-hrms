@@ -9,23 +9,31 @@ import {
 import { useMemo, useState, type FormEvent } from 'react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
-import { CLIENT_WORKSPACES_QUERY, ONBOARD_CLIENT_MUTATION } from '../graphql/client.operations';
+import { CLIENTS_QUERY, ONBOARD_CLIENT_MUTATION } from '../graphql/client.operations';
 
-type ClientWorkspaceRecord = {
+type WorkspaceSummaryRecord = {
   readonly id: string;
-  readonly legalName: string;
   readonly displayName: string;
-  readonly kind: string;
-  readonly defaultLocale: string;
   readonly defaultCurrency: string;
+  readonly defaultLocale: string;
   readonly createdAt: string;
 };
 
-type ClientWorkspacesData = {
-  readonly clientWorkspaces: readonly ClientWorkspaceRecord[];
+type ClientRecord = {
+  readonly id: string;
+  readonly name: string;
+  readonly createdAt: string;
+  readonly workspaces: readonly WorkspaceSummaryRecord[];
 };
 
+type ClientsData = {
+  readonly clients: readonly ClientRecord[];
+};
+
+const NEW_CLIENT_OPTION = 'new';
+
 const emptyForm = {
+  clientId: NEW_CLIENT_OPTION,
   legalName: '',
   displayName: '',
   defaultLocale: 'en',
@@ -43,15 +51,18 @@ const formatDate = (value: string): string =>
 
 export const ClientPortfolioPage = () => {
   const { theme } = useTheme();
-  const { data, loading, error, refetch } = useQuery<ClientWorkspacesData>(CLIENT_WORKSPACES_QUERY);
+  const { data, loading, error, refetch } = useQuery<ClientsData>(CLIENTS_QUERY);
   const [onboardClient, { loading: onboarding }] = useMutation(ONBOARD_CLIENT_MUTATION);
-  const clients = useMemo(() => data?.clientWorkspaces ?? [], [data]);
+  const clients = useMemo(() => data?.clients ?? [], [data]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const newestClient = clients[0] ?? null;
-  const currencies = new Set(clients.map((client) => client.defaultCurrency)).size;
+  const currencies = new Set(
+    clients.flatMap((client) => client.workspaces.map((workspace) => workspace.defaultCurrency)),
+  ).size;
+  const totalWorkspaces = clients.reduce((sum, client) => sum + client.workspaces.length, 0);
 
   const setField = (key: keyof typeof emptyForm, value: string): void =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -64,6 +75,7 @@ export const ClientPortfolioPage = () => {
       const result = await onboardClient({
         variables: {
           input: {
+            clientId: form.clientId === NEW_CLIENT_OPTION ? null : form.clientId,
             legalName: form.legalName.trim(),
             displayName: form.displayName.trim() || null,
             defaultLocale: form.defaultLocale.trim() || null,
@@ -81,12 +93,12 @@ export const ClientPortfolioPage = () => {
       setShowForm(false);
       setNotice(
         adminEmail && hrAdminEmail
-          ? `Client onboarded with admin ${adminEmail} and Tethr HR ${hrAdminEmail}`
-          : 'Client onboarded',
+          ? `Workspace onboarded with admin ${adminEmail} and Tethr HR ${hrAdminEmail}`
+          : 'Workspace onboarded',
       );
       await refetch();
     } catch (caught) {
-      setFormError(caught instanceof Error ? caught.message : 'Could not onboard this client');
+      setFormError(caught instanceof Error ? caught.message : 'Could not onboard this workspace');
     }
   };
 
@@ -98,7 +110,7 @@ export const ClientPortfolioPage = () => {
             <h1 className="page-title" id="client-portfolio-title">
               Client portfolio
             </h1>
-            <p className="page-subtitle">Client workspaces onboarded and managed by Tethr Admin.</p>
+            <p className="page-subtitle">Clients and their workspaces, managed by Tethr Admin.</p>
           </div>
           <div className="page-actions">
             <button
@@ -107,7 +119,7 @@ export const ClientPortfolioPage = () => {
               onClick={() => setShowForm((visible) => !visible)}
             >
               <IconPlus size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-              New client
+              New workspace
             </button>
           </div>
         </header>
@@ -118,6 +130,10 @@ export const ClientPortfolioPage = () => {
             <div className="metric-value">{loading ? '...' : clients.length}</div>
           </div>
           <div className="metric-card">
+            <div className="metric-label">Workspaces</div>
+            <div className="metric-value">{loading ? '...' : totalWorkspaces}</div>
+          </div>
+          <div className="metric-card">
             <div className="metric-label">Currencies</div>
             <div className="metric-value">{loading ? '...' : currencies}</div>
           </div>
@@ -126,10 +142,6 @@ export const ClientPortfolioPage = () => {
             <div className="metric-value">
               {loading ? '...' : newestClient ? formatDate(newestClient.createdAt) : '-'}
             </div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Access</div>
-            <div className="metric-value">Admin</div>
           </div>
         </div>
 
@@ -144,7 +156,22 @@ export const ClientPortfolioPage = () => {
             ) : null}
             <div className="field-group">
               <div className="field">
-                <label htmlFor="client-legal-name">Legal name</label>
+                <label htmlFor="client-select">Client</label>
+                <select
+                  id="client-select"
+                  value={form.clientId}
+                  onChange={(event) => setField('clientId', event.target.value)}
+                >
+                  <option value={NEW_CLIENT_OPTION}>+ New client</option>
+                  {clients.map((client) => (
+                    <option key={client.id} value={client.id}>
+                      {client.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="client-legal-name">Workspace legal name</label>
                 <input
                   id="client-legal-name"
                   required
@@ -153,7 +180,7 @@ export const ClientPortfolioPage = () => {
                 />
               </div>
               <div className="field">
-                <label htmlFor="client-display-name">Display name</label>
+                <label htmlFor="client-display-name">Workspace display name</label>
                 <input
                   id="client-display-name"
                   value={form.displayName}
@@ -227,7 +254,7 @@ export const ClientPortfolioPage = () => {
             <div className="page-actions">
               <button className="button button-primary" disabled={onboarding} type="submit">
                 <IconDeviceFloppy size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-                {onboarding ? 'Onboarding...' : 'Onboard client'}
+                {onboarding ? 'Onboarding...' : 'Onboard workspace'}
               </button>
               <button
                 className="button button-secondary"
@@ -244,7 +271,7 @@ export const ClientPortfolioPage = () => {
           <div className="table-title-row">
             <div className="table-title">
               <IconBuildingCommunity size={theme.icon.size.md} />
-              Client workspaces
+              Clients
             </div>
             <button
               className="icon-button"
@@ -256,15 +283,15 @@ export const ClientPortfolioPage = () => {
             </button>
           </div>
           {error ? (
-            <p className="table-empty">Could not load client workspaces.</p>
+            <p className="table-empty">Could not load clients.</p>
           ) : (
             <div className="data-table-wrap">
               <table className="data-table client-portfolio-table">
                 <thead>
                   <tr>
                     <th>Client</th>
-                    <th>Currency</th>
-                    <th>Locale</th>
+                    <th>Workspaces</th>
+                    <th>Currencies</th>
                     <th>Created</th>
                   </tr>
                 </thead>
@@ -272,18 +299,25 @@ export const ClientPortfolioPage = () => {
                   {clients.map((client) => (
                     <tr key={client.id}>
                       <td>
-                        <div className="employee-primary">{client.displayName}</div>
-                        <div className="employee-secondary">{client.legalName}</div>
+                        <div className="employee-primary">{client.name}</div>
                       </td>
-                      <td>{client.defaultCurrency}</td>
-                      <td>{client.defaultLocale}</td>
+                      <td>
+                        {client.workspaces.length === 0
+                          ? '-'
+                          : client.workspaces.map((workspace) => workspace.displayName).join(', ')}
+                      </td>
+                      <td>
+                        {Array.from(
+                          new Set(client.workspaces.map((workspace) => workspace.defaultCurrency)),
+                        ).join(', ') || '-'}
+                      </td>
                       <td>{formatDate(client.createdAt)}</td>
                     </tr>
                   ))}
                   {!loading && clients.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="table-empty">
-                        No client workspaces onboarded yet.
+                        No clients onboarded yet.
                       </td>
                     </tr>
                   ) : null}

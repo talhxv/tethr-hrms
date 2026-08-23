@@ -8,24 +8,14 @@ import { AuthorizationService } from '../../core/authz/authz.service';
 import { PERMISSIONS } from '../../core/authz/permissions';
 import { PermissionsGuard } from '../../core/authz/permissions.guard';
 import { RequirePermissions } from '../../core/authz/require-permissions.decorator';
-import type { Organization } from '../organization/entities/organization.entity';
+import { toClientView } from '../clients/dto/client.output';
+import { toWorkspaceSummaryView } from '../organization/dto/workspace-summary.output';
 
 import { AccountService } from './account.service';
-import { ClientWorkspaceView, OnboardClientPayload } from './dto/client-workspace.output';
+import { OnboardClientPayload } from './dto/client-workspace.output';
 import { LoginResult } from './dto/login-result.output';
 import { OnboardClientInput } from './dto/onboard-client.input';
 import { SignUpInput } from './dto/sign-up.input';
-
-const toClientWorkspaceView = (organization: Organization): ClientWorkspaceView => ({
-  id: organization.id,
-  legalName: organization.legalName,
-  displayName: organization.displayName,
-  kind: organization.kind,
-  defaultLocale: organization.defaultLocale,
-  defaultCurrency: organization.defaultCurrency,
-  brandColor: organization.brandColor,
-  createdAt: organization.createdAt.toISOString(),
-});
 
 @Resolver()
 export class AccountResolver {
@@ -70,35 +60,37 @@ export class AccountResolver {
     };
   }
 
-  // Public precheck, same trust boundary as signUp/login: warns "a workspace
-  // with this name already exists" without blocking — legalName isn't (and
-  // shouldn't be) a unique key, so this only ever informs.
+  // Public precheck, same trust boundary as signUp/login: workspace names ARE
+  // unique now, so this predicts the real create()-time check exactly.
   @Query(() => Boolean)
   legalNameIsAlreadyUsed(@Args('legalName') legalName: string): Promise<boolean> {
     return this.accountService.legalNameIsAlreadyUsed(legalName);
   }
 
-  @Query(() => [ClientWorkspaceView])
-  @UseGuards(PermissionsGuard)
-  @RequirePermissions(PERMISSIONS.clientManage)
-  async clientWorkspaces(): Promise<ClientWorkspaceView[]> {
-    return (await this.accountService.listClientWorkspaces()).map(toClientWorkspaceView);
+  // Public precheck for the one-self-serve-workspace-per-person cap: has
+  // this email already founded a workspace (as opposed to merely being a
+  // member of one)? Same boolean-only trust boundary as the two checks above.
+  @Query(() => Boolean)
+  hasCreatedWorkspace(@Args('email') email: string): Promise<boolean> {
+    return this.accountService.hasCreatedWorkspace(email);
   }
 
   @Mutation(() => OnboardClientPayload)
   @UseGuards(PermissionsGuard)
   @RequirePermissions(PERMISSIONS.clientManage)
   async onboardClient(@Args('input') input: OnboardClientInput): Promise<OnboardClientPayload> {
-    const { client, initialAdmin, initialHrAdmin } = await this.accountService.onboardClient({
-      legalName: input.legalName,
-      displayName: input.displayName ?? null,
-      defaultLocale: input.defaultLocale ?? null,
-      defaultCurrency: input.defaultCurrency ?? null,
-      adminEmail: input.adminEmail,
-      adminPassword: input.adminPassword,
-      hrAdminEmail: input.hrAdminEmail,
-      hrAdminPassword: input.hrAdminPassword,
-    });
+    const { client, workspace, initialAdmin, initialHrAdmin } =
+      await this.accountService.onboardClient({
+        clientId: input.clientId ?? null,
+        legalName: input.legalName,
+        displayName: input.displayName ?? null,
+        defaultLocale: input.defaultLocale ?? null,
+        defaultCurrency: input.defaultCurrency ?? null,
+        adminEmail: input.adminEmail,
+        adminPassword: input.adminPassword,
+        hrAdminEmail: input.hrAdminEmail,
+        hrAdminPassword: input.hrAdminPassword,
+      });
     const [adminAccess, hrAdminAccess] = await Promise.all([
       this.authorization.getAccessForUserInOrganization(initialAdmin.id, initialAdmin.organizationId),
       this.authorization.getAccessForUserInOrganization(
@@ -107,7 +99,8 @@ export class AccountResolver {
       ),
     ]);
     return {
-      client: toClientWorkspaceView(client),
+      client: toClientView(client),
+      workspace: toWorkspaceSummaryView(workspace),
       initialAdmin: toCurrentUserView(initialAdmin, adminAccess),
       initialHrAdmin: toCurrentUserView(initialHrAdmin, hrAdminAccess),
     };

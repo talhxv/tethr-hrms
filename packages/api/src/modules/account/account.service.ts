@@ -1,11 +1,13 @@
-import { toId, type OrganizationId, type UserId } from '@hrms/shared';
+import { toId, type ClientId, type OrganizationId, type UserId } from '@hrms/shared';
 import { Injectable } from '@nestjs/common';
 
-import { UnauthenticatedError } from '../../common/errors';
+import { ConflictError, UnauthenticatedError } from '../../common/errors';
 import { AuthService, type AuthResult } from '../../core/auth/auth.service';
 import type { User } from '../../core/auth/user.entity';
 import { AuthorizationService, type EffectiveAccess } from '../../core/authz/authz.service';
 import { TenantContextService } from '../../core/tenancy/tenant-context.service';
+import { ClientService } from '../clients/client.service';
+import type { Client } from '../clients/entities/client.entity';
 import type { Organization } from '../organization/entities/organization.entity';
 import { OrganizationService } from '../organization/organization.service';
 
@@ -16,6 +18,9 @@ export type SignUpData = {
 };
 
 export type OnboardClientData = {
+  // An existing Client to add this workspace to; omit to found a new Client
+  // (named after legalName) alongside it — the common "new company" case.
+  readonly clientId?: string | null;
   readonly legalName: string;
   readonly displayName?: string | null;
   readonly defaultLocale?: string | null;
@@ -27,7 +32,8 @@ export type OnboardClientData = {
 };
 
 export type OnboardClientResult = {
-  readonly client: Organization;
+  readonly client: Client;
+  readonly workspace: Organization;
   readonly initialAdmin: Awaited<ReturnType<AuthService['createUser']>>;
   readonly initialHrAdmin: Awaited<ReturnType<AuthService['createUser']>>;
 };
@@ -48,12 +54,22 @@ export type LoginOutcome =
 export class AccountService {
   constructor(
     private readonly organizationService: OrganizationService,
+    private readonly clientService: ClientService,
     private readonly authService: AuthService,
     private readonly authorization: AuthorizationService,
     private readonly tenantContext: TenantContextService,
   ) {}
 
   async signUp(input: SignUpData): Promise<AuthResult> {
+    // One self-serve workspace per person: being a MEMBER of several
+    // workspaces is unrestricted (see createWorkspaceUser); this only caps
+    // founding a brand-new one from this public, unauthenticated mutation.
+    if (await this.authService.hasCreatedWorkspace(input.email)) {
+      throw new ConflictError(
+        "You've already created a workspace with this email. Ask an admin to invite you into another one, or sign in.",
+      );
+    }
+
     const organization = await this.organizationService.create({
       legalName: input.organizationName,
     });
@@ -64,6 +80,7 @@ export class AccountService {
       const created = await this.authService.createUser({
         email: input.email,
         password: input.password,
+        isWorkspaceCreator: true,
       });
       await this.authorization.assignSystemRole(toId<UserId>(created.id), 'clientAdmin');
       return created;
@@ -76,8 +93,8 @@ export class AccountService {
     return this.organizationService.legalNameExists(legalName);
   }
 
-  listClientWorkspaces(): Promise<Organization[]> {
-    return this.organizationService.listClients();
+  hasCreatedWorkspace(email: string): Promise<boolean> {
+    return this.authService.hasCreatedWorkspace(email);
   }
 
   // Tethr is fully-managed by default (design.md "we handle the rest"): every
@@ -89,8 +106,16 @@ export class AccountService {
   // org (findVerifiedUsers + the workspace-selection login flow is how they
   // move between them).
   async onboardClient(input: OnboardClientData): Promise<OnboardClientResult> {
+    const client = input.clientId
+      ? await this.clientService.getById(toId<ClientId>(input.clientId))
+      : await this.clientService.create({ name: input.legalName });
+    if (!client) {
+      throw new ConflictError('Client not found', { clientId: input.clientId });
+    }
+
     const organization = await this.organizationService.create({
       kind: 'client',
+      clientId: client.id,
       legalName: input.legalName,
       displayName: input.displayName ?? undefined,
       defaultLocale: input.defaultLocale ?? undefined,
@@ -101,9 +126,15 @@ export class AccountService {
     const { initialAdmin, initialHrAdmin } = await this.tenantContext.run(
       { organizationId, userId: null },
       async () => {
+        // Only the client-side admin is marked isWorkspaceCreator: this
+        // flow is Tethr-staff-driven, so it's never gated by the
+        // one-self-serve-workspace cap (see signUp) — but the flag still
+        // has to be set here so a later self-serve signUp with this same
+        // email is correctly recognized as "already has a workspace."
         const admin = await this.authService.createUser({
           email: input.adminEmail,
           password: input.adminPassword,
+          isWorkspaceCreator: true,
         });
         await this.authorization.assignSystemRole(toId<UserId>(admin.id), 'clientAdmin');
 
@@ -117,7 +148,7 @@ export class AccountService {
       },
     );
 
-    return { client: organization, initialAdmin, initialHrAdmin };
+    return { client, workspace: organization, initialAdmin, initialHrAdmin };
   }
 
   // Orchestrates login across the Auth (core) and Organization (modules)

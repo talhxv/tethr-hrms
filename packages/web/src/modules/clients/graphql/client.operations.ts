@@ -1,15 +1,18 @@
 import { gql } from '@apollo/client';
 
-export const CLIENT_WORKSPACES_QUERY = gql`
-  query ClientWorkspaces {
-    clientWorkspaces {
+export const CLIENTS_QUERY = gql`
+  query Clients {
+    clients {
       id
-      legalName
-      displayName
-      kind
-      defaultLocale
-      defaultCurrency
+      name
       createdAt
+      workspaces {
+        id
+        displayName
+        defaultCurrency
+        defaultLocale
+        createdAt
+      }
     }
   }
 `;
@@ -18,6 +21,11 @@ export const ONBOARD_CLIENT_MUTATION = gql`
   mutation OnboardClient($input: OnboardClientInput!) {
     onboardClient(input: $input) {
       client {
+        id
+        name
+        createdAt
+      }
+      workspace {
         id
         legalName
         displayName

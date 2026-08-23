@@ -12,6 +12,7 @@ export type Brand<TValue, TBrand extends string> = TValue & {
 
 // --- Platform / tenancy ---
 export type OrganizationId = Brand<string, 'OrganizationId'>;
+export type ClientId = Brand<string, 'ClientId'>;
 export type LegalEntityId = Brand<string, 'LegalEntityId'>;
 export type LocationId = Brand<string, 'LocationId'>;
 export type DepartmentId = Brand<string, 'DepartmentId'>;

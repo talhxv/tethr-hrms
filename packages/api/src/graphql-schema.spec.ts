@@ -6,6 +6,7 @@ import { AuthResolver } from './core/auth/auth.resolver';
 import { HealthResolver } from './health/health.resolver';
 import { AccountResolver } from './modules/account/account.resolver';
 import { AttendanceResolver } from './modules/attendance/attendance.resolver';
+import { ClientResolver } from './modules/clients/client.resolver';
 import { CompensationResolver } from './modules/compensation/compensation.resolver';
 import { EmployeeResolver } from './modules/employee/employee.resolver';
 import { EmployeeRecordsResolver } from './modules/employee-records/employee-records.resolver';
@@ -94,7 +95,7 @@ describe('code-first GraphQL schema', () => {
     }).compile();
 
     const schemaFactory = moduleRef.get(GraphQLSchemaFactory);
-    const schema = await schemaFactory.create([AuthResolver, AccountResolver]);
+    const schema = await schemaFactory.create([AuthResolver, AccountResolver, ClientResolver]);
     const sdl = printSchema(schema);
 
     expect(sdl).toContain('roleKeys: [String!]!');
@@ -104,8 +105,11 @@ describe('code-first GraphQL schema', () => {
     expect(sdl).toContain('createWorkspaceUser');
     expect(sdl).toContain('updateWorkspaceUserRole');
     expect(sdl).toContain('input UpdateWorkspaceUserRoleInput');
-    expect(sdl).toContain('type ClientWorkspace');
-    expect(sdl).toContain('clientWorkspaces');
+    expect(sdl).toContain('type WorkspaceSummary');
+    expect(sdl).toContain('type Client');
+    expect(sdl).toContain('workspaces: [WorkspaceSummary!]!');
+    expect(sdl).toContain('clients: [Client!]!');
+    expect(sdl).toContain('hasCreatedWorkspace');
     expect(sdl).toContain('onboardClient');
   });
 

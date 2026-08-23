@@ -4,13 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { portalHome } from '../../../app/portal';
 import {
-  EMAIL_IS_ALREADY_REGISTERED_QUERY,
+  HAS_CREATED_WORKSPACE_QUERY,
   LEGAL_NAME_IS_ALREADY_USED_QUERY,
 } from '../graphql/auth.operations';
 import { useAuth } from '../hooks/useAuth';
 
-type EmailCheckData = { readonly emailIsAlreadyRegistered: boolean };
-type EmailCheckVars = { readonly email: string };
+type CreatorCheckData = { readonly hasCreatedWorkspace: boolean };
+type CreatorCheckVars = { readonly email: string };
 type NameCheckData = { readonly legalNameIsAlreadyUsed: boolean };
 type NameCheckVars = { readonly legalName: string };
 
@@ -22,25 +22,27 @@ export const SignUpPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  // The value each warning applies to — plain state, checked imperatively via
-  // client.query() rather than a subscribed useQuery. A query fired mid-
-  // lifecycle (on blur, not at mount) can race React 18 StrictMode's dev-only
-  // mount/unmount/remount and never deliver its result to the "wrong" hook
-  // instance; a one-off promise sidesteps that entirely.
-  const [registeredEmailWarning, setRegisteredEmailWarning] = useState<string | null>(null);
+  // Workspace names are unique and one email can found only one workspace —
+  // both are hard blocks, not warnings, so there's no "acknowledge and
+  // proceed anyway" here. The value each check applies to — plain state,
+  // checked imperatively via client.query() rather than a subscribed
+  // useQuery. A query fired mid-lifecycle (on blur, not at mount) can race
+  // React 18 StrictMode's dev-only mount/unmount/remount and never deliver
+  // its result to the "wrong" hook instance; a one-off promise sidesteps
+  // that entirely.
+  const [emailAlreadyFoundedWorkspace, setEmailAlreadyFoundedWorkspace] = useState<string | null>(
+    null,
+  );
   const [usedNameWarning, setUsedNameWarning] = useState<string | null>(null);
   const [checkingEmail, setCheckingEmail] = useState(false);
   const [checkingName, setCheckingName] = useState(false);
-  const [acknowledged, setAcknowledged] = useState(false);
 
   const onEmailChange = (event: ChangeEvent<HTMLInputElement>): void => {
     setEmail(event.target.value);
-    setAcknowledged(false);
   };
 
   const onOrganizationNameChange = (event: ChangeEvent<HTMLInputElement>): void => {
     setOrganizationName(event.target.value);
-    setAcknowledged(false);
   };
 
   const onEmailBlur = async (event: FocusEvent<HTMLInputElement>): Promise<void> => {
@@ -48,14 +50,14 @@ export const SignUpPage = () => {
     if (!value || !event.target.validity.valid) return;
     setCheckingEmail(true);
     try {
-      const { data } = await apollo.query<EmailCheckData, EmailCheckVars>({
-        query: EMAIL_IS_ALREADY_REGISTERED_QUERY,
+      const { data } = await apollo.query<CreatorCheckData, CreatorCheckVars>({
+        query: HAS_CREATED_WORKSPACE_QUERY,
         variables: { email: value },
         fetchPolicy: 'network-only',
       });
-      setRegisteredEmailWarning(data.emailIsAlreadyRegistered ? value : null);
+      setEmailAlreadyFoundedWorkspace(data.hasCreatedWorkspace ? value : null);
     } catch {
-      setRegisteredEmailWarning(null);
+      setEmailAlreadyFoundedWorkspace(null);
     } finally {
       setCheckingEmail(false);
     }
@@ -79,10 +81,9 @@ export const SignUpPage = () => {
     }
   };
 
-  const emailAlreadyRegistered =
-    registeredEmailWarning !== null && registeredEmailWarning === email.trim();
+  const emailBlocked =
+    emailAlreadyFoundedWorkspace !== null && emailAlreadyFoundedWorkspace === email.trim();
   const legalNameAlreadyUsed = usedNameWarning !== null && usedNameWarning === organizationName.trim();
-  const hasWarning = emailAlreadyRegistered || legalNameAlreadyUsed;
 
   const onSubmit = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -125,9 +126,8 @@ export const SignUpPage = () => {
             <div className="field-skeleton" aria-label="Checking workspace name…" />
           ) : legalNameAlreadyUsed ? (
             <p className="field-hint field-hint-warning">
-              A workspace named &quot;{organizationName.trim()}&quot; already exists. If that&apos;s
-              you, submitting here still creates a separate, brand-new workspace with this same
-              name.
+              A workspace named &quot;{organizationName.trim()}&quot; already exists. Workspace
+              names are unique — try a different name.
             </p>
           ) : null}
         </div>
@@ -144,11 +144,10 @@ export const SignUpPage = () => {
           />
           {checkingEmail ? (
             <div className="field-skeleton" aria-label="Checking email…" />
-          ) : emailAlreadyRegistered ? (
+          ) : emailBlocked ? (
             <p className="field-hint field-hint-warning">
-              This email already has an account. If you&apos;re joining an existing company,{' '}
-              <Link to="/login">sign in</Link> instead — submitting here creates a brand-new,
-              separate workspace.
+              This email has already created a workspace. <Link to="/login">Sign in</Link> instead,
+              or ask an admin to invite you into another one.
             </p>
           ) : null}
         </div>
@@ -164,20 +163,10 @@ export const SignUpPage = () => {
             required
           />
         </div>
-        {hasWarning ? (
-          <label className="field-checkbox-row">
-            <input
-              type="checkbox"
-              checked={acknowledged}
-              onChange={(event) => setAcknowledged(event.target.checked)}
-            />
-            I understand this creates a separate, brand-new workspace.
-          </label>
-        ) : null}
         <button
           className="button button-primary button-full"
           type="submit"
-          disabled={isBusy || (hasWarning && !acknowledged)}
+          disabled={isBusy || emailBlocked || legalNameAlreadyUsed}
         >
           {isBusy ? 'Creating…' : 'Create workspace'}
         </button>

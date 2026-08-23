@@ -51,6 +51,11 @@ export class AuthResolver {
     return toCurrentUserView(user, await this.authorization.getCurrentAccess());
   }
 
+  @Query(() => Boolean)
+  async hasOtherWorkspaces(): Promise<boolean> {
+    return this.authService.hasOtherWorkspaces();
+  }
+
   @Query(() => [CurrentUserView])
   @UseGuards(PermissionsGuard)
   @RequirePermissions(PERMISSIONS.userManage)

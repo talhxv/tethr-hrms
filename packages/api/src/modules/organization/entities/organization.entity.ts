@@ -18,6 +18,21 @@ export class Organization extends BaseEntity {
   @Column({ type: 'varchar', length: 256 })
   displayName!: string;
 
+  // Normalized (lowercase, punctuation-stripped) form of legalName — never
+  // shown in the UI, exists purely to enforce workspace-name uniqueness
+  // (like a Slack team name) without a functional LOWER() index, which
+  // wouldn't survive DATABASE_SYNCHRONIZE=true schema sync in dev.
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 280 })
+  slug!: string;
+
+  // ID-only reference to the Client this workspace belongs to (modules/clients)
+  // — null for Tethr's own internal workspace. Deliberately not a DB foreign
+  // key (non-negotiable #2: no cross-module FKs).
+  @Index()
+  @Column({ type: 'uuid', nullable: true })
+  clientId!: string | null;
+
   @Column({ type: 'varchar', length: 8, default: 'en' })
   defaultLocale!: string;
 

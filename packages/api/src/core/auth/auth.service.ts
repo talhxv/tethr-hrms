@@ -21,6 +21,7 @@ export type CreateUserData = {
   readonly email: string;
   readonly password: string;
   readonly employeeId?: EmployeeId | null;
+  readonly isWorkspaceCreator?: boolean;
 };
 
 export type AuthResult = { readonly user: User; readonly token: string };
@@ -46,6 +47,7 @@ export class AuthService {
       status: 'active',
       mfaEnabled: false,
       employeeId: input.employeeId ?? null,
+      isWorkspaceCreator: input.isWorkspaceCreator ?? false,
     });
     return this.users.save(user);
   }
@@ -99,6 +101,17 @@ export class AuthService {
     return count > 0;
   }
 
+  // Same cross-tenant lookup, same trust boundary (boolean-only, no org
+  // names) as emailIsAlreadyRegistered — but a narrower question: has this
+  // email specifically FOUNDED a workspace before, not just joined one as an
+  // invited member. Backs the one-self-serve-workspace-per-person cap.
+  async hasCreatedWorkspace(email: string): Promise<boolean> {
+    const count = await this.userRepository.count({
+      where: { email: email.toLowerCase(), isWorkspaceCreator: true } as FindOptionsWhere<User>,
+    });
+    return count > 0;
+  }
+
   issueToken(user: User): string {
     const claims: JwtClaims = { sub: user.id, org: user.organizationId, email: user.email };
     return this.jwtService.sign(claims);
@@ -146,6 +159,21 @@ export class AuthService {
       throw new UnauthenticatedError();
     }
     return user;
+  }
+
+  // Powers the header's workspace switcher: is it worth showing at all? Unlike
+  // emailIsAlreadyRegistered (unauthenticated, boolean-only, never org names —
+  // see that method) this is scoped to the CALLER'S OWN email, so confirming
+  // "yes, you have other accounts" leaks nothing beyond what they already
+  // know. It still never reveals which orgs or their names — that only ever
+  // comes from re-verifying a password via login (findVerifiedUsers), so an
+  // org with a different password is never confirmed to exist either way.
+  async hasOtherWorkspaces(): Promise<boolean> {
+    const current = await this.getCurrentUser();
+    const count = await this.userRepository.count({
+      where: { email: current.email } as FindOptionsWhere<User>,
+    });
+    return count > 1;
   }
 
   // Disable any login linked to an employee. Naturally idempotent (re-running is

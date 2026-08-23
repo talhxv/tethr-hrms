@@ -34,6 +34,12 @@ export const SELECT_WORKSPACE_MUTATION = gql`
   }
 `;
 
+export const HAS_OTHER_WORKSPACES_QUERY = gql`
+  query HasOtherWorkspaces {
+    hasOtherWorkspaces
+  }
+`;
+
 export const SIGN_UP_MUTATION = gql`
   mutation SignUp($input: SignUpInput!) {
     signUp(input: $input) {
@@ -42,15 +48,15 @@ export const SIGN_UP_MUTATION = gql`
   }
 `;
 
-export const EMAIL_IS_ALREADY_REGISTERED_QUERY = gql`
-  query EmailIsAlreadyRegistered($email: String!) {
-    emailIsAlreadyRegistered(email: $email)
-  }
-`;
-
 export const LEGAL_NAME_IS_ALREADY_USED_QUERY = gql`
   query LegalNameIsAlreadyUsed($legalName: String!) {
     legalNameIsAlreadyUsed(legalName: $legalName)
+  }
+`;
+
+export const HAS_CREATED_WORKSPACE_QUERY = gql`
+  query HasCreatedWorkspace($email: String!) {
+    hasCreatedWorkspace(email: $email)
   }
 `;
 

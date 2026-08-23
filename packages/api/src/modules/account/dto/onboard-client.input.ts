@@ -3,6 +3,13 @@ import { IsEmail, IsOptional, IsString, Length, MaxLength, MinLength } from 'cla
 
 @InputType()
 export class OnboardClientInput {
+  // Add this workspace to an existing Client; omit to found a new Client
+  // (named after legalName) alongside it.
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  clientId?: string | null;
+
   @Field()
   @IsString()
   @MinLength(2)

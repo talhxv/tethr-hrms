@@ -26,6 +26,14 @@ export class User extends TenantScopedEntity {
   @Column({ type: 'boolean', default: false })
   mfaEnabled!: boolean;
 
+  // True only for the founding admin of the workspace this row belongs to
+  // (set by AccountService.signUp / onboardClient) — never for a row created
+  // by inviting an existing person into a workspace (createWorkspaceUser).
+  // Lets AuthService.hasCreatedWorkspace cap self-serve workspace creation
+  // to one per email without limiting how many workspaces someone can join.
+  @Column({ type: 'boolean', default: false })
+  isWorkspaceCreator!: boolean;
+
   @Index()
   @Column({ type: 'uuid', nullable: true })
   employeeId!: EmployeeId | null;
