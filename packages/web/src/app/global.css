@@ -232,8 +232,10 @@ button {
 .account-button,
 .button,
 .segmented-button {
+  /* Same rounded-pill language as the top nav's pills, carried down to
+     every other clickable surface in the app. */
   min-height: 32px;
-  border-radius: var(--hrms-radius-sm);
+  border-radius: var(--hrms-radius-pill);
   cursor: pointer;
   transition: var(--hrms-animation-clickable-background-transition);
 }
@@ -285,21 +287,38 @@ button {
    chip, pill tabs with a "More" overflow, search, and account actions). */
 
 .app-topnav {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   height: var(--hrms-layout-top-bar-height);
   min-height: var(--hrms-layout-top-bar-height);
   gap: var(--hrms-space-4);
-  padding: 0 var(--hrms-space-4);
-  background: var(--hrms-color-background-primary);
+  padding: 0 var(--hrms-space-10);
+  /* A soft wash of the workspace's own brand color rather than a decorative
+     gradient — ties the header hue to per-workspace identity instead of
+     pure ornament. */
+  background: color-mix(
+    in srgb,
+    var(--chip-color, var(--hrms-color-tag-gray)) 6%,
+    var(--hrms-color-background-primary)
+  );
   border-bottom: 1px solid var(--hrms-color-border-light);
 }
 
 .topnav-left {
   display: flex;
   align-items: center;
+  justify-self: start;
   flex-shrink: 0;
   gap: var(--hrms-space-2);
+}
+
+.topnav-right {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  min-width: 0;
+  gap: var(--hrms-space-3);
 }
 
 .topnav-brand {
@@ -321,7 +340,35 @@ button {
   max-width: 160px;
   gap: var(--hrms-space-2);
   padding: var(--hrms-space-1) var(--hrms-space-2);
-  border-radius: var(--hrms-radius-sm);
+  border-radius: var(--hrms-radius-pill);
+}
+
+.workspace-chip-button {
+  cursor: pointer;
+  background: transparent;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.workspace-chip-button:hover {
+  background: var(--hrms-color-background-tertiary);
+}
+
+.dropdown-panel-workspace {
+  left: 0;
+  min-width: 260px;
+}
+
+.dropdown-panel-workspace .field {
+  margin-bottom: var(--hrms-space-2);
+}
+
+.dropdown-panel-workspace .workspace-option-list {
+  margin: var(--hrms-space-1) 0;
+}
+
+.dropdown-panel-workspace .link-button {
+  display: block;
+  margin: var(--hrms-space-2) auto 0;
 }
 
 .workspace-chip-dot {
@@ -357,17 +404,19 @@ button {
   align-items: center;
   gap: var(--hrms-space-1);
   height: 32px;
-  padding: 0 var(--hrms-space-3);
+  padding: 0 var(--hrms-space-4);
   color: var(--hrms-color-text-secondary);
   background: transparent;
   border: 0;
-  border-radius: var(--hrms-radius-rounded);
+  border-radius: var(--hrms-radius-pill);
   cursor: pointer;
-  font-size: var(--hrms-font-size-xs);
+  font-size: var(--hrms-font-size-sm);
   font-weight: var(--hrms-font-weight-medium);
   text-decoration: none;
   white-space: nowrap;
-  transition: var(--hrms-animation-clickable-background-transition);
+  transition:
+    var(--hrms-animation-clickable-background-transition),
+    border-radius 0.15s ease;
 }
 
 .nav-pill:hover {
@@ -376,8 +425,86 @@ button {
 }
 
 .nav-pill.is-active {
+  /* A clean white pill against the tinted bar, like the tab itself was cut
+     out of the header — the workspace's brand color moves to the icon/text
+     instead of the fill, so identity survives without darkening the pill.
+     border-light is too close to white to read against the tinted bar, so
+     the active pill gets the stronger border token to stay legible. */
+  color: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 75%, var(--hrms-color-text-primary));
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-strong);
+  box-shadow: var(--hrms-box-shadow-light);
+}
+
+/* While its panel is open, the pill's bottom corners square off and its
+   bottom border drops out so the button and the panel below read as one
+   expanded shape instead of a floating card with a gap underneath. */
+.nav-pill-group.is-open {
   color: var(--hrms-color-text-primary);
-  background: var(--hrms-color-background-tertiary);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-strong);
+  border-bottom-color: transparent;
+  border-radius: var(--hrms-radius-pill) var(--hrms-radius-pill) var(--hrms-radius-sm)
+    var(--hrms-radius-sm);
+  box-shadow: var(--hrms-box-shadow-light);
+}
+
+/* Persistent second-row tab strip for the group whose page is currently
+   open — lets a user hop between a group's own pages (e.g. People's
+   Employees / Hiring requests / ...) without reopening its pill dropdown.
+   Same pill language as the top nav (white + strong border when active) but
+   a smaller, muted-bar tier so it reads as a sub-level, not a duplicate. */
+.app-subnav {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 44px;
+  min-height: 44px;
+  gap: var(--hrms-space-1);
+  padding: var(--hrms-space-1) var(--hrms-space-10);
+  /* Rather than a flat neutral bar, fade the header's own brand wash down
+     into the page — the two rows read as one continuous surface instead of
+     a plain gray shelf bolted underneath. */
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 10%, var(--hrms-color-background-primary)) 0%,
+    var(--hrms-color-background-primary) 100%
+  );
+  border-bottom: 1px solid var(--hrms-color-border-light);
+  overflow-x: auto;
+}
+
+.subnav-tab {
+  /* Deliberately a softer rounded rectangle, not the top row's full pill —
+     that radius step is what marks this row as one level down instead of a
+     repeat of the same control. */
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 28px;
+  gap: var(--hrms-space-1);
+  padding: 0 var(--hrms-space-3);
+  color: var(--hrms-color-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--hrms-radius-md);
+  cursor: pointer;
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.subnav-tab:hover {
+  color: var(--hrms-color-text-primary);
+  background: var(--hrms-color-background-quaternary);
+}
+
+.subnav-tab.is-active {
+  color: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 65%, var(--hrms-color-text-primary));
+  background: var(--hrms-color-background-primary);
+  border-color: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 35%, var(--hrms-color-border-strong));
   box-shadow: var(--hrms-box-shadow-light);
 }
 
@@ -392,16 +519,21 @@ button {
   min-width: 220px;
   padding: var(--hrms-space-2);
   background: var(--hrms-color-background-primary);
-  border: 1px solid var(--hrms-color-border-light);
+  border: 1px solid var(--hrms-color-border-strong);
   border-radius: var(--hrms-radius-md);
   box-shadow: var(--hrms-box-shadow-strong);
 }
 
 .dropdown-panel-more {
+  /* Sits flush under the (now square-bottomed) trigger pill and squares its
+     own top corners to match, so the two pieces visually fuse into one
+     expanded control; the bottom stays fully rounded. */
+  top: 100%;
   left: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  border-radius: var(--hrms-radius-sm) var(--hrms-radius-sm) var(--hrms-radius-md) var(--hrms-radius-md);
 }
 
 .dropdown-nav-item {
@@ -410,7 +542,9 @@ button {
   gap: var(--hrms-space-2);
   padding: var(--hrms-space-2);
   color: var(--hrms-color-text-secondary);
+  background: transparent;
   border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
   text-decoration: none;
   transition: var(--hrms-animation-clickable-background-transition);
 }
@@ -520,6 +654,11 @@ button {
   flex-direction: column;
   min-height: 0;
   flex: 1;
+  /* Shared side inset for every page mounted here, on top of whatever
+     padding a given page already applies to its own inner blocks — one
+     consistent margin from the viewport edge instead of each page setting
+     its own, so raising it once pulls the whole app in toward the middle. */
+  padding: 0 var(--hrms-space-10);
 }
 
 .app-content-breadcrumb {
@@ -527,7 +666,7 @@ button {
   align-items: center;
   flex-shrink: 0;
   gap: var(--hrms-space-1);
-  padding: var(--hrms-space-3) var(--hrms-space-4) 0;
+  padding: var(--hrms-space-3) 0 0;
   color: var(--hrms-color-text-tertiary);
   font-size: var(--hrms-font-size-xs);
 }
@@ -591,7 +730,7 @@ button {
 .button {
   gap: var(--hrms-space-2);
   justify-content: center;
-  padding: 0 var(--hrms-space-3);
+  padding: 0 var(--hrms-space-4);
   font-weight: var(--hrms-font-weight-medium);
 }
 
@@ -601,8 +740,11 @@ button {
 }
 
 .button-primary {
+  /* The one surface that keeps a solid fill — a bold, unmissable tier for
+     the primary action, same pill shape and elevation as everything else. */
   color: var(--hrms-color-text-inverted);
   background: var(--hrms-color-accent-accent9);
+  box-shadow: var(--hrms-box-shadow-light);
 }
 
 .button-primary:hover {
@@ -610,14 +752,17 @@ button {
 }
 
 .button-secondary {
+  /* White + a border you can actually see + a light lift — the same
+     "selected pill" treatment the nav uses, just as a standing button. */
   color: var(--hrms-color-text-secondary);
   background: var(--hrms-color-background-primary);
-  border: 1px solid var(--hrms-color-border-medium);
+  border: 1px solid var(--hrms-color-border-strong);
+  box-shadow: var(--hrms-box-shadow-light);
 }
 
 .button-secondary:hover {
   color: var(--hrms-color-text-primary);
-  background: var(--hrms-color-background-tertiary);
+  background: var(--hrms-color-background-quaternary);
 }
 
 .metric-strip {

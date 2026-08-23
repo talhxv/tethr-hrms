@@ -1,12 +1,12 @@
-import { useMutation, useQuery } from '@apollo/client';
-import { WORKSPACE_BRAND_COLORS, type WorkspaceBrandColor } from '@hrms/shared';
+import { useApolloClient, useMutation, useQuery } from '@apollo/client';
+import { WORKSPACE_BRAND_COLORS, type PortalKind, type WorkspaceBrandColor } from '@hrms/shared';
 import {
+  IconArrowsRightLeft,
   IconBell,
   IconBriefcase,
   IconBuildingCommunity,
   IconChevronDown,
   IconCurrencyDollar,
-  IconDots,
   IconLayoutDashboard,
   IconLogout,
   IconMessageCircle,
@@ -19,23 +19,38 @@ import {
   IconUsersGroup,
   type TablerIcon,
 } from '@tabler/icons-react';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { useAuth } from '../modules/auth/hooks/useAuth';
+import { HAS_OTHER_WORKSPACES_QUERY } from '../modules/auth/graphql/auth.operations';
+import { useAuth, type WorkspaceOption } from '../modules/auth/hooks/useAuth';
 import {
   MY_ORGANIZATION_QUERY,
   UPDATE_MY_ORGANIZATION_BRAND_COLOR_MUTATION,
 } from '../modules/organization/graphql/organization.operations';
 import { useTheme } from '../providers/theme/useTheme';
 
-import { portalLabel } from './portal';
+import { portalHome, portalLabel } from './portal';
 
 type NavigationItem = {
   readonly label: string;
   readonly to: string;
   readonly icon: TablerIcon;
 };
+
+type NavigationLinkEntry = NavigationItem & { readonly kind: 'link' };
+
+type NavigationGroupEntry = {
+  readonly kind: 'group';
+  readonly label: string;
+  readonly icon: TablerIcon;
+  readonly items: readonly NavigationItem[];
+};
+
+// A top-level entry is either a standalone pill (link) or a labeled
+// dropdown (group) — related pages cluster under one pill (e.g. "People")
+// instead of spilling into a flat, generic "More" catch-all.
+type NavigationEntry = NavigationLinkEntry | NavigationGroupEntry;
 
 type MyOrganization = {
   readonly id: string;
@@ -45,36 +60,53 @@ type MyOrganization = {
 };
 type MyOrganizationData = { readonly myOrganization: MyOrganization };
 
-const tethrNavigation: readonly NavigationItem[] = [
-  { label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
-  { label: 'Clients', to: '/clients', icon: IconBuildingCommunity },
-  { label: 'Employees', to: '/employees', icon: IconUsersGroup },
-  { label: 'Hiring requests', to: '/hiring', icon: IconBriefcase },
-  { label: 'Leave triage', to: '/leave', icon: IconPlaneDeparture },
-  { label: 'Compensation', to: '/compensation', icon: IconCurrencyDollar },
-  { label: 'Announcements', to: '/announcements', icon: IconSpeakerphone },
-  { label: 'Feedback', to: '/feedback', icon: IconMessageCircle },
+const tethrNavigation: readonly NavigationEntry[] = [
+  { kind: 'link', label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
+  { kind: 'link', label: 'Clients', to: '/clients', icon: IconBuildingCommunity },
+  {
+    kind: 'group',
+    label: 'People',
+    icon: IconUsersGroup,
+    items: [
+      { label: 'Employees', to: '/employees', icon: IconUsersGroup },
+      { label: 'Hiring requests', to: '/hiring', icon: IconBriefcase },
+      { label: 'Leave triage', to: '/leave', icon: IconPlaneDeparture },
+    ],
+  },
+  { kind: 'link', label: 'Pay', to: '/compensation', icon: IconCurrencyDollar },
+  {
+    kind: 'group',
+    label: 'Engage',
+    icon: IconSpeakerphone,
+    items: [
+      { label: 'Announcements', to: '/announcements', icon: IconSpeakerphone },
+      { label: 'Feedback', to: '/feedback', icon: IconMessageCircle },
+    ],
+  },
 ];
 
-const clientNavigation: readonly NavigationItem[] = [
-  { label: 'Overview', to: '/client', icon: IconLayoutDashboard },
-  { label: 'Employees', to: '/employees', icon: IconUsersGroup },
-  { label: 'Hiring requests', to: '/hiring', icon: IconBriefcase },
-  { label: 'Leave requests', to: '/leave', icon: IconPlaneDeparture },
-  { label: 'Compensation', to: '/compensation', icon: IconCurrencyDollar },
-  { label: 'Announcements', to: '/announcements', icon: IconSpeakerphone },
+const clientNavigation: readonly NavigationEntry[] = [
+  { kind: 'link', label: 'Overview', to: '/client', icon: IconLayoutDashboard },
+  {
+    kind: 'group',
+    label: 'People',
+    icon: IconUsersGroup,
+    items: [
+      { label: 'Employees', to: '/employees', icon: IconUsersGroup },
+      { label: 'Hiring requests', to: '/hiring', icon: IconBriefcase },
+      { label: 'Leave requests', to: '/leave', icon: IconPlaneDeparture },
+    ],
+  },
+  { kind: 'link', label: 'Pay', to: '/compensation', icon: IconCurrencyDollar },
+  { kind: 'link', label: 'Announcements', to: '/announcements', icon: IconSpeakerphone },
 ];
 
-const employeeNavigation: readonly NavigationItem[] = [
-  { label: 'My workspace', to: '/me', icon: IconUserCircle },
-  { label: 'News', to: '/announcements', icon: IconSpeakerphone },
+const employeeNavigation: readonly NavigationEntry[] = [
+  { kind: 'link', label: 'My workspace', to: '/me', icon: IconUserCircle },
+  { kind: 'link', label: 'News', to: '/announcements', icon: IconSpeakerphone },
 ];
 
-const workspaceUsersNavigation: NavigationItem = {
-  label: 'Users',
-  to: '/users',
-  icon: IconUsersGroup,
-};
+const workspaceUsersItem: NavigationItem = { label: 'Users', to: '/users', icon: IconUsersGroup };
 
 const SECTION_LABELS: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -82,7 +114,7 @@ const SECTION_LABELS: Record<string, string> = {
   '/client': 'People overview',
   '/me': 'My workspace',
   '/employees': 'Employees',
-  '/compensation': 'Compensation',
+  '/compensation': 'Pay',
   '/hiring': 'Hiring requests',
   '/leave': 'Leave triage',
   '/announcements': 'News bulletin',
@@ -90,36 +122,70 @@ const SECTION_LABELS: Record<string, string> = {
   '/users': 'Workspace users',
 };
 
-// Primary items render as pills; the rest live under "More" — mirrors the
-// reference's pill-tabs-plus-overflow pattern rather than a fixed count per
-// portal, so it degrades gracefully for the 2-item employee nav (no "More").
-const PRIMARY_PILL_COUNT = 4;
-
 export const AppShell = () => {
   const { theme, toggle } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, login, selectWorkspace, isBusy: authBusy } = useAuth();
+  const apolloClient = useApolloClient();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  const [openMenu, setOpenMenu] = useState<'more' | 'account' | null>(null);
-  const moreRef = useRef<HTMLDivElement | null>(null);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
   const accountRef = useRef<HTMLDivElement | null>(null);
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onClickOutside = (event: MouseEvent): void => {
       const target = event.target as Node;
-      if (moreRef.current?.contains(target) || accountRef.current?.contains(target)) return;
+      if (
+        navRef.current?.contains(target) ||
+        accountRef.current?.contains(target) ||
+        workspaceRef.current?.contains(target)
+      ) {
+        return;
+      }
       setOpenMenu(null);
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  // navRef wraps every pill, including plain links, so clicking one doesn't
+  // count as "outside" and close a sibling dropdown — this effect is what
+  // actually closes it, by reacting to the resulting route change instead.
+  useEffect(() => {
+    setOpenMenu(null);
+  }, [pathname]);
+
+  // The workspace switcher's own multi-step state (trigger -> password ->
+  // pick a workspace), reset whenever its dropdown isn't the open one so it
+  // always restarts fresh rather than reopening mid-flow.
+  const [switchStep, setSwitchStep] = useState<'trigger' | 'password' | 'picker'>('trigger');
+  const [switchPassword, setSwitchPassword] = useState('');
+  const [switchPendingSelection, setSwitchPendingSelection] = useState<{
+    readonly selectionToken: string;
+    readonly workspaces: readonly WorkspaceOption[];
+  } | null>(null);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (openMenu !== 'workspace') {
+      setSwitchStep('trigger');
+      setSwitchPassword('');
+      setSwitchPendingSelection(null);
+      setSwitchError(null);
+    }
+  }, [openMenu]);
+
   const { data: orgData } = useQuery<MyOrganizationData>(MY_ORGANIZATION_QUERY);
   const [updateBrandColor, { loading: savingColor }] = useMutation(
     UPDATE_MY_ORGANIZATION_BRAND_COLOR_MUTATION,
     { refetchQueries: [{ query: MY_ORGANIZATION_QUERY }] },
   );
+  const { data: workspacesData } = useQuery<{ readonly hasOtherWorkspaces: boolean }>(
+    HAS_OTHER_WORKSPACES_QUERY,
+  );
+  const hasOtherWorkspaces = workspacesData?.hasOtherWorkspaces ?? false;
 
   const ThemeIcon = theme.name === 'light' ? IconMoon : IconSun;
   const section = SECTION_LABELS[pathname] ?? 'Workspace';
@@ -138,17 +204,26 @@ export const AppShell = () => {
   const canManageClients = user?.roleKeys.includes('tethrAdmin') === true;
   const canManageOrganization =
     user?.roleKeys.includes('tethrAdmin') || user?.roleKeys.includes('clientAdmin');
-  const visibleNavigation = navigation.filter(
-    (item) =>
-      (item.to !== '/compensation' || canManageCompensation) &&
-      (item.to !== '/clients' || canManageClients),
+  const visibleNavigation: readonly NavigationEntry[] = navigation
+    .filter((entry) => entry.kind !== 'link' || entry.to !== '/clients' || canManageClients)
+    .filter((entry) => entry.kind !== 'link' || entry.to !== '/compensation' || canManageCompensation)
+    .map((entry): NavigationEntry => {
+      if (entry.kind === 'link') return entry;
+      const items = [
+        ...entry.items,
+        ...(entry.label === 'People' && canManageUsers ? [workspaceUsersItem] : []),
+      ];
+      return { ...entry, items };
+    })
+    .filter((entry) => entry.kind === 'link' || entry.items.length > 0);
+
+  // The group whose own sub-pages the user is currently on, if any — drives
+  // the persistent second-row tab strip so switching between a group's
+  // pages doesn't require reopening the pill's dropdown each time.
+  const activeGroupEntry = visibleNavigation.find(
+    (entry): entry is NavigationGroupEntry =>
+      entry.kind === 'group' && entry.items.some((item) => item.to === pathname),
   );
-  const primaryNavigation = visibleNavigation.slice(0, PRIMARY_PILL_COUNT);
-  const overflowNavigation = [
-    ...visibleNavigation.slice(PRIMARY_PILL_COUNT),
-    ...(canManageUsers ? [workspaceUsersNavigation] : []),
-  ];
-  const moreIsActive = overflowNavigation.some((item) => item.to === pathname);
 
   const organization = orgData?.myOrganization;
   const brandColor = (organization?.brandColor ?? 'gray') as WorkspaceBrandColor;
@@ -162,6 +237,59 @@ export const AppShell = () => {
   const onLogout = async (): Promise<void> => {
     await logout();
     navigate('/login', { replace: true });
+  };
+
+  // Switches in place instead of bouncing out to /login: still re-verifies a
+  // password (each workspace can hold a different one for this same email —
+  // auth.service.ts — so there's no safe way to mint a session for another
+  // org without checking it), but does it inline in the same dropdown via the
+  // existing login/selectWorkspace mutations, reusing exactly the flow the
+  // login-time picker already uses.
+  const finishWorkspaceSwitch = async (portal: PortalKind): Promise<void> => {
+    setOpenMenu(null);
+    navigate(portalHome(portal), { replace: true });
+    // Runs after navigating away, not before: resetting first would briefly
+    // refetch the page we're leaving under the new org's identity.
+    await apolloClient.resetStore();
+  };
+
+  const onSubmitSwitchPassword = async (event: FormEvent): Promise<void> => {
+    event.preventDefault();
+    if (!user?.email) return;
+    setSwitchError(null);
+    try {
+      const outcome = await login(user.email, switchPassword);
+      if (outcome.kind === 'authenticated') {
+        await finishWorkspaceSwitch(outcome.session.user.portal);
+        return;
+      }
+      const otherWorkspaces = outcome.workspaces.filter(
+        (workspace) => workspace.organizationId !== user.organizationId,
+      );
+      if (otherWorkspaces.length === 1) {
+        const session = await selectWorkspace(
+          outcome.selectionToken,
+          otherWorkspaces[0].organizationId,
+        );
+        await finishWorkspaceSwitch(session.user.portal);
+        return;
+      }
+      setSwitchPendingSelection({ selectionToken: outcome.selectionToken, workspaces: otherWorkspaces });
+      setSwitchStep('picker');
+    } catch (caught) {
+      setSwitchError(caught instanceof Error ? caught.message : 'Could not verify that password');
+    }
+  };
+
+  const onPickSwitchWorkspace = async (organizationId: string): Promise<void> => {
+    if (!switchPendingSelection) return;
+    setSwitchError(null);
+    try {
+      const session = await selectWorkspace(switchPendingSelection.selectionToken, organizationId);
+      await finishWorkspaceSwitch(session.user.portal);
+    } catch (caught) {
+      setSwitchError(caught instanceof Error ? caught.message : 'Could not open that workspace');
+    }
   };
 
   const renderPill = (item: NavigationItem) => {
@@ -178,138 +306,262 @@ export const AppShell = () => {
     );
   };
 
+  const renderGroup = (entry: NavigationGroupEntry) => {
+    const Icon = entry.icon;
+    const isOpen = openMenu === entry.label;
+    const isActive = entry.items.some((item) => item.to === pathname);
+    return (
+      <div className="dropdown-anchor" key={entry.label}>
+        <button
+          className={`nav-pill nav-pill-group${isActive ? ' is-active' : ''}${isOpen ? ' is-open' : ''}`}
+          onClick={() => setOpenMenu((current) => (current === entry.label ? null : entry.label))}
+          type="button"
+        >
+          <Icon size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+          <span>{entry.label}</span>
+          <IconChevronDown size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+        </button>
+        {isOpen ? (
+          <div className="dropdown-panel dropdown-panel-more" role="menu">
+            {entry.items.map((item) => {
+              const ItemIcon = item.icon;
+              return (
+                <NavLink
+                  key={item.label}
+                  className={({ isActive: linkIsActive }) =>
+                    `dropdown-nav-item${linkIsActive ? ' is-active' : ''}`
+                  }
+                  to={item.to}
+                  onClick={() => setOpenMenu(null)}
+                >
+                  <ItemIcon size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
-    <div className="app-shell">
+    <div className="app-shell" style={chipColorVar}>
       <header className="app-topnav">
         <div className="topnav-left">
           <div className="topnav-brand" aria-hidden="true">
             H
           </div>
-          <div className="workspace-chip" title={organization?.legalName}>
-            <span className="workspace-chip-dot" style={chipColorVar} aria-hidden="true" />
-            <span className="workspace-chip-name truncate">
-              {organization?.displayName ?? 'Workspace'}
-            </span>
-          </div>
-        </div>
-
-        <nav className="topnav-pills" aria-label="Primary navigation">
-          {primaryNavigation.map(renderPill)}
-          {overflowNavigation.length > 0 ? (
-            <div className="dropdown-anchor" ref={moreRef}>
+          {hasOtherWorkspaces ? (
+            <div className="dropdown-anchor" ref={workspaceRef}>
               <button
-                className={`nav-pill nav-pill-more${moreIsActive ? ' is-active' : ''}`}
-                onClick={() => setOpenMenu((current) => (current === 'more' ? null : 'more'))}
+                className="workspace-chip workspace-chip-button"
+                onClick={() =>
+                  setOpenMenu((current) => (current === 'workspace' ? null : 'workspace'))
+                }
+                title={organization?.legalName}
                 type="button"
               >
-                <IconDots size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
-                <span>More</span>
+                <span className="workspace-chip-dot" aria-hidden="true" />
+                <span className="workspace-chip-name truncate">
+                  {organization?.displayName ?? 'Workspace'}
+                </span>
                 <IconChevronDown size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
               </button>
-              {openMenu === 'more' ? (
-                <div className="dropdown-panel dropdown-panel-more" role="menu">
-                  {overflowNavigation.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <NavLink
-                        key={item.label}
-                        className={({ isActive }) =>
-                          `dropdown-nav-item${isActive ? ' is-active' : ''}`
-                        }
-                        to={item.to}
-                        onClick={() => setOpenMenu(null)}
+              {openMenu === 'workspace' ? (
+                <div className="dropdown-panel dropdown-panel-workspace" role="menu">
+                  {switchStep === 'trigger' ? (
+                    <button
+                      className="dropdown-nav-item"
+                      onClick={() => setSwitchStep('password')}
+                      type="button"
+                    >
+                      <IconArrowsRightLeft size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                      <span>Switch workspace</span>
+                    </button>
+                  ) : null}
+
+                  {switchStep === 'password' ? (
+                    <form onSubmit={(event) => void onSubmitSwitchPassword(event)}>
+                      <p className="account-dropdown-hint">
+                        Re-enter your password for {user?.email}.
+                      </p>
+                      {switchError ? (
+                        <p className="auth-error" role="alert">
+                          {switchError}
+                        </p>
+                      ) : null}
+                      <div className="field">
+                        <label htmlFor="switch-workspace-password">Password</label>
+                        <input
+                          autoFocus
+                          autoComplete="current-password"
+                          id="switch-workspace-password"
+                          required
+                          type="password"
+                          value={switchPassword}
+                          onChange={(event) => setSwitchPassword(event.target.value)}
+                        />
+                      </div>
+                      <button
+                        className="button button-primary button-full"
+                        disabled={authBusy}
+                        type="submit"
                       >
-                        <Icon size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
-                        <span>{item.label}</span>
-                      </NavLink>
-                    );
-                  })}
+                        {authBusy ? 'Checking…' : 'Continue'}
+                      </button>
+                      <button
+                        className="link-button"
+                        onClick={() => setSwitchStep('trigger')}
+                        type="button"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  ) : null}
+
+                  {switchStep === 'picker' ? (
+                    <div>
+                      <p className="account-dropdown-hint">Choose a workspace to switch to.</p>
+                      {switchError ? (
+                        <p className="auth-error" role="alert">
+                          {switchError}
+                        </p>
+                      ) : null}
+                      <div className="workspace-option-list">
+                        {switchPendingSelection?.workspaces.map((workspace) => (
+                          <button
+                            key={workspace.organizationId}
+                            className="button button-secondary button-full"
+                            disabled={authBusy}
+                            type="button"
+                            onClick={() => void onPickSwitchWorkspace(workspace.organizationId)}
+                          >
+                            {workspace.organizationName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
-          ) : null}
+          ) : (
+            <div className="workspace-chip" title={organization?.legalName}>
+              <span className="workspace-chip-dot" aria-hidden="true" />
+              <span className="workspace-chip-name truncate">
+                {organization?.displayName ?? 'Workspace'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <nav className="topnav-pills" aria-label="Primary navigation" ref={navRef}>
+          {visibleNavigation.map((entry) =>
+            entry.kind === 'link' ? renderPill(entry) : renderGroup(entry),
+          )}
         </nav>
 
-        <label className="topbar-search">
-          <IconSearch size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-          <input aria-label="Search" placeholder="Search" type="search" />
-        </label>
+        <div className="topnav-right">
+          <label className="topbar-search">
+            <IconSearch size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+            <input aria-label="Search" placeholder="Search" type="search" />
+          </label>
 
-        <div className="topbar-actions">
-          <button className="icon-button" title="Notifications" type="button">
-            <IconBell size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-          </button>
-          <button
-            className="icon-button"
-            onClick={toggle}
-            title={`Switch to ${theme.name === 'light' ? 'dark' : 'light'} theme`}
-            type="button"
-          >
-            <ThemeIcon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-          </button>
-
-          <div className="dropdown-anchor" ref={accountRef}>
+          <div className="topbar-actions">
+            <button className="icon-button" title="Notifications" type="button">
+              <IconBell size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+            </button>
             <button
-              className="account-button"
-              onClick={() => setOpenMenu((current) => (current === 'account' ? null : 'account'))}
-              title={user?.email ?? undefined}
+              className="icon-button"
+              onClick={toggle}
+              title={`Switch to ${theme.name === 'light' ? 'dark' : 'light'} theme`}
               type="button"
             >
-              <span className="account-avatar" style={chipColorVar}>
-                {accountInitials}
-              </span>
+              <ThemeIcon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
             </button>
-            {openMenu === 'account' ? (
-              <div className="dropdown-panel dropdown-panel-account" role="menu">
-                <div className="account-dropdown-header">
-                  <span className="account-avatar account-avatar-lg" style={chipColorVar}>
-                    {accountInitials}
-                  </span>
-                  <div className="account-dropdown-identity">
-                    <div className="account-dropdown-email truncate">
-                      {user?.email ?? 'Account'}
-                    </div>
-                    <div className="account-dropdown-portal">
-                      {portalLabel(portal)} workspace
+
+            <div className="dropdown-anchor" ref={accountRef}>
+              <button
+                className="account-button"
+                onClick={() =>
+                  setOpenMenu((current) => (current === 'account' ? null : 'account'))
+                }
+                title={user?.email ?? undefined}
+                type="button"
+              >
+                <span className="account-avatar">{accountInitials}</span>
+              </button>
+              {openMenu === 'account' ? (
+                <div className="dropdown-panel dropdown-panel-account" role="menu">
+                  <div className="account-dropdown-header">
+                    <span className="account-avatar account-avatar-lg">{accountInitials}</span>
+                    <div className="account-dropdown-identity">
+                      <div className="account-dropdown-email truncate">
+                        {user?.email ?? 'Account'}
+                      </div>
+                      <div className="account-dropdown-portal">
+                        {portalLabel(portal)} workspace
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="account-dropdown-section">
-                  <div className="account-dropdown-label">Workspace color</div>
-                  <div className="color-swatch-grid">
-                    {WORKSPACE_BRAND_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        aria-label={color}
-                        aria-pressed={brandColor === color}
-                        className={`color-swatch${brandColor === color ? ' is-selected' : ''}`}
-                        disabled={!canManageOrganization || savingColor}
-                        style={{ '--swatch-color': `var(--hrms-color-tag-${color})` } as CSSProperties}
-                        title={color}
-                        type="button"
-                        onClick={() => void onSelectColor(color)}
-                      />
-                    ))}
+                  <div className="account-dropdown-section">
+                    <div className="account-dropdown-label">Workspace color</div>
+                    <div className="color-swatch-grid">
+                      {WORKSPACE_BRAND_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          aria-label={color}
+                          aria-pressed={brandColor === color}
+                          className={`color-swatch${brandColor === color ? ' is-selected' : ''}`}
+                          disabled={!canManageOrganization || savingColor}
+                          style={
+                            { '--swatch-color': `var(--hrms-color-tag-${color})` } as CSSProperties
+                          }
+                          title={color}
+                          type="button"
+                          onClick={() => void onSelectColor(color)}
+                        />
+                      ))}
+                    </div>
+                    {!canManageOrganization ? (
+                      <p className="account-dropdown-hint">Only workspace admins can change this.</p>
+                    ) : null}
                   </div>
-                  {!canManageOrganization ? (
-                    <p className="account-dropdown-hint">Only workspace admins can change this.</p>
-                  ) : null}
-                </div>
 
-                <button
-                  className="account-dropdown-signout"
-                  onClick={() => void onLogout()}
-                  type="button"
-                >
-                  <IconLogout size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
-                  Sign out
-                </button>
-              </div>
-            ) : null}
+                  <button
+                    className="account-dropdown-signout"
+                    onClick={() => void onLogout()}
+                    type="button"
+                  >
+                    <IconLogout size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                    Sign out
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </header>
+
+      {activeGroupEntry ? (
+        <nav className="app-subnav" aria-label={`${activeGroupEntry.label} sections`}>
+          {activeGroupEntry.items.map((item) => {
+            const ItemIcon = item.icon;
+            return (
+              <NavLink
+                key={item.label}
+                className={({ isActive }) => `subnav-tab${isActive ? ' is-active' : ''}`}
+                to={item.to}
+              >
+                <ItemIcon size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
+      ) : null}
 
       <main className="app-content">
         <div className="app-content-breadcrumb">
