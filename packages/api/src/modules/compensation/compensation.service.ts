@@ -10,9 +10,11 @@ import {
   type GradeId,
   type IsoDate,
   type PayComponentCategory,
+  type PayComponentId,
   type PayFrequency,
   type SalaryRevisionId,
   type SalaryStructureId,
+  type StructureComponentCalcType,
   type UserId,
 } from '@hrms/shared';
 import { Inject, Injectable } from '@nestjs/common';
@@ -30,11 +32,13 @@ import {
   PAY_COMPONENT_REPOSITORY,
   BONUS_AWARD_REPOSITORY,
   SALARY_REVISION_REPOSITORY,
+  SALARY_STRUCTURE_COMPONENT_REPOSITORY,
   SALARY_STRUCTURE_REPOSITORY,
 } from './compensation.tokens';
 import { BonusAward } from './entities/bonus-award.entity';
 import { PayComponent } from './entities/pay-component.entity';
 import { SalaryRevision } from './entities/salary-revision.entity';
+import { SalaryStructureComponent } from './entities/salary-structure-component.entity';
 import { SalaryStructure } from './entities/salary-structure.entity';
 
 export type CreatePayComponentData = {
@@ -51,6 +55,25 @@ export type CreateSalaryStructureData = {
   readonly gradeId?: GradeId | null;
   readonly currency: string;
   readonly payFrequency?: PayFrequency;
+};
+
+// One line of a structure's gross-split composition. Replaces the whole
+// composition on write (simple, auditable, no partial-state drift).
+export type StructureComponentData = {
+  readonly componentId: PayComponentId;
+  readonly calcType: StructureComponentCalcType;
+  readonly value: number;
+  readonly sortOrder?: number;
+};
+
+// The resolved breakdown payroll consumes: display facts snapshotted from the
+// tenant's own component config, amounts derived from the period gross.
+export type StructureBreakdownLine = {
+  readonly componentCode: string;
+  readonly componentName: string;
+  readonly category: PayComponentCategory;
+  readonly taxable: boolean;
+  readonly amount: number;
 };
 
 export type ReviseSalaryData = {
@@ -94,6 +117,8 @@ export class CompensationService {
     private readonly payComponents: TenantScopedRepository<PayComponent>,
     @Inject(SALARY_STRUCTURE_REPOSITORY)
     private readonly salaryStructures: TenantScopedRepository<SalaryStructure>,
+    @Inject(SALARY_STRUCTURE_COMPONENT_REPOSITORY)
+    private readonly structureComponents: TenantScopedRepository<SalaryStructureComponent>,
     @Inject(SALARY_REVISION_REPOSITORY)
     private readonly salaryRevisions: TenantScopedRepository<SalaryRevision>,
     @Inject(BONUS_AWARD_REPOSITORY)
@@ -148,6 +173,121 @@ export class CompensationService {
 
   listSalaryStructures(): Promise<SalaryStructure[]> {
     return this.salaryStructures.find({ order: { code: 'ASC' } });
+  }
+
+  // Replace the whole gross-split composition of a structure. Percent lines must
+  // not allocate more than 100% of gross; fixed amounts must be non-negative.
+  async setSalaryStructureComponents(
+    structureId: SalaryStructureId,
+    components: readonly StructureComponentData[],
+  ): Promise<SalaryStructureComponent[]> {
+    const structure = await this.salaryStructures.findById(structureId);
+    if (!structure) {
+      throw new NotFoundError('Salary structure not found', { id: structureId });
+    }
+
+    let percentTotal = 0;
+    for (const component of components) {
+      if (component.calcType === 'percentOfGross') {
+        if (component.value <= 0 || component.value > 100) {
+          throw new ValidationFailedError('percentOfGross value must be within (0, 100]', {
+            value: component.value,
+          });
+        }
+        percentTotal += component.value;
+      } else if (component.value < 0) {
+        throw new ValidationFailedError('fixedMonthly value must be zero or greater', {
+          value: component.value,
+        });
+      }
+    }
+    if (percentTotal > 100 + Number.EPSILON) {
+      throw new ValidationFailedError('percentOfGross values exceed 100% of gross', {
+        percentTotal,
+      });
+    }
+    const componentIds = new Set(components.map((component) => component.componentId));
+    if (componentIds.size !== components.length) {
+      throw new ValidationFailedError('Duplicate component in structure composition');
+    }
+    for (const componentId of componentIds) {
+      if (!(await this.payComponents.findById(componentId))) {
+        throw new NotFoundError('Pay component not found', { id: componentId });
+      }
+    }
+
+    const organizationId = this.tenantContext.getOrganizationId();
+    const saved = await this.dataSource.transaction(async (manager) => {
+      const existing = await manager.find(SalaryStructureComponent, {
+        where: { organizationId, structureId } as FindOptionsWhere<SalaryStructureComponent>,
+      });
+      for (const row of existing) {
+        await manager.remove(row);
+      }
+      const rows = components.map((component, index) =>
+        manager.create(SalaryStructureComponent, {
+          organizationId,
+          structureId,
+          componentId: component.componentId,
+          calcType: component.calcType,
+          value: toAmount(component.value),
+          sortOrder: component.sortOrder ?? index,
+        }),
+      );
+      const persisted: SalaryStructureComponent[] = [];
+      for (const row of rows) {
+        persisted.push(await manager.save(row));
+      }
+      return persisted;
+    });
+
+    await this.audit.record({
+      action: 'setComponents',
+      resourceType: 'salary_structure',
+      resourceId: structureId,
+      after: { componentCount: saved.length },
+    });
+    return saved;
+  }
+
+  listSalaryStructureComponents(structureId: SalaryStructureId): Promise<SalaryStructureComponent[]> {
+    return this.structureComponents.find({
+      where: { structureId } as FindOptionsWhere<SalaryStructureComponent>,
+      order: { sortOrder: 'ASC', createdAt: 'ASC' },
+    });
+  }
+
+  // The published calculation payroll consumes: resolve a structure's composition
+  // into concrete amounts for a period gross. percentOfGross lines scale with the
+  // gross; fixedMonthly lines pass through at face value.
+  async getStructureComponentBreakdown(
+    structureId: SalaryStructureId,
+    monthlyGross: number,
+  ): Promise<StructureBreakdownLine[]> {
+    const [composition, components] = await Promise.all([
+      this.listSalaryStructureComponents(structureId),
+      this.payComponents.find(),
+    ]);
+    const byId = new Map(components.map((component) => [component.id, component]));
+    return composition.flatMap((row) => {
+      const component = byId.get(row.componentId);
+      if (!component) {
+        return [];
+      }
+      const amount =
+        row.calcType === 'percentOfGross'
+          ? (monthlyGross * Number(row.value)) / 100
+          : Number(row.value);
+      return [
+        {
+          componentCode: component.code,
+          componentName: component.name,
+          category: component.category,
+          taxable: component.taxable,
+          amount: Math.round(amount * 100) / 100,
+        },
+      ];
+    });
   }
 
   async reviseSalary(input: ReviseSalaryData): Promise<SalaryRevision> {

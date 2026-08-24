@@ -7,11 +7,13 @@ import {
   IconBuildingCommunity,
   IconChevronDown,
   IconCurrencyDollar,
+  IconFileInvoice,
   IconLayoutDashboard,
   IconLogout,
   IconMessageCircle,
   IconMoon,
   IconPlaneDeparture,
+  IconReportMoney,
   IconSearch,
   IconSpeakerphone,
   IconSun,
@@ -76,6 +78,15 @@ const tethrNavigation: readonly NavigationEntry[] = [
   { kind: 'link', label: 'Pay', to: '/compensation', icon: IconCurrencyDollar },
   {
     kind: 'group',
+    label: 'Finance',
+    icon: IconReportMoney,
+    items: [
+      { label: 'Payroll', to: '/payroll', icon: IconReportMoney },
+      { label: 'Billing', to: '/billing', icon: IconFileInvoice },
+    ],
+  },
+  {
+    kind: 'group',
     label: 'Engage',
     icon: IconSpeakerphone,
     items: [
@@ -115,6 +126,8 @@ const SECTION_LABELS: Record<string, string> = {
   '/me': 'My workspace',
   '/employees': 'Employees',
   '/compensation': 'Pay',
+  '/payroll': 'Payroll',
+  '/billing': 'Billing',
   '/hiring': 'Hiring requests',
   '/leave': 'Leave triage',
   '/announcements': 'News bulletin',
@@ -199,6 +212,9 @@ export const AppShell = () => {
         : employeeNavigation;
   const canManageUsers =
     user?.roleKeys.includes('tethrAdmin') || user?.roleKeys.includes('clientAdmin');
+  const canManagePayroll =
+    user?.roleKeys.includes('tethrAdmin') === true ||
+    user?.roleKeys.includes('tethrFinance') === true;
   const canManageCompensation =
     portal === 'tethr' || user?.roleKeys.includes('clientAdmin') === true;
   const canManageClients = user?.roleKeys.includes('tethrAdmin') === true;
@@ -207,6 +223,8 @@ export const AppShell = () => {
   const visibleNavigation: readonly NavigationEntry[] = navigation
     .filter((entry) => entry.kind !== 'link' || entry.to !== '/clients' || canManageClients)
     .filter((entry) => entry.kind !== 'link' || entry.to !== '/compensation' || canManageCompensation)
+    // The Finance group (payroll runs + client invoicing) is finance-role only.
+    .filter((entry) => entry.kind !== 'group' || entry.label !== 'Finance' || canManagePayroll)
     .map((entry): NavigationEntry => {
       if (entry.kind === 'link') return entry;
       const items = [
@@ -574,3 +592,4 @@ export const AppShell = () => {
     </div>
   );
 };
+

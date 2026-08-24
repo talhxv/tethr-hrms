@@ -1,5 +1,6 @@
 import type { EmployeeId } from '@hrms/shared';
 import { Inject, Injectable } from '@nestjs/common';
+import type { FindOptionsWhere } from 'typeorm';
 
 import { TenantScopedRepository } from '../../core/tenancy/tenant-scoped.repository';
 
@@ -27,5 +28,15 @@ export class EmployeeDirectoryService {
   async getDisplayName(employeeId: EmployeeId): Promise<string | null> {
     const employee = await this.employees.findById(employeeId);
     return employee ? `${employee.firstName} ${employee.lastName}` : null;
+  }
+
+  // Everyone not terminated, in hire-date order. Payroll iterates this to draft a
+  // run; the returned entities are read-only facts from this module's private
+  // storage — consumers must never persist them elsewhere.
+  listActive(): Promise<Employee[]> {
+    return this.employees.find({
+      where: { employmentStatus: 'active' } as FindOptionsWhere<Employee>,
+      order: { hireDate: 'ASC', employeeNumber: 'ASC' },
+    });
   }
 }

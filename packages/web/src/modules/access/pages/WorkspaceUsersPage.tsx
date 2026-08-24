@@ -34,6 +34,7 @@ type EmployeesData = { readonly employees: readonly EmployeeOption[] };
 const roleLabels: Record<SystemRoleKey, string> = {
   tethrAdmin: 'Tethr administrator',
   tethrHr: 'Tethr HR',
+  tethrFinance: 'Tethr Finance',
   clientAdmin: 'Client administrator',
   clientMember: 'Client member',
   employee: 'Employee',

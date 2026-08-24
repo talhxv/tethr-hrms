@@ -5,8 +5,10 @@ import {
   type EmployeeId,
   type GradeId,
   type PayComponentCategory,
+  type PayComponentId,
   type PayFrequency,
   type SalaryStructureId,
+  type StructureComponentCalcType,
   type UserId,
 } from '@hrms/shared';
 import { UseGuards } from '@nestjs/common';
@@ -27,9 +29,14 @@ import { PayComponentView } from './dto/pay-component.output';
 import { ReviseSalaryInput } from './dto/revise-salary.input';
 import { SalaryRevisionView } from './dto/salary-revision.output';
 import { SalaryStructureView } from './dto/salary-structure.output';
+import {
+  StructureComponentInput,
+} from './dto/structure-component.input';
+import { SalaryStructureComponentView } from './dto/structure-component.output';
 import { BonusAward } from './entities/bonus-award.entity';
 import { PayComponent } from './entities/pay-component.entity';
 import { SalaryRevision } from './entities/salary-revision.entity';
+import { SalaryStructureComponent } from './entities/salary-structure-component.entity';
 import { SalaryStructure } from './entities/salary-structure.entity';
 
 const toPayComponentView = (component: PayComponent): PayComponentView => ({
@@ -73,6 +80,17 @@ const toBonusAwardView = (bonus: BonusAward): BonusAwardView => ({
   reason: bonus.reason,
   approvedByUserId: bonus.approvedByUserId,
   note: bonus.note,
+});
+
+const toStructureComponentView = (
+  component: SalaryStructureComponent,
+): SalaryStructureComponentView => ({
+  id: component.id,
+  structureId: component.structureId,
+  componentId: component.componentId,
+  calcType: component.calcType,
+  value: Number(component.value),
+  sortOrder: component.sortOrder,
 });
 
 @Resolver(() => SalaryRevisionView)
@@ -126,6 +144,38 @@ export class CompensationResolver {
       payFrequency: input.payFrequency as PayFrequency | undefined,
     });
     return toSalaryStructureView(structure);
+  }
+
+  @Query(() => [SalaryStructureComponentView])
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.compensationRead)
+  async salaryStructureComponents(
+    @Args('structureId', { type: () => ID }) structureId: string,
+  ): Promise<SalaryStructureComponentView[]> {
+    const rows = await this.compensationService.listSalaryStructureComponents(
+      toId<SalaryStructureId>(structureId),
+    );
+    return rows.map(toStructureComponentView);
+  }
+
+  @Mutation(() => [SalaryStructureComponentView])
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.compensationWrite)
+  async setSalaryStructureComponents(
+    @Args('structureId', { type: () => ID }) structureId: string,
+    @Args('components', { type: () => [StructureComponentInput] })
+    components: StructureComponentInput[],
+  ): Promise<SalaryStructureComponentView[]> {
+    const rows = await this.compensationService.setSalaryStructureComponents(
+      toId<SalaryStructureId>(structureId),
+      components.map((component) => ({
+        componentId: toId<PayComponentId>(component.componentId),
+        calcType: component.calcType as StructureComponentCalcType,
+        value: component.value,
+        sortOrder: component.sortOrder,
+      })),
+    );
+    return rows.map(toStructureComponentView);
   }
 
   @Query(() => [SalaryRevisionView])

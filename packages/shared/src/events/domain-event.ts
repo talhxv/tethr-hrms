@@ -1,6 +1,7 @@
 import type {
   AnnouncementId,
   AssignmentId,
+  BillingGroupId,
   BonusAwardId,
   DocumentId,
   EmployeeAssessmentId,
@@ -8,9 +9,11 @@ import type {
   EmployeeId,
   EmployeeFeedbackId,
   HiringRequestId,
+  InvoiceId,
   LeaveRequestId,
   LeaveTypeId,
   OrganizationId,
+  PayrollRunId,
   PositionId,
   SalaryRevisionId,
   SalaryStructureId,
@@ -46,6 +49,8 @@ export const DOMAIN_EVENT_NAMES = [
   'employeeAssessment.recorded',
   'employeeDocument.attached',
   'bonus.awarded',
+  'payroll.finalized',
+  'invoice.issued',
 ] as const;
 
 export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];
@@ -155,6 +160,24 @@ export type DomainEventPayloads = {
     readonly employeeId: EmployeeId;
     readonly amount: number;
     readonly currency: string;
+  };
+  'payroll.finalized': {
+    readonly payrollRunId: PayrollRunId;
+    readonly periodYear: number;
+    readonly periodMonth: number;
+    readonly currency: string;
+    readonly payslipCount: number;
+    readonly totalNetPay: number;
+  };
+  'invoice.issued': {
+    readonly invoiceId: InvoiceId;
+    readonly invoiceNumber: string;
+    readonly billingGroupId: BillingGroupId;
+    readonly invoiceType: string;
+    readonly currency: string;
+    readonly totalAmount: number;
+    readonly issueDate: string;
+    readonly dueDate: string;
   };
 };
 

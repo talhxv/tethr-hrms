@@ -1872,3 +1872,33 @@ button {
     margin-top: var(--hrms-space-2);
   }
 }
+
+/* --- Payroll (finance) --- */
+
+.field-hint {
+  margin: var(--hrms-space-2) 0 0;
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.inline-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-2) 0;
+}
+
+.table-link {
+  color: var(--hrms-color-accent-accent9);
+  font-weight: var(--hrms-font-weight-medium);
+  text-decoration: none;
+}
+
+.table-link:hover {
+  text-decoration: underline;
+}
+
+.record-inline-actions input[type='number'] {
+  width: 150px;
+}
