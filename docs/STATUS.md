@@ -1,6 +1,25 @@
 # Foundation Status
 
-> As of 2026-08-03. What exists, what's scaffolded, what's next, and the decisions behind it. Phases 0–2 are complete, Phase 3 Compensation is in progress, and the V1 client/employee/Tethr portal foundation is now in place.
+> As of 2026-08-24 (`finance` branch). Phases 0–2 plus the V1 portal foundation are complete; **Finance F1 (payroll core) and F2 (billing core) are built and smoke-verified** — see [finance-plan.md](finance-plan.md) for the agreed scope. What follows is the pre-Finance status record.
+
+## Finance F2 — billing core (this branch)
+
+- **New `modules/billing`:** `client_billing_configs` (PEPM fee, Net-7 terms, anchor day 20, receiver/sender/bank facts), `billing_groups` with per-group SP/EP-style prefixes, `billing_group_members` (current group + agreed fixed USD rate per employee), and the invoice pipeline: `invoices` + `invoice_lines` with draft → issued → paid lifecycle. Services invoices auto-draft from a finalized payroll run via the idempotent `payroll.finalized` consumer; expenses invoices open manually for pass-through lines.
+- **Drafting engine:** advance billing (on/after the anchor day the document covers the following month); catch-up lines for past months never invoiced, pro-rated by working days actually worked (`proratedAmount` — money rounds once); one PEPM fee line per billed person; receiver snapshot frozen at creation; uniqueness by group+type+service month makes re-runs no-ops.
+- **Issue & settle:** human numbers `{prefix}{sequence}` assigned only at issue counting issued/paid only (drafts never burn numbers); issuing freezes the document (edits rejected) and emits `invoice.issued` transactionally; mark-paid records date + reference. Client read path (`billing:own:read`) exposes issued/paid only.
+- **RBAC:** `billing:read/write` on Tethr Finance, `billing:own:read` on client roles.
+- **Web:** `/billing` (terms editor, groups, rates, invoices list, manual expenses-invoice opener) and `/billing/:invoiceId` (line drill-down, add/remove pass-through lines while draft, approve & issue, mark paid).
+- **Verified:** typecheck/lint/build green; API tests 96 passing incl. 12 new billing specs; 19-check HTTP smoke passed live (catch-up math 900×8/21=342.86 for the Aug-20 joiner, advance window Aug 20→Sep 20, issue → `SP0001`, immutability rejection, client visibility, settlement, idempotent re-draft).
+- **Known follow-ups for F3+:** PDF generation & download, credit notes if ever needed (draft-edit-only per scope), payslip/invoice emailing once SMTP exists, effective-dated group memberships if mid-month team moves become real, and the system-role permission drift issue (persisted tenant role rows don't track shipped definition updates — dev workaround: re-seed; product fix candidate: sync-on-ensure in `ensureSystemRole`).
+
+## Finance F1 — payroll core (this branch)
+
+- **New `modules/payroll`:** monthly runs (`draft → finalized`, one per period), draft lines with working-day pro-rata (mid-month joiners) minus approved unpaid leave via the leave published interface, structure-driven component breakdown snapshots, PK progressive withholding engine from tenant-configured slabs with per-line override, finalization into immutable `payslips`/`payslip_lines` snapshots, per-tenant sequential payslip numbers (`PS-YYYYMM-0001`), bank advice CSV (account facts via the employee-records published interface), and the transactional `payroll.finalized` outbox event carrying the true total.
+- **Compensation extension:** `salary_structure_components` (percentOfGross / fixedMonthly) with replace-all validation (percents ≤ 100); breakdown resolved through `getStructureComponentBreakdown`; GraphQL query/mutation for composition.
+- **RBAC:** new permissions (`payroll:read/write/finalize`, `payslip:read`, `payslip:own:read`); new `tethrFinance` system role (Tethr portal); employees gain self-service payslip reads.
+- **Web:** `/payroll` runs list + draft creation + tax-slab group management; `/payroll/:runId` line grid with component drill-down, tax override editing, regenerate/remove while draft, finalize & lock, bank advice download, issued-payslips table. Nav item gated to Tethr Admin/Finance.
+- **Verified:** typecheck/lint/build green across packages; API tests 83 passing incl. calculator + lifecycle specs; 24-check HTTP smoke against Docker Postgres passed (pro-rata = 8 days for an Aug-20 joiner, engine tax = 500 on 60k taxable at the 720k annual band, override round-trip, immutable payslip, bank advice CSV, `payroll.finalized` in outbox).
+- **Known follow-ups for F2+:** billing module consuming `payroll.finalized`; payslip emails once SMTP exists; catch-up/arrears suggestion pass; bootstrap gap — `signUp` yields only clientAdmin and `onboardClient` requires an existing tethrAdmin, so brand-new installs have no seed path to Tethr-side roles (dev DB was promoted manually for testing).
 
 ## V1 Portal Foundation
 

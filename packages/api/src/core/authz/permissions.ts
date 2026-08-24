@@ -34,7 +34,14 @@ export const PERMISSIONS = {
   feedbackRead: 'feedback:read',
   feedbackWrite: 'feedback:write',
   feedbackManage: 'feedback:manage',
-  payrollRun: 'payroll:run',
+  payrollRead: 'payroll:read',
+  payrollWrite: 'payroll:write',
+  payrollFinalize: 'payroll:finalize',
+  payslipRead: 'payslip:read',
+  payslipOwnRead: 'payslip:own:read',
+  billingRead: 'billing:read',
+  billingWrite: 'billing:write',
+  billingOwnRead: 'billing:own:read',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

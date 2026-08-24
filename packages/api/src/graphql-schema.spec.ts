@@ -6,12 +6,14 @@ import { AuthResolver } from './core/auth/auth.resolver';
 import { HealthResolver } from './health/health.resolver';
 import { AccountResolver } from './modules/account/account.resolver';
 import { AttendanceResolver } from './modules/attendance/attendance.resolver';
+import { BillingResolver } from './modules/billing/billing.resolver';
 import { ClientResolver } from './modules/clients/client.resolver';
 import { CompensationResolver } from './modules/compensation/compensation.resolver';
 import { EmployeeResolver } from './modules/employee/employee.resolver';
 import { EmployeeRecordsResolver } from './modules/employee-records/employee-records.resolver';
 import { EngagementResolver } from './modules/engagement/engagement.resolver';
 import { LeaveResolver } from './modules/leave/leave.resolver';
+import { PayrollResolver } from './modules/payroll/payroll.resolver';
 import { RecruitmentResolver } from './modules/recruitment/recruitment.resolver';
 
 // Builds the code-first GraphQL schema from the resolver/type decorators without
@@ -146,6 +148,58 @@ describe('code-first GraphQL schema', () => {
     expect(sdl).toContain('submitMyFeedback');
     expect(sdl).toContain('employeeFeedback');
     expect(sdl).toContain('resolveEmployeeFeedback');
+  });
+
+  it('builds the finance payroll operations', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [GraphQLSchemaBuilderModule],
+    }).compile();
+
+    const schemaFactory = moduleRef.get(GraphQLSchemaFactory);
+    const schema = await schemaFactory.create([HealthResolver, PayrollResolver]);
+    const sdl = printSchema(schema);
+
+    expect(sdl).toContain('type PayrollRun');
+    expect(sdl).toContain('type PayrollRunLine');
+    expect(sdl).toContain('type Payslip');
+    expect(sdl).toContain('type TaxSlabGroup');
+    expect(sdl).toContain('createPayrollRun');
+    expect(sdl).toContain('regeneratePayrollRun');
+    expect(sdl).toContain('updatePayrollRunLine');
+    expect(sdl).toContain('removePayrollRunLine');
+    expect(sdl).toContain('finalizePayrollRun');
+    expect(sdl).toContain('bankAdviceCsv');
+    expect(sdl).toContain('myPayslips');
+    expect(sdl).toContain('runPayslips');
+    expect(sdl).toContain('taxSlabGroup');
+    expect(sdl).toContain('replaceTaxSlabs');
+    expect(sdl).toContain('activateTaxSlabGroup');
+    expect(sdl).toContain('input CreatePayrollRunInput');
+  });
+
+  it('builds the finance billing operations', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [GraphQLSchemaBuilderModule],
+    }).compile();
+
+    const schemaFactory = moduleRef.get(GraphQLSchemaFactory);
+    const schema = await schemaFactory.create([HealthResolver, BillingResolver]);
+    const sdl = printSchema(schema);
+
+    expect(sdl).toContain('type Invoice');
+    expect(sdl).toContain('type InvoiceLine');
+    expect(sdl).toContain('type BillingGroup');
+    expect(sdl).toContain('type ClientBillingConfig');
+    expect(sdl).toContain('billingConfig');
+    expect(sdl).toContain('updateBillingConfig');
+    expect(sdl).toContain('billingGroups');
+    expect(sdl).toContain('setBillingMember');
+    expect(sdl).toContain('clientInvoices');
+    expect(sdl).toContain('draftInvoicesFromRun');
+    expect(sdl).toContain('openExpensesInvoice');
+    expect(sdl).toContain('addInvoiceLine');
+    expect(sdl).toContain('issueInvoice');
+    expect(sdl).toContain('markInvoicePaid');
   });
 
   it('builds the employee records assessment and document operations', async () => {

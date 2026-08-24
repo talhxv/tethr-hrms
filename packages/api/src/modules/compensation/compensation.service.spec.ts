@@ -18,6 +18,7 @@ import type { BonusAward } from './entities/bonus-award.entity';
 import type { PayComponent } from './entities/pay-component.entity';
 import type { SalaryRevision } from './entities/salary-revision.entity';
 import type { SalaryStructure } from './entities/salary-structure.entity';
+import type { SalaryStructureComponent } from './entities/salary-structure-component.entity';
 
 const ORG = toId<OrganizationId>('org-1');
 const EMPLOYEE = toId<EmployeeId>('emp-1');
@@ -60,6 +61,13 @@ const buildService = (options: {
   const salaryRevisions = {
     find: jest.fn().mockResolvedValue(options.existingRevisions ?? []),
   } as unknown as TenantScopedRepository<SalaryRevision>;
+  const salaryStructureComponents = {
+    create: jest.fn((value: unknown) => value),
+    save: jest.fn((value: Record<string, unknown>) =>
+      Promise.resolve({ id: 'structure-component-1', ...value }),
+    ),
+    find: jest.fn().mockResolvedValue([]),
+  } as unknown as TenantScopedRepository<SalaryStructureComponent>;
   const bonusAwards = {
     find: jest.fn().mockResolvedValue([]),
   } as unknown as TenantScopedRepository<BonusAward>;
@@ -89,6 +97,7 @@ const buildService = (options: {
   const service = new CompensationService(
     payComponents,
     salaryStructures,
+    salaryStructureComponents,
     salaryRevisions,
     bonusAwards,
     dataSource,

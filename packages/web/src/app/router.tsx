@@ -5,6 +5,8 @@ import { useAuth } from '../modules/auth/hooks/useAuth';
 import { AccessPendingPage } from '../modules/auth/pages/AccessPendingPage';
 import { LoginPage } from '../modules/auth/pages/LoginPage';
 import { SignUpPage } from '../modules/auth/pages/SignUpPage';
+import { BillingPage } from '../modules/billing/pages/BillingPage';
+import { InvoiceDetailPage } from '../modules/billing/pages/InvoiceDetailPage';
 import { ClientWorkspacePage } from '../modules/client/pages/ClientWorkspacePage';
 import { ClientPortfolioPage } from '../modules/clients/pages/ClientPortfolioPage';
 import { CompensationPage } from '../modules/compensation/pages/CompensationPage';
@@ -13,6 +15,8 @@ import { EmployeesListPage } from '../modules/employees/pages/EmployeesListPage'
 import { AnnouncementsPage } from '../modules/engagement/pages/AnnouncementsPage';
 import { FeedbackInboxPage } from '../modules/engagement/pages/FeedbackInboxPage';
 import { LeaveTriagePage } from '../modules/leave/pages/LeaveTriagePage';
+import { PayrollPage } from '../modules/payroll/pages/PayrollPage';
+import { PayrollRunDetailPage } from '../modules/payroll/pages/PayrollRunDetailPage';
 import { HiringRequestsPage } from '../modules/recruitment/pages/HiringRequestsPage';
 import { EmployeeWorkspacePage } from '../modules/self-service/pages/EmployeeWorkspacePage';
 
@@ -39,6 +43,16 @@ export const AppRouter = () => (
           <Route element={<RequirePortal portals={['tethr']} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/feedback" element={<FeedbackInboxPage />} />
+          </Route>
+          <Route
+            element={
+              <RequirePortal portals={['tethr']} roleKeys={['tethrAdmin', 'tethrFinance']} />
+            }
+          >
+            <Route path="/payroll" element={<PayrollPage />} />
+            <Route path="/payroll/:runId" element={<PayrollRunDetailPage />} />
+            <Route path="/billing" element={<BillingPage />} />
+            <Route path="/billing/:invoiceId" element={<InvoiceDetailPage />} />
           </Route>
           <Route element={<RequirePortal portals={['tethr']} roleKeys={['tethrAdmin']} />}>
             <Route path="/clients" element={<ClientPortfolioPage />} />

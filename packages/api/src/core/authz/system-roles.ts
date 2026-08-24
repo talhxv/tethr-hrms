@@ -50,6 +50,24 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.feedbackManage,
     ],
   },
+  tethrFinance: {
+    key: 'tethrFinance',
+    name: 'Tethr Finance',
+    portal: 'tethr',
+    dataScope: 'organization',
+    permissions: [
+      PERMISSIONS.employeeRead,
+      PERMISSIONS.compensationRead,
+      PERMISSIONS.payrollRead,
+      PERMISSIONS.payrollWrite,
+      PERMISSIONS.payrollFinalize,
+      PERMISSIONS.payslipRead,
+      PERMISSIONS.billingRead,
+      PERMISSIONS.billingWrite,
+      PERMISSIONS.leaveTeamRead,
+      PERMISSIONS.holidayRead,
+    ],
+  },
   clientAdmin: {
     key: 'clientAdmin',
     name: 'Client administrator',
@@ -70,6 +88,7 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.leaveTeamRead,
       PERMISSIONS.holidayRead,
       PERMISSIONS.announcementRead,
+      PERMISSIONS.billingOwnRead,
     ],
   },
   clientMember: {
@@ -87,6 +106,7 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.leaveTeamRead,
       PERMISSIONS.holidayRead,
       PERMISSIONS.announcementRead,
+      PERMISSIONS.billingOwnRead,
     ],
   },
   employee: {
@@ -98,6 +118,7 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.employeeSelfRead,
       PERMISSIONS.employeeSelfWrite,
       PERMISSIONS.compensationOwnRead,
+      PERMISSIONS.payslipOwnRead,
       PERMISSIONS.leaveOwnRead,
       PERMISSIONS.leaveOwnWrite,
       PERMISSIONS.holidayRead,
@@ -108,7 +129,13 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
 };
 
 export const portalForRoleKeys = (roleKeys: readonly string[]): PortalKind => {
-  if (roleKeys.includes('tethrAdmin') || roleKeys.includes('tethrHr')) return 'tethr';
+  if (
+    roleKeys.includes('tethrAdmin') ||
+    roleKeys.includes('tethrHr') ||
+    roleKeys.includes('tethrFinance')
+  ) {
+    return 'tethr';
+  }
   if (roleKeys.includes('clientAdmin') || roleKeys.includes('clientMember')) return 'client';
   if (roleKeys.includes('employee')) return 'employee';
   return 'none';

@@ -115,6 +115,7 @@ describe('AuthorizationService', () => {
     await expect(service.listAssignableSystemRoleKeys()).resolves.toEqual([
       'tethrAdmin',
       'tethrHr',
+      'tethrFinance',
       'clientAdmin',
       'clientMember',
       'employee',

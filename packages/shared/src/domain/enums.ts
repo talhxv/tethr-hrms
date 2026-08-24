@@ -33,7 +33,13 @@ export type CompensationChangeReason =
 // The system roles that establish the first V1 experiences. Roles remain
 // tenant-configurable data, but these stable keys let the product safely select
 // a portal and seed a sensible initial permission set.
-export type SystemRoleKey = 'tethrAdmin' | 'tethrHr' | 'clientAdmin' | 'clientMember' | 'employee';
+export type SystemRoleKey =
+  | 'tethrAdmin'
+  | 'tethrHr'
+  | 'tethrFinance'
+  | 'clientAdmin'
+  | 'clientMember'
+  | 'employee';
 
 // A person can hold more than one role. The portal is a presentation choice made
 // from their effective roles; authorization continues to use permissions.
@@ -77,3 +83,21 @@ export type DocumentSignatureStatus = 'notRequired' | 'pending' | 'signed' | 'de
 
 export type BonusReason =
   'performance' | 'retention' | 'referral' | 'spot' | 'clientApproved' | 'other';
+
+// Payroll run lifecycle. A draft is fully recomputable and editable; finalize
+// snapshots payslips (immutable) and locks the run.
+export type PayrollRunStatus = 'draft' | 'finalized';
+
+// How a salary-structure component derives its amount from the period gross:
+// a percent of gross, or a fixed monthly amount on top of the net calculation.
+export type StructureComponentCalcType = 'percentOfGross' | 'fixedMonthly';
+
+// Client invoice lifecycle. Drafts are freely editable finance working state;
+// issuing freezes the document (number assigned, immutable); paid closes it.
+export type InvoiceStatus = 'draft' | 'issued' | 'paid';
+
+// Services invoices carry salaries + management fees; expenses invoices carry
+// pass-through reimbursements. Each billing group issues its own pair.
+export type InvoiceType = 'services' | 'expenses';
+
+export type InvoiceLineKind = 'salary' | 'fee' | 'expense' | 'catchup';

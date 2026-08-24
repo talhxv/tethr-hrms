@@ -81,3 +81,17 @@ export const countWorkingDays = (
   holidays: ReadonlySet<IsoDate> = new Set(),
 ): number =>
   eachIsoDateInclusive(from, to).filter((date) => !isWeekend(date) && !holidays.has(date)).length;
+
+// The half-open month range [start, endExclusive) for a calendar year/month.
+// Payroll periods are keyed by (year, month) and resolve to this range so every
+// consumer derives identical period boundaries.
+export const isoMonthRange = (
+  year: number,
+  month: number,
+): { readonly start: IsoDate; readonly endExclusive: IsoDate } => {
+  const start = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-01`;
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const endExclusive = `${String(nextYear).padStart(4, '0')}-${String(nextMonth).padStart(2, '0')}-01`;
+  return { start, endExclusive };
+};

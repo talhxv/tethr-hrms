@@ -52,6 +52,11 @@ export type SalaryStructureId = Brand<string, 'SalaryStructureId'>;
 export type PayComponentId = Brand<string, 'PayComponentId'>;
 export type SalaryRevisionId = Brand<string, 'SalaryRevisionId'>;
 export type BonusAwardId = Brand<string, 'BonusAwardId'>;
+export type PayrollRunId = Brand<string, 'PayrollRunId'>;
+export type PayslipId = Brand<string, 'PayslipId'>;
+export type TaxSlabGroupId = Brand<string, 'TaxSlabGroupId'>;
+export type BillingGroupId = Brand<string, 'BillingGroupId'>;
+export type InvoiceId = Brand<string, 'InvoiceId'>;
 
 // --- Recruitment ---
 export type HiringRequestId = Brand<string, 'HiringRequestId'>;

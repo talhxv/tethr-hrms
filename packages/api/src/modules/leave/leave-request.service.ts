@@ -174,6 +174,40 @@ export class LeaveRequestService {
     return this.requests.find({ order: { startDate: 'DESC', createdAt: 'DESC' } });
   }
 
+  // Published read for Payroll: approved UNPAID leave touching [from, to], counted
+  // in working days after clipping the request to that window (holidays supplied by
+  // the caller so run and leave math share one calendar). Storage stays private to
+  // this module — payroll never queries these tables itself.
+  async getApprovedUnpaidWorkDays(
+    employeeId: EmployeeId,
+    from: IsoDate,
+    to: IsoDate,
+    holidays: ReadonlySet<IsoDate> = new Set(),
+  ): Promise<number> {
+    if (compareIsoDate(from, to) > 0) {
+      return 0;
+    }
+    const approved = await this.requests.find({
+      where: { employeeId, status: 'approved' } as FindOptionsWhere<LeaveRequest>,
+    });
+    const overlapping = approved.filter(
+      (request) => compareIsoDate(request.startDate, to) <= 0 && compareIsoDate(request.endDate, from) >= 0,
+    );
+    if (overlapping.length === 0) {
+      return 0;
+    }
+    const types = await this.leaveTypes.find();
+    const unpaidTypeIds = new Set(types.filter((leaveType) => !leaveType.paid).map((t) => t.id));
+    let unpaidDays = 0;
+    for (const request of overlapping) {
+      if (!unpaidTypeIds.has(request.leaveTypeId)) continue;
+      const clippedStart = compareIsoDate(request.startDate, from) > 0 ? request.startDate : from;
+      const clippedEnd = compareIsoDate(request.endDate, to) < 0 ? request.endDate : to;
+      unpaidDays += countWorkingDays(clippedStart, clippedEnd, holidays);
+    }
+    return unpaidDays;
+  }
+
   private async decide(
     id: string,
     status: 'approved' | 'rejected' | 'cancelled',
