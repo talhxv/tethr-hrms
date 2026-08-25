@@ -1,4 +1,4 @@
-import { useApolloClient, useMutation, useQuery } from '@apollo/client';
+﻿import { useApolloClient, useMutation, useQuery } from '@apollo/client';
 import { WORKSPACE_BRAND_COLORS, type PortalKind, type WorkspaceBrandColor } from '@hrms/shared';
 import {
   IconArrowsRightLeft,
@@ -50,7 +50,7 @@ type NavigationGroupEntry = {
 };
 
 // A top-level entry is either a standalone pill (link) or a labeled
-// dropdown (group) — related pages cluster under one pill (e.g. "People")
+// dropdown (group) â€” related pages cluster under one pill (e.g. "People")
 // instead of spilling into a flat, generic "More" catch-all.
 type NavigationEntry = NavigationLinkEntry | NavigationGroupEntry;
 
@@ -164,7 +164,7 @@ export const AppShell = () => {
   }, []);
 
   // navRef wraps every pill, including plain links, so clicking one doesn't
-  // count as "outside" and close a sibling dropdown — this effect is what
+  // count as "outside" and close a sibling dropdown â€” this effect is what
   // actually closes it, by reacting to the resulting route change instead.
   useEffect(() => {
     setOpenMenu(null);
@@ -211,15 +211,15 @@ export const AppShell = () => {
         ? clientNavigation
         : employeeNavigation;
   const canManageUsers =
-    user?.roleKeys.includes('tethrAdmin') || user?.roleKeys.includes('clientAdmin');
+    user?.roleKeys?.includes('tethrAdmin') || user?.roleKeys?.includes('clientAdmin');
   const canManagePayroll =
-    user?.roleKeys.includes('tethrAdmin') === true ||
-    user?.roleKeys.includes('tethrFinance') === true;
+    user?.roleKeys?.includes('tethrAdmin') === true ||
+    user?.roleKeys?.includes('tethrFinance') === true;
   const canManageCompensation =
-    portal === 'tethr' || user?.roleKeys.includes('clientAdmin') === true;
-  const canManageClients = user?.roleKeys.includes('tethrAdmin') === true;
+    portal === 'tethr' || user?.roleKeys?.includes('clientAdmin') === true;
+  const canManageClients = user?.roleKeys?.includes('tethrAdmin') === true;
   const canManageOrganization =
-    user?.roleKeys.includes('tethrAdmin') || user?.roleKeys.includes('clientAdmin');
+    user?.roleKeys?.includes('tethrAdmin') || user?.roleKeys?.includes('clientAdmin');
   const visibleNavigation: readonly NavigationEntry[] = navigation
     .filter((entry) => entry.kind !== 'link' || entry.to !== '/clients' || canManageClients)
     .filter((entry) => entry.kind !== 'link' || entry.to !== '/compensation' || canManageCompensation)
@@ -235,7 +235,7 @@ export const AppShell = () => {
     })
     .filter((entry) => entry.kind === 'link' || entry.items.length > 0);
 
-  // The group whose own sub-pages the user is currently on, if any — drives
+  // The group whose own sub-pages the user is currently on, if any â€” drives
   // the persistent second-row tab strip so switching between a group's
   // pages doesn't require reopening the pill's dropdown each time.
   const activeGroupEntry = visibleNavigation.find(
@@ -258,8 +258,8 @@ export const AppShell = () => {
   };
 
   // Switches in place instead of bouncing out to /login: still re-verifies a
-  // password (each workspace can hold a different one for this same email —
-  // auth.service.ts — so there's no safe way to mint a session for another
+  // password (each workspace can hold a different one for this same email â€”
+  // auth.service.ts â€” so there's no safe way to mint a session for another
   // org without checking it), but does it inline in the same dropdown via the
   // existing login/selectWorkspace mutations, reusing exactly the flow the
   // login-time picker already uses.
@@ -426,7 +426,7 @@ export const AppShell = () => {
                         disabled={authBusy}
                         type="submit"
                       >
-                        {authBusy ? 'Checking…' : 'Continue'}
+                        {authBusy ? 'Checkingâ€¦' : 'Continue'}
                       </button>
                       <button
                         className="link-button"
