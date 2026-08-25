@@ -156,7 +156,7 @@ export const InvoiceDetailPage = () => {
             <h1 className="page-title">{invoice?.number ?? 'Draft invoice'}</h1>
             <p className="page-subtitle">
               {invoice
-                ? `${invoice.groupName ?? ''} Â· ${invoice.type} Â· covers ${MONTH_NAMES[invoice.serviceMonth - 1]} ${invoice.serviceYear} (${invoice.periodStart} â†’ ${invoice.periodEndExclusive})`
+                ? `${invoice.groupName ?? ''} · ${invoice.type} · covers ${MONTH_NAMES[invoice.serviceMonth - 1]} ${invoice.serviceYear} (${invoice.periodStart} → ${invoice.periodEndExclusive})`
                 : ''}
             </p>
           </div>
@@ -186,16 +186,16 @@ export const InvoiceDetailPage = () => {
                 className="button button-primary"
                 disabled={issuing || lines.length === 0}
                 type="button"
-                onClick={() => void run(() => issueInvoice({ variables: { invoiceId } }), 'Invoice issued â€” the document is now immutable.')}
+                onClick={() => void run(() => issueInvoice({ variables: { invoiceId } }), 'Invoice issued — the document is now immutable.')}
               >
                 <IconLock size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-                {issuing ? 'Issuingâ€¦' : 'Approve & issue'}
+                {issuing ? 'Issuing…' : 'Approve & issue'}
               </button>
             ) : null}
             {!isDraft && invoice?.status === 'issued' ? (
               <span className="chip" style={{ '--chip-color': 'var(--hrms-color-tag-blue)' } as CSSProperties}>
                 <span className="chip-dot" />
-                {`Due ${invoice.dueDate ?? 'â€”'}`}
+                {`Due ${invoice.dueDate ?? '—'}`}
               </span>
             ) : null}
             <Link className="button button-secondary" to="/billing">All invoices</Link>
@@ -209,7 +209,7 @@ export const InvoiceDetailPage = () => {
           <div className="table-title-row">
             <div className="table-title" id="lines-title">Lines</div>
             <div className="table-density">
-              {loading ? 'Loadingâ€¦' : `${invoice?.totalAmount ? formatMoney(invoice.totalAmount, invoice.currency) + ' total' : ''}`}
+              {loading ? 'Loading…' : `${invoice?.totalAmount ? formatMoney(invoice.totalAmount, invoice.currency) + ' total' : ''}`}
             </div>
           </div>
           <div className="data-table-wrap">
@@ -223,8 +223,8 @@ export const InvoiceDetailPage = () => {
                 ) : (
                   lines.map((line) => (
                     <tr key={line.id}>
-                      <td><span className="employee-primary">{line.employeeName ?? 'â€”'}</span></td>
-                      <td>{line.monthLabel ?? 'â€”'}</td>
+                      <td><span className="employee-primary">{line.employeeName ?? '—'}</span></td>
+                      <td>{line.monthLabel ?? '—'}</td>
                       <td>{line.description}</td>
                       <td>{line.quantity}</td>
                       <td>{formatMoney(line.unitPrice, invoice?.currency ?? 'USD')}</td>
@@ -237,7 +237,7 @@ export const InvoiceDetailPage = () => {
                             type="button"
                             onClick={() => void run(() => removeLine({ variables: { lineId: line.id, invoiceId } }), 'Line removed.')}
                           >
-                            âœ•
+                            ✕
                           </button>
                         </td>
                       ) : null}
@@ -261,7 +261,7 @@ export const InvoiceDetailPage = () => {
               </div>
             </div>
             <button className="button button-secondary" disabled={adding} type="submit">Add line</button>
-            <p className="field-hint">Quantity defaults to 1 â€” adjust per line afterwards while still draft.</p>
+            <p className="field-hint">Quantity defaults to 1 — adjust per line afterwards while still draft.</p>
           </form>
         ) : null}
       </div>
@@ -278,10 +278,10 @@ export const InvoiceDetailPage = () => {
         {invoice ? (
           <ul className="field-list">
             <li className="field-row"><span>Status</span><span className="field-value">{invoice.status}</span></li>
-            <li className="field-row"><span>Receiver</span><span className="field-value truncate">{invoice.receiverName ?? 'â€”'}</span></li>
+            <li className="field-row"><span>Receiver</span><span className="field-value truncate">{invoice.receiverName ?? '—'}</span></li>
             <li className="field-row"><span>Sub-total</span><span className="field-value">{formatMoney(invoice.subTotal, invoice.currency)}</span></li>
-            <li className="field-row"><span>Issue date</span><span className="field-value">{invoice.issueDate ?? 'â€”'}</span></li>
-            <li className="field-row"><span>Due date</span><span className="field-value">{invoice.dueDate ?? 'â€”'}</span></li>
+            <li className="field-row"><span>Issue date</span><span className="field-value">{invoice.issueDate ?? '—'}</span></li>
+            <li className="field-row"><span>Due date</span><span className="field-value">{invoice.dueDate ?? '—'}</span></li>
             {invoice.paymentReference ? (
               <li className="field-row"><span>Payment ref</span><span className="field-value">{invoice.paymentReference}</span></li>
             ) : null}

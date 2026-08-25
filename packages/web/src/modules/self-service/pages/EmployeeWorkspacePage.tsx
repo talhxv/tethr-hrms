@@ -619,7 +619,7 @@ export const EmployeeWorkspacePage = () => {
                         {formatDateTime(request.decidedAt ?? request.submittedAt)}
                       </div>
                     </td>
-                    <td className="truncate">{request.decisionNote ?? request.reason ?? 'â€”'}</td>
+                    <td className="truncate">{request.decisionNote ?? request.reason ?? '—'}</td>
                   </tr>
                 ))}
                 {sortedRequests.length === 0 ? (
@@ -900,7 +900,7 @@ export const EmployeeWorkspacePage = () => {
             </div>
             <div className="field-row">
               <span className="field-label">Work email</span>
-              <span className="field-value">{employee.workEmail ?? 'â€”'}</span>
+              <span className="field-value">{employee.workEmail ?? '—'}</span>
             </div>
             <div className="field-row">
               <span className="field-label">Employment type</span>

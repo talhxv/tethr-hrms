@@ -208,7 +208,7 @@ export const BillingPage = () => {
           <div>
             <h1 className="page-title">Billing</h1>
             <p className="page-subtitle">
-              Tethr â†’ client invoicing: groups, agreed rates, and the invoice pipeline
+              Tethr → client invoicing: groups, agreed rates, and the invoice pipeline
               (auto-drafted when payroll finalizes).
             </p>
           </div>
@@ -223,7 +223,7 @@ export const BillingPage = () => {
         <section className="table-shell" aria-labelledby="groups-title">
           <div className="table-title-row">
             <div className="table-title" id="groups-title">Billing groups</div>
-            <div className="table-density">{loading ? 'Loadingâ€¦' : `${groups.length}`}</div>
+            <div className="table-density">{loading ? 'Loading…' : `${groups.length}`}</div>
           </div>
           <div className="data-table-wrap">
             <table className="data-table">
@@ -232,7 +232,7 @@ export const BillingPage = () => {
               </thead>
               <tbody>
                 {groups.length === 0 && !loading ? (
-                  <tr><td colSpan={3}>No groups yet â€” create one to start billing.</td></tr>
+                  <tr><td colSpan={3}>No groups yet — create one to start billing.</td></tr>
                 ) : (
                   groups.map((group) => (
                     <tr key={group.id}>
@@ -273,7 +273,7 @@ export const BillingPage = () => {
                           title="Remove membership"
                           onClick={() => void run(() => removeMember({ variables: { employeeId: member.employeeId }, refetchQueries: [{ query: BILLING_PAGE_DATA_QUERY }] }))}
                         >
-                          âœ•
+                          ✕
                         </button>
                       </td>
                     </tr>
@@ -296,12 +296,12 @@ export const BillingPage = () => {
               </thead>
               <tbody>
                 {invoices.length === 0 && !loading ? (
-                  <tr><td colSpan={7}>No invoices yet â€” finalize a payroll run to auto-draft services invoices.</td></tr>
+                  <tr><td colSpan={7}>No invoices yet — finalize a payroll run to auto-draft services invoices.</td></tr>
                 ) : (
                   invoices.map((invoice) => (
                     <tr key={invoice.id}>
                       <td><span className="employee-primary">{invoice.number ?? 'Draft'}</span></td>
-                      <td>{`${invoice.groupName ?? 'â€”'} Â· ${invoice.type}`}</td>
+                      <td>{`${invoice.groupName ?? '—'} · ${invoice.type}`}</td>
                       <td>{`${MONTH_NAMES[invoice.serviceMonth - 1]} ${invoice.serviceYear}`}</td>
                       <td>{new Intl.NumberFormat('en', { currency: invoice.currency, style: 'currency' }).format(invoice.totalAmount)}</td>
                       <td>
@@ -313,7 +313,7 @@ export const BillingPage = () => {
                           {invoice.status}
                         </span>
                       </td>
-                      <td>{invoice.dueDate ?? 'â€”'}</td>
+                      <td>{invoice.dueDate ?? '—'}</td>
                       <td><Link className="table-link" to={`/billing/${invoice.id}`}>Open</Link></td>
                     </tr>
                   ))
@@ -335,7 +335,7 @@ export const BillingPage = () => {
 
         <form className="config-form" onSubmit={onSaveConfig}>
           <h3 className="section-title">Commercial terms</h3>
-          <p className="field-hint">Current: ${config?.feeAmount ?? 'â€”'} PEPM Â· Net {config?.paymentTermsNetDays ?? 'â€”'} Â· anchor day {config?.anchorDay ?? 'â€”'}</p>
+          <p className="field-hint">Current: ${config?.feeAmount ?? '—'} PEPM · Net {config?.paymentTermsNetDays ?? '—'} · anchor day {config?.anchorDay ?? '—'}</p>
           <div className="field"><label htmlFor="fee-amount">PEPM fee (USD)</label>
             <input id="fee-amount" min={0} placeholder={String(config?.feeAmount ?? '')} step="0.01" type="number" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} />
           </div>
@@ -452,7 +452,7 @@ export const BillingPage = () => {
           <h3 className="section-title">Assign rate</h3>
           <div className="field"><label htmlFor="member-employee">Employee</label>
             <select id="member-employee" value={memberEmployeeId} onChange={(e) => setMemberEmployeeId(e.target.value)}>
-              <option value="">Selectâ€¦</option>
+              <option value="">Select…</option>
               {employees.map((employee) => (
                 <option key={employee.id} value={employee.id}>{`${employee.firstName} ${employee.lastName} (${employee.employeeNumber})`}</option>
               ))}
@@ -460,7 +460,7 @@ export const BillingPage = () => {
           </div>
           <div className="field"><label htmlFor="member-group">Group</label>
             <select id="member-group" value={memberGroupId} onChange={(e) => setMemberGroupId(e.target.value)}>
-              <option value="">Selectâ€¦</option>
+              <option value="">Select…</option>
               {groups.map((group) => (<option key={group.id} value={group.id}>{group.name}</option>))}
             </select>
           </div>
@@ -486,7 +486,7 @@ export const BillingPage = () => {
           <h3 className="section-title">Expenses pass-through</h3>
           <div className="field"><label htmlFor="expense-group">Group</label>
             <select id="expense-group" value={expenseGroupId} onChange={(e) => setExpenseGroupId(e.target.value)}>
-              <option value="">Selectâ€¦</option>
+              <option value="">Select…</option>
               {groups.map((group) => (<option key={group.id} value={group.id}>{group.name}</option>))}
             </select>
           </div>

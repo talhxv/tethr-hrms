@@ -148,19 +148,19 @@ export const ClientWorkspacePage = () => {
         <div className="metric-strip client-metrics">
           <div className="metric-card">
             <div className="metric-label">Total employees</div>
-            <div className="metric-value">{loading ? 'â€”' : employees.length}</div>
+            <div className="metric-value">{loading ? '—' : employees.length}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Active</div>
-            <div className="metric-value">{loading ? 'â€”' : activeEmployees}</div>
+            <div className="metric-value">{loading ? '—' : activeEmployees}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">On leave</div>
-            <div className="metric-value">{loading ? 'â€”' : onLeaveEmployees}</div>
+            <div className="metric-value">{loading ? '—' : onLeaveEmployees}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Hiring requests</div>
-            <div className="metric-value">{loading ? 'â€”' : activeHiringRequests}</div>
+            <div className="metric-value">{loading ? '—' : activeHiringRequests}</div>
           </div>
         </div>
 
@@ -246,7 +246,7 @@ export const ClientWorkspacePage = () => {
                         </div>
                         <div className="employee-secondary">{employee.employeeNumber}</div>
                       </td>
-                      <td>{employee.workEmail ?? 'â€”'}</td>
+                      <td>{employee.workEmail ?? '—'}</td>
                       <td>{formatDate(employee.hireDate)}</td>
                       <td>
                         <span
