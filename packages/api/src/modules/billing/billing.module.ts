@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from '../../core/auth/auth.module';
 import { AuthzModule } from '../../core/authz/authz.module';
+import { PdfModule } from '../../core/pdf/pdf.module';
 import { provideTenantScopedRepository } from '../../core/tenancy/tenant-repository.provider';
 import { EmployeeModule } from '../employee';
 import { PayrollModule } from '../payroll';
@@ -22,6 +23,7 @@ import { ClientBillingConfig } from './entities/client-billing-config.entity';
 import { InvoiceLine } from './entities/invoice-line.entity';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceService } from './invoice.service';
+import { InvoicePdfService } from './pdf/invoice-pdf.service';
 
 @Module({
   imports: [
@@ -34,12 +36,14 @@ import { InvoiceService } from './invoice.service';
     ]),
     AuthModule,
     AuthzModule,
+    PdfModule,
     EmployeeModule,
     // Published interface only: the finalized-run summary the auto-drafter reads.
     PayrollModule,
   ],
   providers: [
     InvoiceService,
+    InvoicePdfService,
     PayrollFinalizedBillingConsumer,
     BillingResolver,
     provideTenantScopedRepository(CLIENT_BILLING_CONFIG_REPOSITORY, ClientBillingConfig),

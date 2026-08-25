@@ -182,3 +182,33 @@ export const MARK_INVOICE_PAID_MUTATION = gql`
     }
   }
 `;
+
+export const INVOICE_PDF_QUERY = gql`
+  query InvoicePdf($invoiceId: ID!) {
+    invoicePdf(invoiceId: $invoiceId)
+  }
+`;
+
+export const CLIENT_INVOICE_PDF_QUERY = gql`
+  query ClientInvoicePdf($invoiceId: ID!) {
+    clientInvoicePdf(invoiceId: $invoiceId)
+  }
+`;
+
+export const CLIENT_INVOICES_QUERY = gql`
+  query ClientInvoices {
+    clientInvoices {
+      id
+      groupName
+      type
+      status
+      serviceYear
+      serviceMonth
+      number
+      issueDate
+      dueDate
+      currency
+      totalAmount
+    }
+  }
+`;

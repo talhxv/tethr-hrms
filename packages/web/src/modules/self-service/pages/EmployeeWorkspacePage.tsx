@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+﻿import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import type { ApprovalStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
@@ -13,6 +13,11 @@ import {
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
+import { downloadBase64File } from '../../../app/download';
+import {
+  MY_PAYSLIP_PDF_QUERY,
+  MY_PAYSLIPS_QUERY,
+} from '../../payroll/graphql/payroll.operations';
 import { SUBMIT_MY_FEEDBACK_MUTATION } from '../../engagement/graphql/engagement.operations';
 import {
   MY_WORKSPACE_QUERY,
@@ -614,7 +619,7 @@ export const EmployeeWorkspacePage = () => {
                         {formatDateTime(request.decidedAt ?? request.submittedAt)}
                       </div>
                     </td>
-                    <td className="truncate">{request.decisionNote ?? request.reason ?? '—'}</td>
+                    <td className="truncate">{request.decisionNote ?? request.reason ?? 'â€”'}</td>
                   </tr>
                 ))}
                 {sortedRequests.length === 0 ? (
@@ -629,6 +634,8 @@ export const EmployeeWorkspacePage = () => {
           </div>
         </section>
       </section>
+
+      <MyPayslipsSection />
 
       <aside className="self-service-panel" aria-label="Employee actions">
         <section className="self-service-section">
@@ -893,7 +900,7 @@ export const EmployeeWorkspacePage = () => {
             </div>
             <div className="field-row">
               <span className="field-label">Work email</span>
-              <span className="field-value">{employee.workEmail ?? '—'}</span>
+              <span className="field-value">{employee.workEmail ?? 'â€”'}</span>
             </div>
             <div className="field-row">
               <span className="field-label">Employment type</span>
@@ -905,3 +912,95 @@ export const EmployeeWorkspacePage = () => {
     </main>
   );
 };
+
+type PayslipRowRecord = {
+  readonly id: string;
+  readonly payslipNumber: string;
+  readonly periodYear: number;
+  readonly periodMonth: number;
+  readonly payDate: string;
+  readonly currency: string;
+  readonly paidDays: number;
+  readonly lopDays: number;
+  readonly grossAmount: number;
+  readonly incomeTaxAmount: number;
+  readonly netPayAmount: number;
+};
+
+function MyPayslipsSection() {
+  const [error, setError] = useState<string | null>(null);
+  const { data, loading } = useQuery<{ readonly myPayslips: readonly PayslipRowRecord[] }>(
+    MY_PAYSLIPS_QUERY,
+  );
+  const [loadPdf] = useLazyQuery<{ readonly myPayslipPdf: string }>(MY_PAYSLIP_PDF_QUERY, {
+    fetchPolicy: 'no-cache',
+  });
+
+  const rows = data?.myPayslips ?? [];
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const money = (value: number, currency: string): string =>
+    new Intl.NumberFormat('en', { currency, maximumFractionDigits: 0, style: 'currency' }).format(value);
+
+  return (
+    <section className="table-shell" aria-labelledby="my-payslips-title">
+      <div className="table-title-row">
+        <div className="table-title" id="my-payslips-title">My payslips</div>
+        <div className="table-density">{loading ? 'Loading…' : `${rows.length}`}</div>
+      </div>
+      <div className="data-table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Payslip</th>
+              <th>Period</th>
+              <th>Pay date</th>
+              <th>Paid / LOP</th>
+              <th>Gross</th>
+              <th>Tax</th>
+              <th>Net pay</th>
+              <th aria-label="Download" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && !loading ? (
+              <tr><td colSpan={8}>No payslips issued yet.</td></tr>
+            ) : (
+              rows.map((payslip) => (
+                <tr key={payslip.id}>
+                  <td><span className="employee-primary">{payslip.payslipNumber}</span></td>
+                  <td>{monthNames[payslip.periodMonth - 1]} {payslip.periodYear}</td>
+                  <td>{payslip.payDate}</td>
+                  <td>{payslip.paidDays}{payslip.lopDays > 0 ? ` / LOP ${payslip.lopDays}` : ''}</td>
+                  <td>{money(payslip.grossAmount, payslip.currency)}</td>
+                  <td>{money(payslip.incomeTaxAmount, payslip.currency)}</td>
+                  <td><strong>{money(payslip.netPayAmount, payslip.currency)}</strong></td>
+                  <td>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      onClick={() => {
+                        void (async () => {
+                          setError(null);
+                          try {
+                            const result = await loadPdf({ variables: { payslipId: payslip.id } });
+                            if (!result.data) return;
+                            downloadBase64File(`${payslip.payslipNumber}.pdf`, result.data.myPayslipPdf);
+                          } catch (cause) {
+                            setError(cause instanceof Error ? cause.message : 'Could not render PDF.');
+                          }
+                        })();
+                      }}
+                    >
+                      PDF
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {error ? <p className="auth-error" role="alert">{error}</p> : null}
+    </section>
+  );
+}

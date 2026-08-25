@@ -35,6 +35,10 @@ export const configSchema = z.object({
   JWT_EXPIRES_IN: z.coerce.number().int().positive().default(3600),
 
   GRAPHQL_PLAYGROUND: envBoolean(false),
+
+  // Employer identity printed on generated payslip PDFs.
+  PDF_EMPLOYER_NAME: z.string().min(1).default('Tethr Pvt. Ltd.'),
+  PDF_EMPLOYER_LOCATION: z.string().min(1).default('Islamabad, Pakistan'),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;

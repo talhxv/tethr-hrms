@@ -1,8 +1,9 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+﻿import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { IconLock, IconRefresh } from '@tabler/icons-react';
 import { Fragment, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { downloadBase64File } from '../../../app/download';
 import { useTheme } from '../../../providers/theme/useTheme';
 import {
   BANK_ADVICE_CSV_QUERY,
@@ -11,6 +12,7 @@ import {
   REMOVE_PAYROLL_RUN_LINE_MUTATION,
   REGENERATE_PAYROLL_RUN_MUTATION,
   RUN_PAYSLIPS_QUERY,
+  PAYSLIP_PDF_QUERY,
   UPDATE_PAYROLL_RUN_LINE_MUTATION,
 } from '../graphql/payroll.operations';
 
@@ -119,6 +121,10 @@ export const PayrollRunDetailPage = () => {
     BANK_ADVICE_CSV_QUERY,
     { fetchPolicy: 'no-cache' },
   );
+  const [loadPayslipPdf] = useLazyQuery<{ readonly payslipPdf: string }>(
+    PAYSLIP_PDF_QUERY,
+    { fetchPolicy: 'no-cache' },
+  );
 
   const runAction = async (action: () => Promise<unknown>, successMessage: string): Promise<void> => {
     setError(null);
@@ -135,7 +141,7 @@ export const PayrollRunDetailPage = () => {
   const onFinalize = async (): Promise<void> => {
     await runAction(
       () => finalizeRun({ variables: { runId } }),
-      'Run finalized — payslips are locked and the billing handoff event was emitted.',
+      'Run finalized â€” payslips are locked and the billing handoff event was emitted.',
     );
   };
 
@@ -151,7 +157,7 @@ export const PayrollRunDetailPage = () => {
             },
           },
         }),
-      value === '' ? 'Tax override cleared — engine value restored.' : 'Tax override saved.',
+      value === '' ? 'Tax override cleared â€” engine value restored.' : 'Tax override saved.',
     );
   };
 
@@ -194,7 +200,7 @@ export const PayrollRunDetailPage = () => {
             </h1>
             <p className="page-subtitle">
               {run
-                ? `${lines.length} line${lines.length === 1 ? '' : 's'} · ${run.standardWorkingDays} working days · ${formatMoney(totalNet, run.currency)} net`
+                ? `${lines.length} line${lines.length === 1 ? '' : 's'} Â· ${run.standardWorkingDays} working days Â· ${formatMoney(totalNet, run.currency)} net`
                 : ''}
             </p>
           </div>
@@ -213,7 +219,7 @@ export const PayrollRunDetailPage = () => {
                   }}
                 >
                   <IconRefresh size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-                  {regenerating ? 'Recomputing…' : 'Regenerate'}
+                  {regenerating ? 'Recomputingâ€¦' : 'Regenerate'}
                 </button>
                 <button
                   className="button button-primary"
@@ -224,7 +230,7 @@ export const PayrollRunDetailPage = () => {
                   type="button"
                 >
                   <IconLock size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-                  {finalizing ? 'Finalizing…' : 'Finalize run'}
+                  {finalizing ? 'Finalizingâ€¦' : 'Finalize run'}
                 </button>
               </>
             ) : null}
@@ -248,7 +254,7 @@ export const PayrollRunDetailPage = () => {
               {isFinalized ? 'Locked lines (as disbursed)' : 'Draft lines'}
             </div>
             <div className="table-density">
-              {loading ? 'Loading…' : `${lines.length} employee${lines.length === 1 ? '' : 's'}`}
+              {loading ? 'Loadingâ€¦' : `${lines.length} employee${lines.length === 1 ? '' : 's'}`}
             </div>
           </div>
           <div className="data-table-wrap">
@@ -268,7 +274,7 @@ export const PayrollRunDetailPage = () => {
               <tbody>
                 {lines.length === 0 && !loading ? (
                   <tr>
-                    <td colSpan={isFinalized ? 7 : 8}>No lines — regenerate the draft.</td>
+                    <td colSpan={isFinalized ? 7 : 8}>No lines â€” regenerate the draft.</td>
                   </tr>
                 ) : (
                   lines.map((line) => (
@@ -286,8 +292,8 @@ export const PayrollRunDetailPage = () => {
                         </td>
                         <td>{line.payableDays}</td>
                         <td>{line.lopDays}</td>
-                        <td>{run ? formatMoney(line.grossAmount, run.currency) : '—'}</td>
-                        <td>{run ? formatMoney(line.taxableAmount, run.currency) : '—'}</td>
+                        <td>{run ? formatMoney(line.grossAmount, run.currency) : 'â€”'}</td>
+                        <td>{run ? formatMoney(line.taxableAmount, run.currency) : 'â€”'}</td>
                         <td>
                           {formatMoney(line.incomeTax, run?.currency ?? 'PKR')}
                           {line.taxOverrideAmount !== null ? (
@@ -316,7 +322,7 @@ export const PayrollRunDetailPage = () => {
                                 );
                               }}
                             >
-                              ✕
+                              âœ•
                             </button>
                           </td>
                         ) : null}
@@ -336,7 +342,7 @@ export const PayrollRunDetailPage = () => {
                                     </span>
                                     <span>
                                       {formatMoney(component.amount, run?.currency ?? 'PKR')}
-                                      {component.taxable ? '' : ' · non-taxable'}
+                                      {component.taxable ? '' : ' Â· non-taxable'}
                                     </span>
                                   </div>
                                 ))
@@ -409,6 +415,7 @@ export const PayrollRunDetailPage = () => {
                     <th>Gross</th>
                     <th>Tax</th>
                     <th>Net pay</th>
+                    <th aria-label="Payslip PDF" />
                   </tr>
                 </thead>
                 <tbody>
@@ -430,6 +437,33 @@ export const PayrollRunDetailPage = () => {
                       <td>{formatMoney(payslip.incomeTaxAmount, payslip.currency)}</td>
                       <td>
                         <strong>{formatMoney(payslip.netPayAmount, payslip.currency)}</strong>
+                      </td>
+                      <td>
+                        <button
+                          className="button button-secondary"
+                          type="button"
+                          onClick={() => {
+                            void (async () => {
+                              setError(null);
+                              try {
+                                const result = await loadPayslipPdf({
+                                  variables: { payslipId: payslip.id },
+                                });
+                                if (!result.data) return;
+                                downloadBase64File(
+                                  `${payslip.payslipNumber}.pdf`,
+                                  result.data.payslipPdf,
+                                );
+                              } catch (cause) {
+                                setError(
+                                  cause instanceof Error ? cause.message : 'Could not render PDF.',
+                                );
+                              }
+                            })();
+                          }}
+                        >
+                          PDF
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -463,7 +497,7 @@ export const PayrollRunDetailPage = () => {
               </li>
               <li className="field-row">
                 <span>Status</span>
-                <span className="field-value">draft — fully recomputable</span>
+                <span className="field-value">draft â€” fully recomputable</span>
               </li>
             </ul>
             <p className="field-hint">
@@ -478,7 +512,7 @@ export const PayrollRunDetailPage = () => {
                 void onFinalize();
               }}
             >
-              {finalizing ? 'Finalizing…' : 'Finalize & lock'}
+              {finalizing ? 'Finalizingâ€¦' : 'Finalize & lock'}
             </button>
           </div>
         ) : null}

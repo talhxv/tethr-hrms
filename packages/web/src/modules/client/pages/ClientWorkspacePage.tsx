@@ -1,4 +1,4 @@
-import { useQuery } from '@apollo/client';
+﻿import { useLazyQuery, useQuery } from '@apollo/client';
 import type { EmploymentStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
@@ -12,12 +12,14 @@ import {
   IconUsersGroup,
   type TablerIcon,
 } from '@tabler/icons-react';
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 
+import { downloadBase64File } from '../../../app/download';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { CLIENT_WORKSPACE_QUERY } from '../graphql/client-workspace.operations';
+import { CLIENT_INVOICES_QUERY, CLIENT_INVOICE_PDF_QUERY } from '../../billing/graphql/billing.operations';
 
 type EmployeeRecord = {
   readonly id: string;
@@ -142,19 +144,19 @@ export const ClientWorkspacePage = () => {
         <div className="metric-strip client-metrics">
           <div className="metric-card">
             <div className="metric-label">Total employees</div>
-            <div className="metric-value">{loading ? '—' : employees.length}</div>
+            <div className="metric-value">{loading ? 'â€”' : employees.length}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Active</div>
-            <div className="metric-value">{loading ? '—' : activeEmployees}</div>
+            <div className="metric-value">{loading ? 'â€”' : activeEmployees}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">On leave</div>
-            <div className="metric-value">{loading ? '—' : onLeaveEmployees}</div>
+            <div className="metric-value">{loading ? 'â€”' : onLeaveEmployees}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Hiring requests</div>
-            <div className="metric-value">{loading ? '—' : activeHiringRequests}</div>
+            <div className="metric-value">{loading ? 'â€”' : activeHiringRequests}</div>
           </div>
         </div>
 
@@ -240,7 +242,7 @@ export const ClientWorkspacePage = () => {
                         </div>
                         <div className="employee-secondary">{employee.employeeNumber}</div>
                       </td>
-                      <td>{employee.workEmail ?? '—'}</td>
+                      <td>{employee.workEmail ?? 'â€”'}</td>
                       <td>{formatDate(employee.hireDate)}</td>
                       <td>
                         <span
@@ -270,6 +272,8 @@ export const ClientWorkspacePage = () => {
           )}
         </section>
       </section>
+
+      <ClientInvoicesSection />
 
       <aside className="client-workspace-panel" aria-label="Client actions">
         <section className="client-action-block">
@@ -320,3 +324,102 @@ export const ClientWorkspacePage = () => {
     </main>
   );
 };
+
+type ClientInvoiceRow = {
+  readonly id: string;
+  readonly groupName: string | null;
+  readonly type: string;
+  readonly status: string;
+  readonly serviceYear: number;
+  readonly serviceMonth: number;
+  readonly number: string | null;
+  readonly issueDate: string | null;
+  readonly dueDate: string | null;
+  readonly currency: string;
+  readonly totalAmount: number;
+};
+
+const invoiceMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+function ClientInvoicesSection() {
+  const [error, setError] = useState<string | null>(null);
+  const { data, loading } = useQuery<{ readonly clientInvoices: readonly ClientInvoiceRow[] }>(
+    CLIENT_INVOICES_QUERY,
+  );
+  const [loadPdf] = useLazyQuery<{ readonly clientInvoicePdf: string }>(CLIENT_INVOICE_PDF_QUERY, {
+    fetchPolicy: 'no-cache',
+  });
+
+  const rows = data?.clientInvoices ?? [];
+  const money = (value: number, currency: string): string =>
+    new Intl.NumberFormat('en', { currency, style: 'currency' }).format(value);
+
+  return (
+    <section className="table-shell" aria-labelledby="client-invoices-title">
+      <div className="table-title-row">
+        <div className="table-title" id="client-invoices-title">Invoices</div>
+        <div className="table-density">{loading ? 'Loading…' : `${rows.length}`}</div>
+      </div>
+      <div className="data-table-wrap">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Covers</th>
+              <th>Issued</th>
+              <th>Due</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th aria-label="Download" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && !loading ? (
+              <tr><td colSpan={7}>No invoices issued yet.</td></tr>
+            ) : (
+              rows.map((invoice) => (
+                <tr key={invoice.id}>
+                  <td><span className="employee-primary">{invoice.number}</span></td>
+                  <td>{`${invoice.groupName ?? ''} ${invoice.type} · ${invoiceMonthNames[invoice.serviceMonth - 1]} ${invoice.serviceYear}`}</td>
+                  <td>{invoice.issueDate}</td>
+                  <td>{invoice.dueDate}</td>
+                  <td><strong>{money(invoice.totalAmount, invoice.currency)}</strong></td>
+                  <td>
+                    <span
+                      className="chip"
+                      style={{ '--chip-color': `var(--hrms-color-tag-${invoice.status === 'paid' ? 'green' : 'blue'})` } as CSSProperties}
+                    >
+                      <span className="chip-dot" />
+                      {invoice.status}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      onClick={() => {
+                        void (async () => {
+                          setError(null);
+                          try {
+                            const result = await loadPdf({ variables: { invoiceId: invoice.id } });
+                            if (!result.data) return;
+                            downloadBase64File(`${invoice.number}.pdf`, result.data.clientInvoicePdf);
+                          } catch (cause) {
+                            setError(cause instanceof Error ? cause.message : 'Could not render PDF.');
+                          }
+                        })();
+                      }}
+                    >
+                      PDF
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+      {error ? <p className="auth-error" role="alert">{error}</p> : null}
+    </section>
+  );
+}

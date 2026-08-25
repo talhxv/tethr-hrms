@@ -207,3 +207,33 @@ export const ACTIVATE_TAX_SLAB_GROUP_MUTATION = gql`
     }
   }
 `;
+
+export const MY_PAYSLIPS_QUERY = gql`
+  query MyPayslips {
+    myPayslips {
+      id
+      payslipNumber
+      periodYear
+      periodMonth
+      payDate
+      currency
+      paidDays
+      lopDays
+      grossAmount
+      incomeTaxAmount
+      netPayAmount
+    }
+  }
+`;
+
+export const PAYSLIP_PDF_QUERY = gql`
+  query PayslipPdf($payslipId: ID!) {
+    payslipPdf(payslipId: $payslipId)
+  }
+`;
+
+export const MY_PAYSLIP_PDF_QUERY = gql`
+  query MyPayslipPdf($payslipId: ID!) {
+    myPayslipPdf(payslipId: $payslipId)
+  }
+`;

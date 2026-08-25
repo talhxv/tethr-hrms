@@ -1,9 +1,10 @@
-import { toId, type EmployeeId, type HolidayCalendarId, type PayrollRunId, type TaxSlabGroupId } from '@hrms/shared';
+﻿import { toId, type EmployeeId, type HolidayCalendarId, type PayrollRunId, type TaxSlabGroupId } from '@hrms/shared';
 import { UseGuards } from '@nestjs/common';
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { NotFoundError } from '../../common/errors';
 import { AuthService } from '../../core/auth/auth.service';
+import { ConfigService } from '../../core/config/config.service';
 import { PERMISSIONS } from '../../core/authz/permissions';
 import { PermissionsGuard } from '../../core/authz/permissions.guard';
 import { RequirePermissions } from '../../core/authz/require-permissions.decorator';
@@ -21,6 +22,7 @@ import { TaxSlabGroupView, TaxSlabView } from './dto/tax-slab.view';
 import { PayrollRun } from './entities/payroll-run.entity';
 import type { RunDetail } from './payroll-run.service';
 import { PayrollRunService } from './payroll-run.service';
+import { PayslipPdfService } from './pdf/payslip-pdf.service';
 import { TaxSlabService } from './tax-slab.service';
 import { TaxSlab, TaxSlabGroup } from './entities/tax-slab.entities';
 import type { Payslip } from './entities/payslip.entity';
@@ -120,7 +122,9 @@ export class PayrollResolver {
   constructor(
     private readonly runService: PayrollRunService,
     private readonly taxConfig: TaxSlabService,
+    private readonly pdfService: PayslipPdfService,
     private readonly authService: AuthService,
+    private readonly configService: ConfigService,
   ) {}
 
   // --- Runs (finance) ---
@@ -255,6 +259,40 @@ export class PayrollResolver {
     @Args('runId', { type: () => ID }) runId: string,
   ): Promise<PayslipView[]> {
     return (await this.runService.listPayslipsForRun(toId<PayrollRunId>(runId))).map(toPayslipView);
+  }
+
+  // --- Payslip PDFs ---
+
+  private async renderPayslipPdfBase64(payslipId: string): Promise<string> {
+    const { payslip, lines } = await this.runService.getPayslipWithLines(payslipId);
+    const pdf = await this.pdfService.renderPayslipPdf(payslip, lines, {
+      name: this.configService.get('PDF_EMPLOYER_NAME'),
+      location: this.configService.get('PDF_EMPLOYER_LOCATION'),
+    });
+    return pdf.toString('base64');
+  }
+
+  @Query(() => String)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.payslipRead)
+  async payslipPdf(@Args('payslipId', { type: () => ID }) payslipId: string): Promise<string> {
+    return this.renderPayslipPdfBase64(payslipId);
+  }
+
+  // Self-service variant: the payslip must belong to the signed-in employee.
+  @Query(() => String)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.payslipOwnRead)
+  async myPayslipPdf(@Args('payslipId', { type: () => ID }) payslipId: string): Promise<string> {
+    const user = await this.authService.getCurrentUser();
+    if (!user.employeeId) {
+      throw new NotFoundError('No employee record is linked to this account');
+    }
+    const { payslip } = await this.runService.getPayslipWithLines(payslipId);
+    if (payslip.employeeId !== user.employeeId) {
+      throw new NotFoundError('Payslip not found', { id: payslipId });
+    }
+    return this.renderPayslipPdfBase64(payslipId);
   }
 
   // --- Tax configuration ---

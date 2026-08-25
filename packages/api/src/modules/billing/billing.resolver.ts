@@ -1,4 +1,4 @@
-import { toId, type BillingGroupId, type EmployeeId, type InvoiceId } from '@hrms/shared';
+﻿import { toId, type BillingGroupId, type EmployeeId, type InvoiceId } from '@hrms/shared';
 import { UseGuards } from '@nestjs/common';
 import { Args, ID, Mutation, Query, Resolver } from '@nestjs/graphql';
 
@@ -29,6 +29,7 @@ import type { Invoice } from './entities/invoice.entity';
 import type { ClientBillingConfig } from './entities/client-billing-config.entity';
 import type { InvoiceDetail } from './invoice.service';
 import { InvoiceService } from './invoice.service';
+import { InvoicePdfService } from './pdf/invoice-pdf.service';
 
 const toGroupView = (group: BillingGroup): BillingGroupView => ({
   id: group.id,
@@ -93,6 +94,7 @@ const toInvoiceView = (invoice: Invoice, groupName?: string | null): InvoiceView
 export class BillingResolver {
   constructor(
     private readonly invoicesService: InvoiceService,
+    private readonly invoicePdfService: InvoicePdfService,
     private readonly employeeDirectory: EmployeeDirectoryService,
   ) {}
 
@@ -318,6 +320,44 @@ export class BillingResolver {
       paymentReference: args.paymentReference ?? null,
     });
     return this.refreshed(args.invoiceId);
+  }
+
+  // --- PDF documents ---
+
+  private async renderInvoicePdfBase64(invoiceId: string): Promise<string> {
+    const { invoice, lines } = await this.invoicesService.getInvoiceDetail(
+      toId<InvoiceId>(invoiceId),
+    );
+    const [config, groups] = await Promise.all([
+      this.invoicesService.getConfig(),
+      this.invoicesService.listGroups(),
+    ]);
+    const pdf = await this.invoicePdfService.renderInvoicePdf(
+      invoice,
+      lines,
+      config,
+      groups.find((g) => g.id === invoice.groupId)?.name ?? '',
+    );
+    return pdf.toString('base64');
+  }
+
+  @Query(() => String)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.billingRead)
+  async invoicePdf(@Args('invoiceId', { type: () => ID }) invoiceId: string): Promise<string> {
+    return this.renderInvoicePdfBase64(invoiceId);
+  }
+
+  // Client-portal variant: issued/paid documents only, never drafts.
+  @Query(() => String)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.billingOwnRead)
+  async clientInvoicePdf(@Args('invoiceId', { type: () => ID }) invoiceId: string): Promise<string> {
+    const detail = await this.invoicesService.getInvoiceDetail(toId<InvoiceId>(invoiceId));
+    if (detail.invoice.status === 'draft') {
+      throw new NotFoundError('Invoice not found', { id: invoiceId });
+    }
+    return this.renderInvoicePdfBase64(invoiceId);
   }
 
   private async refreshed(invoiceId: string): Promise<InvoiceView> {

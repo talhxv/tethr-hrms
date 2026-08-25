@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AuthModule } from '../../core/auth/auth.module';
 import { AuthzModule } from '../../core/authz/authz.module';
+import { PdfModule } from '../../core/pdf/pdf.module';
 import { provideTenantScopedRepository } from '../../core/tenancy/tenant-repository.provider';
 import { CompensationModule } from '../compensation';
 import { EmployeeModule } from '../employee';
@@ -29,6 +30,7 @@ import {
   TAX_SLAB_REPOSITORY,
 } from './payroll.tokens';
 import { TaxSlabService } from './tax-slab.service';
+import { PayslipPdfService } from './pdf/payslip-pdf.service';
 
 @Module({
   imports: [
@@ -43,6 +45,7 @@ import { TaxSlabService } from './tax-slab.service';
     ]),
     AuthModule,
     AuthzModule,
+    PdfModule,
     EmployeeModule,
     CompensationModule,
     LeaveModule,
@@ -50,6 +53,7 @@ import { TaxSlabService } from './tax-slab.service';
   ],
   providers: [
     PayrollRunService,
+    PayslipPdfService,
     TaxSlabService,
     PayrollResolver,
     provideTenantScopedRepository(PAYROLL_RUN_REPOSITORY, PayrollRun),
