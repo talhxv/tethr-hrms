@@ -60,6 +60,18 @@ export class Invoice extends TenantScopedEntity {
   @Column({ type: 'varchar', length: 320, nullable: true })
   receiverEmail!: string | null;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  receiverPhone!: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  receiverZipCode!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  receiverCity!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  receiverCountry!: string | null;
+
   @Column({ type: 'numeric', precision: 14, scale: 2, default: '0.00' })
   subTotal!: string;
 

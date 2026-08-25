@@ -37,6 +37,15 @@ export class ClientBillingConfig extends TenantScopedEntity {
   @Column({ type: 'varchar', length: 50, nullable: true })
   receiverPhone!: string | null;
 
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  receiverZipCode!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  receiverCity!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  receiverCountry!: string | null;
+
   // --- Sender (Tethr) + payment instructions shown on the invoice ---
   @Column({ type: 'varchar', length: 200, nullable: true })
   senderName!: string | null;
@@ -49,6 +58,23 @@ export class ClientBillingConfig extends TenantScopedEntity {
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   senderPhone!: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  senderZipCode!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  senderCity!: string | null;
+
+  @Column({ type: 'varchar', length: 80, nullable: true })
+  senderCountry!: string | null;
+
+  // Branding assets as data URLs — the same shape Invoify stores, so ported
+  // templates render them unchanged. Uploaded once in Billing → Setup.
+  @Column({ type: 'text', nullable: true })
+  invoiceLogoDataUrl!: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  signatureDataUrl!: string | null;
 
   @Column({ type: 'varchar', length: 160, nullable: true })
   bankName!: string | null;

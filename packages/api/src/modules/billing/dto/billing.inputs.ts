@@ -1,4 +1,4 @@
-import { ArgsType, Field, ID, InputType } from '@nestjs/graphql';
+﻿import { ArgsType, Field, ID, InputType } from '@nestjs/graphql';
 import {
   IsIn,
   IsInt,
@@ -49,6 +49,59 @@ export class UpdateBillingConfigInput {
   @IsOptional()
   @IsString()
   receiverEmail?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  receiverZipCode?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  receiverCity?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  receiverCountry?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  receiverPhone?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  senderZipCode?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  senderCity?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  senderCountry?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  senderPhone?: string | null;
+
+  // Data URLs (base64) — capped well above a 300 KB image.
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(600_000)
+  invoiceLogoDataUrl?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(600_000)
+  signatureDataUrl?: string | null;
 
   @Field(() => String, { nullable: true })
   @IsOptional()

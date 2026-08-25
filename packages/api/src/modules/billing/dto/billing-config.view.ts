@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+﻿import { Field, ID, ObjectType } from '@nestjs/graphql';
 
 @ObjectType('BillingGroup')
 export class BillingGroupView {
@@ -68,6 +68,30 @@ export class ClientBillingConfigView {
 
   @Field(() => String, { nullable: true })
   receiverEmail!: string | null;
+
+  @Field(() => String, { nullable: true })
+  receiverZipCode!: string | null;
+
+  @Field(() => String, { nullable: true })
+  receiverCity!: string | null;
+
+  @Field(() => String, { nullable: true })
+  receiverCountry!: string | null;
+
+  @Field(() => String, { nullable: true })
+  senderZipCode!: string | null;
+
+  @Field(() => String, { nullable: true })
+  senderCity!: string | null;
+
+  @Field(() => String, { nullable: true })
+  senderCountry!: string | null;
+
+  @Field(() => String, { nullable: true })
+  invoiceLogoDataUrl!: string | null;
+
+  @Field(() => String, { nullable: true })
+  signatureDataUrl!: string | null;
 
   @Field(() => String, { nullable: true })
   senderName!: string | null;

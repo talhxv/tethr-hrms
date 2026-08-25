@@ -8,6 +8,7 @@ import { useTheme } from '../../../providers/theme/useTheme';
 import {
   ADD_INVOICE_LINE_MUTATION,
   INVOICE_DETAIL_QUERY,
+  INVOICE_ADDENDUM_PDF_QUERY,
   INVOICE_PDF_QUERY,
   ISSUE_INVOICE_MUTATION,
   MARK_INVOICE_PAID_MUTATION,
@@ -67,6 +68,27 @@ export const InvoiceDetailPage = () => {
     INVOICE_PDF_QUERY,
     { fetchPolicy: 'no-cache' },
   );
+  const [loadAddendumPdf, { loading: loadingAddendum }] = useLazyQuery<{
+    readonly invoiceAddendumPdf: string;
+  }>(INVOICE_ADDENDUM_PDF_QUERY, { fetchPolicy: 'no-cache' });
+
+  const downloadDocument = async (
+    loader: (options: { variables: { invoiceId: string } }) => Promise<unknown>,
+    fieldName: string,
+    suffix: string,
+  ): Promise<void> => {
+    setError(null);
+    try {
+      const result = (await loader({ variables: { invoiceId } })) as {
+        data?: Record<string, string>;
+      };
+      if (!result.data) return;
+      const name = invoice?.number ?? 'invoice-draft';
+      downloadBase64File(`${name}${suffix}.pdf`, result.data[fieldName]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not generate PDF.');
+    }
+  };
 
   const { data, loading, error: loadError, refetch } = useQuery<{ readonly invoice: InvoiceRecord }>(
     INVOICE_DETAIL_QUERY,
@@ -144,20 +166,20 @@ export const InvoiceDetailPage = () => {
               disabled={loadingPdf || !invoiceId}
               type="button"
               onClick={() => {
-                void (async () => {
-                  setError(null);
-                  try {
-                    const result = await loadInvoicePdf({ variables: { invoiceId } });
-                    if (!result.data) return;
-                    const name = invoice?.number ?? 'invoice-draft';
-                    downloadBase64File(`${name}.pdf`, result.data.invoicePdf);
-                  } catch (cause) {
-                    setError(cause instanceof Error ? cause.message : 'Could not generate PDF.');
-                  }
-                })();
+                void downloadDocument(loadInvoicePdf, 'invoicePdf', '');
               }}
             >
-              {loadingPdf ? 'Rendering…' : 'Download PDF'}
+              {loadingPdf ? 'Rendering…' : 'Download invoice'}
+            </button>
+            <button
+              className="button button-secondary"
+              disabled={loadingAddendum || !invoiceId}
+              type="button"
+              onClick={() => {
+                void downloadDocument(loadAddendumPdf, 'invoiceAddendumPdf', '-addendum');
+              }}
+            >
+              {loadingAddendum ? 'Rendering…' : 'Download addendum'}
             </button>
             {isDraft ? (
               <button

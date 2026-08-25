@@ -1,4 +1,4 @@
-import {
+﻿import {
   addIsoDays,
   toId,
   type BillingGroupId,
@@ -39,7 +39,15 @@ export type UpdateBillingConfigData = {
   readonly receiverName?: string | null;
   readonly receiverAddress?: string | null;
   readonly receiverEmail?: string | null;
+  readonly receiverZipCode?: string | null;
+  readonly receiverCity?: string | null;
+  readonly receiverCountry?: string | null;
   readonly receiverPhone?: string | null;
+  readonly senderZipCode?: string | null;
+  readonly senderCity?: string | null;
+  readonly senderCountry?: string | null;
+  readonly invoiceLogoDataUrl?: string | null;
+  readonly signatureDataUrl?: string | null;
   readonly senderName?: string | null;
   readonly senderAddress?: string | null;
   readonly senderEmail?: string | null;
@@ -85,7 +93,7 @@ export type InvoiceDetail = {
   readonly lines: readonly InvoiceLine[];
 };
 
-// A line pending persistence during auto-drafting — plain data, no base-entity
+// A line pending persistence during auto-drafting â€” plain data, no base-entity
 // noise.
 type PendingLine = {
   readonly kind: InvoiceLineKind;
@@ -103,8 +111,8 @@ const pad4 = (value: number): string => String(value).padStart(4, '0');
 
 export const todayIso = (): IsoDate => new Date().toISOString().slice(0, 10);
 
-// [anchor day of `year-month`, anchor day of the next month) — the billing
-// window printed on documents, mirroring the sheet's 20th → 19th convention.
+// [anchor day of `year-month`, anchor day of the next month) â€” the billing
+// window printed on documents, mirroring the sheet's 20th â†’ 19th convention.
 const anchoredWindow = (
   year: number,
   month: number,
@@ -117,10 +125,10 @@ const anchoredWindow = (
   };
 };
 
-// Owns the Tethr → client billing domain. Services invoices are drafted
+// Owns the Tethr â†’ client billing domain. Services invoices are drafted
 // automatically from a finalized payroll run (the event consumer calls into
 // this service); expenses invoices are opened manually. Everything money-shaped
-// on an issued invoice is frozen — corrections ride later documents.
+// on an issued invoice is frozen â€” corrections ride later documents.
 @Injectable()
 export class InvoiceService {
   constructor(
@@ -184,6 +192,9 @@ export class InvoiceService {
     }
     const nullableTextFields = [
       'receiverName', 'receiverAddress', 'receiverEmail', 'receiverPhone',
+      'receiverZipCode', 'receiverCity', 'receiverCountry',
+      'senderZipCode', 'senderCity', 'senderCountry',
+      'invoiceLogoDataUrl', 'signatureDataUrl',
       'senderName', 'senderAddress', 'senderEmail', 'senderPhone',
       'bankName', 'bankAccountName', 'bankAccountNumber', 'bankSwift',
     ] as const;
@@ -280,7 +291,7 @@ export class InvoiceService {
     if (!member) {
       throw new NotFoundError('Billing group membership not found', { employeeId });
     }
-    // TenantScopedRepository exposes no delete — removal goes through a manager
+    // TenantScopedRepository exposes no delete â€” removal goes through a manager
     // so the tenant stamp on the fetched row still guards the write.
     await this.dataSource.transaction(async (manager) => {
       await manager.remove(member);
@@ -329,10 +340,10 @@ export class InvoiceService {
   /**
    * The auto-drafter behind the `payroll.finalized` consumer. For each billing
    * group it produces at most one Services draft per service month containing:
-   *   · catch-up salary lines for past months never invoiced (pro-rated by
+   *   Â· catch-up salary lines for past months never invoiced (pro-rated by
    *     working days actually worked),
-   *   · the service-month salary line (full rate unless hired inside it),
-   *   · one PEPM management fee per billed person.
+   *   Â· the service-month salary line (full rate unless hired inside it),
+   *   Â· one PEPM management fee per billed person.
    * Advance billing: on/after the anchor day the document covers the following
    * month; before it, the run's own month. Re-running for an already-covered
    * period is a no-op (uniqueness by group + type + service month).
@@ -503,6 +514,10 @@ export class InvoiceService {
         receiverName: config.receiverName,
         receiverAddress: config.receiverAddress,
         receiverEmail: config.receiverEmail,
+        receiverPhone: config.receiverPhone,
+        receiverZipCode: config.receiverZipCode,
+        receiverCity: config.receiverCity,
+        receiverCountry: config.receiverCountry,
       }),
     );
   }
@@ -594,7 +609,7 @@ export class InvoiceService {
         throw new NotFoundError('Billing group not found', { id: invoice.groupId });
       }
       const prefix = invoice.type === 'services' ? group.servicesPrefix : group.expensesPrefix;
-      // Only issued/paid documents consume a number — drafts must not burn
+      // Only issued/paid documents consume a number â€” drafts must not burn
       // sequence positions for documents that may never ship.
       const sequence = await manager.count(Invoice, {
         where: {
@@ -663,7 +678,7 @@ export class InvoiceService {
 
   // --- internals ---
 
-  // Month labels already billed per employee across ALL invoices — drafts count,
+  // Month labels already billed per employee across ALL invoices â€” drafts count,
   // so a manual draft covering September suppresses the next auto-draft's
   // September line instead of double-billing.
   private async loadCoveredMonths(employeeIds: readonly EmployeeId[]): Promise<Set<string>> {
@@ -710,6 +725,10 @@ export class InvoiceService {
         receiverName: config.receiverName,
         receiverAddress: config.receiverAddress,
         receiverEmail: config.receiverEmail,
+        receiverPhone: config.receiverPhone,
+        receiverZipCode: config.receiverZipCode,
+        receiverCity: config.receiverCity,
+        receiverCountry: config.receiverCountry,
         subTotal: toMoneyString(subTotal),
         totalAmount: toMoneyString(subTotal),
         sourcePayrollRunId,

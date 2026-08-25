@@ -8,7 +8,7 @@ const money = formatNumberWithCommas;
 
 // Layout ported from Invoify's InvoiceLayout: Manrope via Google Fonts, white
 // card on A4. Tailwind classes compile at render time from the CDN stylesheet
-// the PdfRendererService injects â€” same mechanism, same pixels.
+// the PdfRendererService injects — same mechanism, same pixels.
 
 const InvoiceLayout = ({ children }: { children: ReactNode }): ReactNode => (
   <>
@@ -30,18 +30,22 @@ export const InvoicePdfTemplate = (data: InvoicePdfData): ReactNode => {
     <InvoiceLayout>
       <div className="flex justify-between">
         <div>
+          {data.logoDataUrl ? (
+            <img src={data.logoDataUrl} width={140} height={100} alt={`Logo of ${sender.name}`} />
+          ) : null}
           <h1 className="mt-2 text-lg md:text-xl font-semibold text-blue-600">{sender.name}</h1>
-          <address className="mt-1 not-italic text-gray-500">
-            {sender.address}
-            <br />
-            {sender.email}
-            <br />
-            {sender.phone}
-          </address>
         </div>
         <div className="text-right">
           <h2 className="text-2xl md:text-3xl font-semibold text-gray-800">Invoice #</h2>
           <span className="mt-1 block text-gray-500">{invoice.number}</span>
+          <address className="mt-4 not-italic text-gray-800">
+            {sender.address}
+            <br />
+            {sender.zipCode}, {sender.city}
+            <br />
+            {sender.country}
+            <br />
+          </address>
         </div>
       </div>
 
@@ -50,7 +54,10 @@ export const InvoicePdfTemplate = (data: InvoicePdfData): ReactNode => {
           <h3 className="text-lg font-semibold text-gray-800">Bill to:</h3>
           <h3 className="text-lg font-semibold text-gray-800">{receiver.name}</h3>
           <address className="mt-2 not-italic text-gray-500">
-            {receiver.address}
+            {receiver.address ? `${receiver.address}` : null}
+            {receiver.zipCode ? `, ${receiver.zipCode}` : null}
+            <br />
+            {receiver.city}, {receiver.country}
             <br />
           </address>
         </div>
@@ -85,8 +92,8 @@ export const InvoicePdfTemplate = (data: InvoicePdfData): ReactNode => {
           </div>
           <div className="hidden sm:block border-b border-gray-200"></div>
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-y-1">
-            {invoice.items.map((item) => (
-              <div className="contents" key={`${item.name}-${item.description}-${item.total}`}>
+            {invoice.items.map((item, index) => (
+              <div className="contents" key={`${item.name}-${item.description}-${index}`}>
                 <div className="col-span-full sm:col-span-2 border-b border-gray-300">
                   <p className="font-medium text-gray-800">{item.name}</p>
                   <p className="text-xs text-gray-600 whitespace-pre-line">{item.description}</p>
@@ -169,8 +176,13 @@ export const InvoicePdfTemplate = (data: InvoicePdfData): ReactNode => {
           <p className="block text-sm font-medium text-gray-800">{sender.phone}</p>
         </div>
       </div>
+
+      {data.signatureDataUrl ? (
+        <div className="mt-6">
+          <p className="font-semibold text-gray-800">Signature:</p>
+          <img src={data.signatureDataUrl} width={120} height={60} alt={`Signature of ${sender.name}`} />
+        </div>
+      ) : null}
     </InvoiceLayout>
   );
 };
-
-

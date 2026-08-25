@@ -61,6 +61,14 @@ const toConfigView = (config: ClientBillingConfig): ClientBillingConfigView => (
   receiverName: config.receiverName,
   receiverAddress: config.receiverAddress,
   receiverEmail: config.receiverEmail,
+  receiverZipCode: config.receiverZipCode,
+  receiverCity: config.receiverCity,
+  receiverCountry: config.receiverCountry,
+  senderZipCode: config.senderZipCode,
+  senderCity: config.senderCity,
+  senderCountry: config.senderCountry,
+  invoiceLogoDataUrl: config.invoiceLogoDataUrl,
+  signatureDataUrl: config.signatureDataUrl,
   senderName: config.senderName,
   senderEmail: config.senderEmail,
   bankName: config.bankName,
@@ -324,7 +332,10 @@ export class BillingResolver {
 
   // --- PDF documents ---
 
-  private async renderInvoicePdfBase64(invoiceId: string): Promise<string> {
+  private async renderInvoicePdfBase64(
+    invoiceId: string,
+    kind: 'invoice' | 'addendum',
+  ): Promise<string> {
     const { invoice, lines } = await this.invoicesService.getInvoiceDetail(
       toId<InvoiceId>(invoiceId),
     );
@@ -332,12 +343,20 @@ export class BillingResolver {
       this.invoicesService.getConfig(),
       this.invoicesService.listGroups(),
     ]);
-    const pdf = await this.invoicePdfService.renderInvoicePdf(
-      invoice,
-      lines,
-      config,
-      groups.find((g) => g.id === invoice.groupId)?.name ?? '',
-    );
+    const pdf =
+      kind === 'addendum'
+        ? await this.invoicePdfService.renderAddendumPdf(
+            invoice,
+            lines,
+            config,
+            groups.find((g) => g.id === invoice.groupId)?.name ?? '',
+          )
+        : await this.invoicePdfService.renderInvoicePdf(
+            invoice,
+            lines,
+            config,
+            groups.find((g) => g.id === invoice.groupId)?.name ?? '',
+          );
     return pdf.toString('base64');
   }
 
@@ -345,19 +364,41 @@ export class BillingResolver {
   @UseGuards(PermissionsGuard)
   @RequirePermissions(PERMISSIONS.billingRead)
   async invoicePdf(@Args('invoiceId', { type: () => ID }) invoiceId: string): Promise<string> {
-    return this.renderInvoicePdfBase64(invoiceId);
+    return this.renderInvoicePdfBase64(invoiceId, 'invoice');
   }
 
-  // Client-portal variant: issued/paid documents only, never drafts.
   @Query(() => String)
   @UseGuards(PermissionsGuard)
-  @RequirePermissions(PERMISSIONS.billingOwnRead)
-  async clientInvoicePdf(@Args('invoiceId', { type: () => ID }) invoiceId: string): Promise<string> {
+  @RequirePermissions(PERMISSIONS.billingRead)
+  async invoiceAddendumPdf(
+    @Args('invoiceId', { type: () => ID }) invoiceId: string,
+  ): Promise<string> {
+    return this.renderInvoicePdfBase64(invoiceId, 'addendum');
+  }
+
+  // Client-portal variants: issued/paid documents only, never drafts.
+  private async renderClientPdfBase64(invoiceId: string, kind: 'invoice' | 'addendum') {
     const detail = await this.invoicesService.getInvoiceDetail(toId<InvoiceId>(invoiceId));
     if (detail.invoice.status === 'draft') {
       throw new NotFoundError('Invoice not found', { id: invoiceId });
     }
-    return this.renderInvoicePdfBase64(invoiceId);
+    return this.renderInvoicePdfBase64(invoiceId, kind);
+  }
+
+  @Query(() => String)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.billingOwnRead)
+  async clientInvoicePdf(@Args('invoiceId', { type: () => ID }) invoiceId: string): Promise<string> {
+    return this.renderClientPdfBase64(invoiceId, 'invoice');
+  }
+
+  @Query(() => String)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.billingOwnRead)
+  async clientInvoiceAddendumPdf(
+    @Args('invoiceId', { type: () => ID }) invoiceId: string,
+  ): Promise<string> {
+    return this.renderClientPdfBase64(invoiceId, 'addendum');
   }
 
   private async refreshed(invoiceId: string): Promise<InvoiceView> {

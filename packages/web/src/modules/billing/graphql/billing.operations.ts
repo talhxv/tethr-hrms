@@ -212,3 +212,15 @@ export const CLIENT_INVOICES_QUERY = gql`
     }
   }
 `;
+
+export const INVOICE_ADDENDUM_PDF_QUERY = gql`
+  query InvoiceAddendumPdf($invoiceId: ID!) {
+    invoiceAddendumPdf(invoiceId: $invoiceId)
+  }
+`;
+
+export const CLIENT_INVOICE_ADDENDUM_PDF_QUERY = gql`
+  query ClientInvoiceAddendumPdf($invoiceId: ID!) {
+    clientInvoiceAddendumPdf(invoiceId: $invoiceId)
+  }
+`;

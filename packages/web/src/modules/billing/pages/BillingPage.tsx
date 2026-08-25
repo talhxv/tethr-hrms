@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+﻿import { useMutation, useQuery } from '@apollo/client';
 import { IconBuildingBank, IconFileInvoice, IconRefresh } from '@tabler/icons-react';
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
@@ -21,6 +21,18 @@ type BillingConfigRecord = {
   readonly anchorDay: number;
   readonly receiverName: string | null;
   readonly receiverEmail: string | null;
+  readonly receiverAddress: string | null;
+  readonly receiverZipCode: string | null;
+  readonly receiverCity: string | null;
+  readonly receiverCountry: string | null;
+  readonly receiverPhone: string | null;
+  readonly senderAddress: string | null;
+  readonly senderZipCode: string | null;
+  readonly senderCity: string | null;
+  readonly senderCountry: string | null;
+  readonly senderPhone: string | null;
+  readonly invoiceLogoDataUrl: string | null;
+  readonly signatureDataUrl: string | null;
 };
 
 type BillingGroupRecord = {
@@ -96,6 +108,12 @@ export const BillingPage = () => {
   const [netDays, setNetDays] = useState('');
   const [anchorDay, setAnchorDay] = useState('');
   const [receiverName, setReceiverName] = useState('');
+  const [addressForm, setAddressForm] = useState({
+    senderAddress: '', senderZipCode: '', senderCity: '', senderCountry: '', senderPhone: '',
+    receiverAddress: '', receiverZipCode: '', receiverCity: '', receiverCountry: '', receiverPhone: '',
+  });
+  const [logoDataUrl, setLogoDataUrl] = useState('');
+  const [signatureDataUrl, setSignatureDataUrl] = useState('');
 
   const [expenseGroupId, setExpenseGroupId] = useState('');
   const [expenseYear, setExpenseYear] = useState(now.getFullYear());
@@ -133,11 +151,26 @@ export const BillingPage = () => {
             ...(netDays !== '' ? { paymentTermsNetDays: Number(netDays) } : {}),
             ...(anchorDay !== '' ? { anchorDay: Number(anchorDay) } : {}),
             ...(receiverName !== '' ? { receiverName } : {}),
+            ...Object.fromEntries(
+              Object.entries(addressForm).filter(([, value]) => value !== ''),
+            ),
+            ...(logoDataUrl ? { invoiceLogoDataUrl: logoDataUrl } : {}),
+            ...(signatureDataUrl ? { signatureDataUrl } : {}),
           },
         },
         refetchQueries: [{ query: BILLING_PAGE_DATA_QUERY }],
       }),
     );
+  };
+
+  const readFileAsDataUrl = (file: File, setter: (dataUrl: string) => void): void => {
+    if (file.size > 300_000) {
+      setFormError('Image must be under 300 KB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setter(String(reader.result));
+    reader.readAsDataURL(file);
   };
 
   const onCreateGroup = (event: FormEvent): void => {
@@ -175,7 +208,7 @@ export const BillingPage = () => {
           <div>
             <h1 className="page-title">Billing</h1>
             <p className="page-subtitle">
-              Tethr → client invoicing: groups, agreed rates, and the invoice pipeline
+              Tethr â†’ client invoicing: groups, agreed rates, and the invoice pipeline
               (auto-drafted when payroll finalizes).
             </p>
           </div>
@@ -190,7 +223,7 @@ export const BillingPage = () => {
         <section className="table-shell" aria-labelledby="groups-title">
           <div className="table-title-row">
             <div className="table-title" id="groups-title">Billing groups</div>
-            <div className="table-density">{loading ? 'Loading…' : `${groups.length}`}</div>
+            <div className="table-density">{loading ? 'Loadingâ€¦' : `${groups.length}`}</div>
           </div>
           <div className="data-table-wrap">
             <table className="data-table">
@@ -199,7 +232,7 @@ export const BillingPage = () => {
               </thead>
               <tbody>
                 {groups.length === 0 && !loading ? (
-                  <tr><td colSpan={3}>No groups yet — create one to start billing.</td></tr>
+                  <tr><td colSpan={3}>No groups yet â€” create one to start billing.</td></tr>
                 ) : (
                   groups.map((group) => (
                     <tr key={group.id}>
@@ -240,7 +273,7 @@ export const BillingPage = () => {
                           title="Remove membership"
                           onClick={() => void run(() => removeMember({ variables: { employeeId: member.employeeId }, refetchQueries: [{ query: BILLING_PAGE_DATA_QUERY }] }))}
                         >
-                          ✕
+                          âœ•
                         </button>
                       </td>
                     </tr>
@@ -263,12 +296,12 @@ export const BillingPage = () => {
               </thead>
               <tbody>
                 {invoices.length === 0 && !loading ? (
-                  <tr><td colSpan={7}>No invoices yet — finalize a payroll run to auto-draft services invoices.</td></tr>
+                  <tr><td colSpan={7}>No invoices yet â€” finalize a payroll run to auto-draft services invoices.</td></tr>
                 ) : (
                   invoices.map((invoice) => (
                     <tr key={invoice.id}>
                       <td><span className="employee-primary">{invoice.number ?? 'Draft'}</span></td>
-                      <td>{`${invoice.groupName ?? '—'} · ${invoice.type}`}</td>
+                      <td>{`${invoice.groupName ?? 'â€”'} Â· ${invoice.type}`}</td>
                       <td>{`${MONTH_NAMES[invoice.serviceMonth - 1]} ${invoice.serviceYear}`}</td>
                       <td>{new Intl.NumberFormat('en', { currency: invoice.currency, style: 'currency' }).format(invoice.totalAmount)}</td>
                       <td>
@@ -280,7 +313,7 @@ export const BillingPage = () => {
                           {invoice.status}
                         </span>
                       </td>
-                      <td>{invoice.dueDate ?? '—'}</td>
+                      <td>{invoice.dueDate ?? 'â€”'}</td>
                       <td><Link className="table-link" to={`/billing/${invoice.id}`}>Open</Link></td>
                     </tr>
                   ))
@@ -302,7 +335,7 @@ export const BillingPage = () => {
 
         <form className="config-form" onSubmit={onSaveConfig}>
           <h3 className="section-title">Commercial terms</h3>
-          <p className="field-hint">Current: ${config?.feeAmount ?? '—'} PEPM · Net {config?.paymentTermsNetDays ?? '—'} · anchor day {config?.anchorDay ?? '—'}</p>
+          <p className="field-hint">Current: ${config?.feeAmount ?? 'â€”'} PEPM Â· Net {config?.paymentTermsNetDays ?? 'â€”'} Â· anchor day {config?.anchorDay ?? 'â€”'}</p>
           <div className="field"><label htmlFor="fee-amount">PEPM fee (USD)</label>
             <input id="fee-amount" min={0} placeholder={String(config?.feeAmount ?? '')} step="0.01" type="number" value={feeAmount} onChange={(e) => setFeeAmount(e.target.value)} />
           </div>
@@ -315,6 +348,89 @@ export const BillingPage = () => {
           <div className="field"><label htmlFor="receiver-name">Client receiver name</label>
             <input id="receiver-name" placeholder={config?.receiverName ?? 'SynAck Solutions LLC'} value={receiverName} onChange={(e) => setReceiverName(e.target.value)} />
           </div>
+
+          <h3 className="section-title">Letterhead</h3>
+          <div className="field">
+            <label htmlFor="invoice-logo">Invoice logo (PNG/JPG, ≤300 KB)</label>
+            <input
+              accept="image/*"
+              id="invoice-logo"
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) readFileAsDataUrl(file, setLogoDataUrl);
+              }}
+            />
+          </div>
+          {config?.invoiceLogoDataUrl || logoDataUrl ? (
+            <img
+              alt="Invoice logo preview"
+              src={logoDataUrl || config?.invoiceLogoDataUrl || undefined}
+              style={{ maxHeight: 60, marginBottom: 8, objectFit: 'contain' }}
+            />
+          ) : null}
+          <div className="field">
+            <label htmlFor="signature-image">Signature image (≤300 KB)</label>
+            <input
+              accept="image/*"
+              id="signature-image"
+              type="file"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) readFileAsDataUrl(file, setSignatureDataUrl);
+              }}
+            />
+          </div>
+          {config?.signatureDataUrl || signatureDataUrl ? (
+            <img
+              alt="Signature preview"
+              src={signatureDataUrl || config?.signatureDataUrl || undefined}
+              style={{ maxHeight: 40, marginBottom: 8, objectFit: 'contain' }}
+            />
+          ) : null}
+
+          <h3 className="section-title">Sender (Tethr) address</h3>
+          <div className="field"><label htmlFor="sender-address">Street address</label>
+            <input id="sender-address" placeholder={config?.senderAddress ?? '152, Street 23, G-10/2'} value={addressForm.senderAddress} onChange={(e) => setAddressForm((f) => ({ ...f, senderAddress: e.target.value }))} />
+          </div>
+          <div className="field-row">
+            <div className="field"><label htmlFor="sender-zip">Zip</label>
+              <input id="sender-zip" placeholder={config?.senderZipCode ?? '42201'} value={addressForm.senderZipCode} onChange={(e) => setAddressForm((f) => ({ ...f, senderZipCode: e.target.value }))} />
+            </div>
+            <div className="field"><label htmlFor="sender-city">City</label>
+              <input id="sender-city" placeholder={config?.senderCity ?? 'Islamabad'} value={addressForm.senderCity} onChange={(e) => setAddressForm((f) => ({ ...f, senderCity: e.target.value }))} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field"><label htmlFor="sender-country">Country</label>
+              <input id="sender-country" placeholder={config?.senderCountry ?? 'Pakistan'} value={addressForm.senderCountry} onChange={(e) => setAddressForm((f) => ({ ...f, senderCountry: e.target.value }))} />
+            </div>
+            <div className="field"><label htmlFor="sender-phone">Phone</label>
+              <input id="sender-phone" placeholder={config?.senderPhone ?? '+92 332 8883847'} value={addressForm.senderPhone} onChange={(e) => setAddressForm((f) => ({ ...f, senderPhone: e.target.value }))} />
+            </div>
+          </div>
+
+          <h3 className="section-title">Receiver (client) address</h3>
+          <div className="field"><label htmlFor="receiver-address">Street address</label>
+            <input id="receiver-address" placeholder={config?.receiverAddress ?? '7709 Inwood Ave'} value={addressForm.receiverAddress} onChange={(e) => setAddressForm((f) => ({ ...f, receiverAddress: e.target.value }))} />
+          </div>
+          <div className="field-row">
+            <div className="field"><label htmlFor="receiver-zip">Zip</label>
+              <input id="receiver-zip" placeholder={config?.receiverZipCode ?? '21228'} value={addressForm.receiverZipCode} onChange={(e) => setAddressForm((f) => ({ ...f, receiverZipCode: e.target.value }))} />
+            </div>
+            <div className="field"><label htmlFor="receiver-city">City</label>
+              <input id="receiver-city" placeholder={config?.receiverCity ?? 'Baltimore'} value={addressForm.receiverCity} onChange={(e) => setAddressForm((f) => ({ ...f, receiverCity: e.target.value }))} />
+            </div>
+          </div>
+          <div className="field-row">
+            <div className="field"><label htmlFor="receiver-country">Country</label>
+              <input id="receiver-country" placeholder={config?.receiverCountry ?? 'United States'} value={addressForm.receiverCountry} onChange={(e) => setAddressForm((f) => ({ ...f, receiverCountry: e.target.value }))} />
+            </div>
+            <div className="field"><label htmlFor="receiver-phone">Phone</label>
+              <input id="receiver-phone" placeholder={config?.receiverPhone ?? '+1 443 805 9476'} value={addressForm.receiverPhone} onChange={(e) => setAddressForm((f) => ({ ...f, receiverPhone: e.target.value }))} />
+            </div>
+          </div>
+
           <button className="button button-secondary button-full" type="submit">Save terms</button>
         </form>
 
@@ -336,7 +452,7 @@ export const BillingPage = () => {
           <h3 className="section-title">Assign rate</h3>
           <div className="field"><label htmlFor="member-employee">Employee</label>
             <select id="member-employee" value={memberEmployeeId} onChange={(e) => setMemberEmployeeId(e.target.value)}>
-              <option value="">Select…</option>
+              <option value="">Selectâ€¦</option>
               {employees.map((employee) => (
                 <option key={employee.id} value={employee.id}>{`${employee.firstName} ${employee.lastName} (${employee.employeeNumber})`}</option>
               ))}
@@ -344,7 +460,7 @@ export const BillingPage = () => {
           </div>
           <div className="field"><label htmlFor="member-group">Group</label>
             <select id="member-group" value={memberGroupId} onChange={(e) => setMemberGroupId(e.target.value)}>
-              <option value="">Select…</option>
+              <option value="">Selectâ€¦</option>
               {groups.map((group) => (<option key={group.id} value={group.id}>{group.name}</option>))}
             </select>
           </div>
@@ -370,7 +486,7 @@ export const BillingPage = () => {
           <h3 className="section-title">Expenses pass-through</h3>
           <div className="field"><label htmlFor="expense-group">Group</label>
             <select id="expense-group" value={expenseGroupId} onChange={(e) => setExpenseGroupId(e.target.value)}>
-              <option value="">Select…</option>
+              <option value="">Selectâ€¦</option>
               {groups.map((group) => (<option key={group.id} value={group.id}>{group.name}</option>))}
             </select>
           </div>

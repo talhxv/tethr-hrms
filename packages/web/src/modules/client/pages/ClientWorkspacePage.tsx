@@ -19,7 +19,11 @@ import { downloadBase64File } from '../../../app/download';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { CLIENT_WORKSPACE_QUERY } from '../graphql/client-workspace.operations';
-import { CLIENT_INVOICES_QUERY, CLIENT_INVOICE_PDF_QUERY } from '../../billing/graphql/billing.operations';
+import {
+  CLIENT_INVOICES_QUERY,
+  CLIENT_INVOICE_ADDENDUM_PDF_QUERY,
+  CLIENT_INVOICE_PDF_QUERY,
+} from '../../billing/graphql/billing.operations';
 
 type EmployeeRecord = {
   readonly id: string;
@@ -349,6 +353,29 @@ function ClientInvoicesSection() {
   const [loadPdf] = useLazyQuery<{ readonly clientInvoicePdf: string }>(CLIENT_INVOICE_PDF_QUERY, {
     fetchPolicy: 'no-cache',
   });
+  const [loadAddendum] = useLazyQuery<{ readonly clientInvoiceAddendumPdf: string }>(
+    CLIENT_INVOICE_ADDENDUM_PDF_QUERY,
+    { fetchPolicy: 'no-cache' },
+  );
+
+  const fetchAndSave = async (
+    loader: (options: { variables: { invoiceId: string } }) => Promise<unknown>,
+    fieldName: string,
+    suffix: string,
+    invoiceId: string,
+    invoiceNumber: string,
+  ): Promise<void> => {
+    setError(null);
+    try {
+      const result = (await loader({ variables: { invoiceId } })) as {
+        data?: Record<string, string>;
+      };
+      if (!result.data) return;
+      downloadBase64File(`${invoiceNumber}${suffix}.pdf`, result.data[fieldName]);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not render PDF.');
+    }
+  };
 
   const rows = data?.clientInvoices ?? [];
   const money = (value: number, currency: string): string =>
@@ -394,24 +421,32 @@ function ClientInvoicesSection() {
                     </span>
                   </td>
                   <td>
-                    <button
-                      className="button button-secondary"
-                      type="button"
-                      onClick={() => {
-                        void (async () => {
-                          setError(null);
-                          try {
-                            const result = await loadPdf({ variables: { invoiceId: invoice.id } });
-                            if (!result.data) return;
-                            downloadBase64File(`${invoice.number}.pdf`, result.data.clientInvoicePdf);
-                          } catch (cause) {
-                            setError(cause instanceof Error ? cause.message : 'Could not render PDF.');
-                          }
-                        })();
-                      }}
-                    >
-                      PDF
-                    </button>
+                    <span className="row-actions">
+                      <button
+                        className="button button-secondary"
+                        type="button"
+                        onClick={() => {
+                          void fetchAndSave(loadPdf, 'clientInvoicePdf', '', invoice.id, invoice.number ?? 'invoice');
+                        }}
+                      >
+                        Invoice
+                      </button>
+                      <button
+                        className="button button-secondary"
+                        type="button"
+                        onClick={() => {
+                          void fetchAndSave(
+                            loadAddendum,
+                            'clientInvoiceAddendumPdf',
+                            '-addendum',
+                            invoice.id,
+                            invoice.number ?? 'invoice',
+                          );
+                        }}
+                      >
+                        Addendum
+                      </button>
+                    </span>
                   </td>
                 </tr>
               ))
