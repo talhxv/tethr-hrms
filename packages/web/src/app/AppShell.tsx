@@ -18,6 +18,7 @@ import {
   IconSpeakerphone,
   IconSun,
   IconUserCircle,
+  IconUserCog,
   IconUsersGroup,
   type TablerIcon,
 } from '@tabler/icons-react';
@@ -117,7 +118,7 @@ const employeeNavigation: readonly NavigationEntry[] = [
   { kind: 'link', label: 'News', to: '/announcements', icon: IconSpeakerphone },
 ];
 
-const workspaceUsersItem: NavigationItem = { label: 'Users', to: '/users', icon: IconUsersGroup };
+const workspaceUsersItem: NavigationItem = { label: 'Users', to: '/users', icon: IconUserCog };
 
 const SECTION_LABELS: Record<string, string> = {
   '/dashboard': 'Dashboard',

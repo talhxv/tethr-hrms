@@ -436,16 +436,10 @@ button {
   box-shadow: var(--hrms-box-shadow-light);
 }
 
-/* While its panel is open, the pill's bottom corners square off and its
-   bottom border drops out so the button and the panel below read as one
-   expanded shape instead of a floating card with a gap underneath. */
 .nav-pill-group.is-open {
   color: var(--hrms-color-text-primary);
   background: var(--hrms-color-background-primary);
   border: 1px solid var(--hrms-color-border-strong);
-  border-bottom-color: transparent;
-  border-radius: var(--hrms-radius-pill) var(--hrms-radius-pill) var(--hrms-radius-sm)
-    var(--hrms-radius-sm);
   box-shadow: var(--hrms-box-shadow-light);
 }
 
@@ -525,27 +519,31 @@ button {
 }
 
 .dropdown-panel-more {
-  /* Sits flush under the (now square-bottomed) trigger pill and squares its
-     own top corners to match, so the two pieces visually fuse into one
-     expanded control; the bottom stays fully rounded. */
-  top: 100%;
   left: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  border-radius: var(--hrms-radius-sm) var(--hrms-radius-sm) var(--hrms-radius-md) var(--hrms-radius-md);
+  gap: var(--hrms-between-siblings-gap);
+  min-width: 200px;
 }
 
 .dropdown-nav-item {
   display: flex;
   align-items: center;
   gap: var(--hrms-space-2);
-  padding: var(--hrms-space-2);
+  padding: var(--hrms-space-2) var(--hrms-space-3);
   color: var(--hrms-color-text-secondary);
   background: transparent;
   border-radius: var(--hrms-radius-sm);
   cursor: pointer;
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
   text-decoration: none;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.dropdown-nav-item svg {
+  flex-shrink: 0;
+  color: var(--hrms-color-text-tertiary);
   transition: var(--hrms-animation-clickable-background-transition);
 }
 
@@ -553,6 +551,11 @@ button {
 .dropdown-nav-item.is-active {
   color: var(--hrms-color-text-primary);
   background: var(--hrms-color-background-tertiary);
+}
+
+.dropdown-nav-item:hover svg,
+.dropdown-nav-item.is-active svg {
+  color: var(--hrms-color-text-primary);
 }
 
 .dropdown-panel-account {
@@ -679,6 +682,7 @@ button {
 .page-frame {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--hrms-layout-side-panel-width);
+  gap: var(--hrms-space-6);
   min-height: 0;
 }
 
@@ -693,7 +697,9 @@ button {
   padding: var(--hrms-space-5);
   overflow: auto;
   background: var(--hrms-color-background-secondary);
-  border-left: 1px solid var(--hrms-color-border-light);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
 }
 
 .page-header {
@@ -791,6 +797,51 @@ button {
   font-size: var(--hrms-font-size-xl);
   font-weight: var(--hrms-font-weight-semi-bold);
   line-height: var(--hrms-line-height-md);
+}
+
+.dashboard-next-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  margin-top: var(--hrms-space-4);
+  padding: var(--hrms-space-3) var(--hrms-space-4);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+}
+
+.dashboard-next-step-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--hrms-color-text-tertiary);
+  background: var(--hrms-color-background-tertiary);
+  border-radius: var(--hrms-radius-sm);
+}
+
+.dashboard-next-step-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-next-step-copy .panel-title {
+  margin-bottom: 0;
+  font-size: var(--hrms-font-size-sm);
+}
+
+.dashboard-next-step-copy p {
+  margin: 0;
+  color: var(--hrms-color-text-secondary);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.dashboard-next-step .button {
+  flex-shrink: 0;
+  text-decoration: none;
 }
 
 .toolbar {
@@ -1157,12 +1208,26 @@ button {
 .config-form {
   display: grid;
   gap: var(--hrms-space-2);
-  padding: var(--hrms-space-5) 0;
-  border-top: 1px solid var(--hrms-color-border-light);
+  margin-bottom: var(--hrms-space-4);
+  padding: var(--hrms-space-4);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-sm);
 }
 
-.compact-form {
+.config-form:last-child {
+  margin-bottom: 0;
+}
+
+/* Nested inside a .detail-section, which already provides its own card
+   framing — a compact form stays a bare divider, not a box within a box. */
+.config-form.compact-form {
+  margin-bottom: 0;
   padding: var(--hrms-space-3) 0 0;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--hrms-color-border-light);
+  border-radius: 0;
 }
 
 .field-group {
@@ -1458,6 +1523,7 @@ button {
 .leave-page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--hrms-layout-side-panel-width);
+  gap: var(--hrms-space-6);
   min-height: 0;
 }
 
@@ -1485,7 +1551,9 @@ button {
   padding: var(--hrms-space-5);
   overflow: auto;
   background: var(--hrms-color-background-secondary);
-  border-left: 1px solid var(--hrms-color-border-light);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
 }
 
 .employee-identity {

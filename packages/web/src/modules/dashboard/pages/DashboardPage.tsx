@@ -1,10 +1,9 @@
 import { gql, useQuery } from '@apollo/client';
+import { IconArrowRight, IconUsersGroup } from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
 
 import { useTheme } from '../../../providers/theme/useTheme';
-import { useAuth } from '../../auth/hooks/useAuth';
 
-// Live landing metrics. Real counts from the authenticated API — a fresh
-// workspace shows zeros, which is exactly right.
 const DASHBOARD_QUERY = gql`
   query Dashboard {
     employees {
@@ -24,7 +23,6 @@ type DashboardData = {
 
 export const DashboardPage = () => {
   const { theme } = useTheme();
-  const { user } = useAuth();
   const { data, loading, error } = useQuery<DashboardData>(DASHBOARD_QUERY);
 
   const employees = data?.employees ?? [];
@@ -40,15 +38,13 @@ export const DashboardPage = () => {
       <header className="page-header">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">
-            Signed in as {user?.email ?? 'your account'} — live from the API.
-          </p>
+          <p className="page-subtitle">Your workspace at a glance.</p>
         </div>
       </header>
 
       {error ? (
         <p className="auth-error" role="alert">
-          Could not load metrics — is the API running?
+          Could not load workspace metrics.
         </p>
       ) : null}
 
@@ -61,10 +57,19 @@ export const DashboardPage = () => {
         ))}
       </div>
 
-      <p style={{ marginTop: theme.spacing(5), color: 'var(--hrms-color-text-secondary)' }}>
-        Welcome to your workspace. Use the sidebar to manage employees; time-off and
-        attendance modules are live on the API and will surface here next.
-      </p>
+      <section className="dashboard-next-step" aria-label="Get started">
+        <div className="dashboard-next-step-icon">
+          <IconUsersGroup size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+        </div>
+        <div className="dashboard-next-step-copy">
+          <h2 className="panel-title">Add your first employee</h2>
+          <p>Open the People menu in the top navigation to build out your employee directory.</p>
+        </div>
+        <Link className="button button-secondary" to="/employees">
+          Go to Employees
+          <IconArrowRight size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+        </Link>
+      </section>
     </main>
   );
 };
