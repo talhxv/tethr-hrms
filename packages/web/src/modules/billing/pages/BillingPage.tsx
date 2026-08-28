@@ -114,6 +114,8 @@ export const BillingPage = () => {
   });
   const [logoDataUrl, setLogoDataUrl] = useState('');
   const [signatureDataUrl, setSignatureDataUrl] = useState('');
+  const [logoFileName, setLogoFileName] = useState('');
+  const [signatureFileName, setSignatureFileName] = useState('');
 
   const [expenseGroupId, setExpenseGroupId] = useState('');
   const [expenseYear, setExpenseYear] = useState(now.getFullYear());
@@ -352,15 +354,25 @@ export const BillingPage = () => {
           <h3 className="section-title">Letterhead</h3>
           <div className="field">
             <label htmlFor="invoice-logo">Invoice logo (PNG/JPG, ≤300 KB)</label>
-            <input
-              accept="image/*"
-              id="invoice-logo"
-              type="file"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) readFileAsDataUrl(file, setLogoDataUrl);
-              }}
-            />
+            <div className="file-input">
+              <label className="file-input-trigger" htmlFor="invoice-logo">
+                Choose file
+              </label>
+              <span className="file-input-name">{logoFileName || 'No file chosen'}</span>
+              <input
+                accept="image/*"
+                className="file-input-native"
+                id="invoice-logo"
+                type="file"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    setLogoFileName(file.name);
+                    readFileAsDataUrl(file, setLogoDataUrl);
+                  }
+                }}
+              />
+            </div>
           </div>
           {config?.invoiceLogoDataUrl || logoDataUrl ? (
             <img
@@ -371,15 +383,25 @@ export const BillingPage = () => {
           ) : null}
           <div className="field">
             <label htmlFor="signature-image">Signature image (≤300 KB)</label>
-            <input
-              accept="image/*"
-              id="signature-image"
-              type="file"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) readFileAsDataUrl(file, setSignatureDataUrl);
-              }}
-            />
+            <div className="file-input">
+              <label className="file-input-trigger" htmlFor="signature-image">
+                Choose file
+              </label>
+              <span className="file-input-name">{signatureFileName || 'No file chosen'}</span>
+              <input
+                accept="image/*"
+                className="file-input-native"
+                id="signature-image"
+                type="file"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    setSignatureFileName(file.name);
+                    readFileAsDataUrl(file, setSignatureDataUrl);
+                  }
+                }}
+              />
+            </div>
           </div>
           {config?.signatureDataUrl || signatureDataUrl ? (
             <img

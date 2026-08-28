@@ -24,6 +24,11 @@ import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from
 
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { DetailSection } from '../components/DetailSection';
+import {
+  EmployeeOnboardingForm,
+  type EmployeeOnboardingFormValues,
+} from '../components/EmployeeOnboardingForm';
 import {
   ADD_EMPLOYEE_DOCUMENT_VERSION_MUTATION,
   ATTACH_EMPLOYEE_DOCUMENT_MUTATION,
@@ -299,7 +304,7 @@ const daysUntil = (value: string): number =>
   Math.max(0, Math.ceil((new Date(`${value}T00:00:00`).getTime() - Date.now()) / 86_400_000));
 const today = (): string => new Date().toISOString().slice(0, 10);
 
-const emptyForm = {
+const emptyForm: EmployeeOnboardingFormValues = {
   employeeNumber: '',
   firstName: '',
   lastName: '',
@@ -402,7 +407,6 @@ export const EmployeesListPage = () => {
   const employees = useMemo(() => data?.employees ?? [], [data]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptyForm);
   const [assessmentForm, setAssessmentForm] = useState(emptyAssessmentForm);
   const [documentForm, setDocumentForm] = useState(emptyDocumentForm);
   const [documentVersionForm, setDocumentVersionForm] = useState(emptyDocumentVersionForm);
@@ -423,7 +427,7 @@ export const EmployeesListPage = () => {
   const [detailError, setDetailError] = useState<string | null>(null);
 
   const selected: EmployeeRecord | null =
-    employees.find((employee) => employee.id === selectedId) ?? employees[0] ?? null;
+    employees.find((employee) => employee.id === selectedId) ?? null;
   const isTethrWorkspace = user?.portal === 'tethr';
   const canOnboardEmployee = Boolean(
     user?.roleKeys.includes('tethrAdmin') || user?.roleKeys.includes('tethrHr'),
@@ -506,28 +510,26 @@ export const EmployeesListPage = () => {
     user?.roleKeys.includes('tethrHr') ||
     user?.roleKeys.includes('clientAdmin');
 
-  const onCreate = async (event: FormEvent): Promise<void> => {
-    event.preventDefault();
+  const onCreate = async (values: EmployeeOnboardingFormValues): Promise<void> => {
     if (!canOnboardEmployee) return;
     setFormError(null);
     try {
       const result = await createEmployee({
         variables: {
           input: {
-            employeeNumber: form.employeeNumber,
-            firstName: form.firstName,
-            lastName: form.lastName,
-            hireDate: form.hireDate,
-            workEmail: form.workEmail ? form.workEmail : undefined,
-            roleTitle: form.roleTitle ? form.roleTitle : undefined,
-            dateOfBirth: form.dateOfBirth ? form.dateOfBirth : undefined,
-            probationEndDate: form.probationEndDate ? form.probationEndDate : undefined,
-            workerType: form.workerType,
+            employeeNumber: values.employeeNumber,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            hireDate: values.hireDate,
+            workEmail: values.workEmail ? values.workEmail : undefined,
+            roleTitle: values.roleTitle ? values.roleTitle : undefined,
+            dateOfBirth: values.dateOfBirth ? values.dateOfBirth : undefined,
+            probationEndDate: values.probationEndDate ? values.probationEndDate : undefined,
+            workerType: values.workerType,
           },
         },
       });
       await refetch();
-      setForm(emptyForm);
       setShowForm(false);
       if (result.data) {
         setSelectedId(result.data.createEmployee.id);
@@ -536,9 +538,6 @@ export const EmployeesListPage = () => {
       setFormError(caught instanceof Error ? caught.message : 'Could not create employee');
     }
   };
-
-  const setField = (key: keyof typeof emptyForm, value: string): void =>
-    setForm((current) => ({ ...current, [key]: value }));
 
   useEffect(() => {
     setHrRecordForm({
@@ -943,131 +942,14 @@ export const EmployeesListPage = () => {
         </header>
 
         {showForm && canOnboardEmployee ? (
-          <form
-            className="table-shell"
-            onSubmit={onCreate}
-            style={{ padding: theme.spacing(4), marginBottom: theme.spacing(4) }}
-          >
-            <div className="section-title-row">
-              <div>
-                <h2 className="section-title">Employee onboarding intake</h2>
-                <p className="page-subtitle">
-                  Capture identity, role, joining date, probation, and worker type.
-                </p>
-              </div>
-            </div>
-            {formError ? (
-              <p className="auth-error" role="alert">
-                {formError}
-              </p>
-            ) : null}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-                gap: theme.spacing(3),
-              }}
-            >
-              <div className="field">
-                <label htmlFor="emp-number">Employee number</label>
-                <input
-                  id="emp-number"
-                  value={form.employeeNumber}
-                  onChange={(event) => setField('employeeNumber', event.target.value)}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-first">First name</label>
-                <input
-                  id="emp-first"
-                  value={form.firstName}
-                  onChange={(event) => setField('firstName', event.target.value)}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-last">Last name</label>
-                <input
-                  id="emp-last"
-                  value={form.lastName}
-                  onChange={(event) => setField('lastName', event.target.value)}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-hire">Hire date</label>
-                <input
-                  id="emp-hire"
-                  type="date"
-                  value={form.hireDate}
-                  onChange={(event) => setField('hireDate', event.target.value)}
-                  required
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-email">Work email</label>
-                <input
-                  id="emp-email"
-                  type="email"
-                  value={form.workEmail}
-                  onChange={(event) => setField('workEmail', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-role">Role</label>
-                <input
-                  id="emp-role"
-                  value={form.roleTitle}
-                  onChange={(event) => setField('roleTitle', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-dob">Date of birth</label>
-                <input
-                  id="emp-dob"
-                  type="date"
-                  value={form.dateOfBirth}
-                  onChange={(event) => setField('dateOfBirth', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-probation">Probation end</label>
-                <input
-                  id="emp-probation"
-                  type="date"
-                  value={form.probationEndDate}
-                  onChange={(event) => setField('probationEndDate', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="emp-worker">Worker type</label>
-                <select
-                  id="emp-worker"
-                  value={form.workerType}
-                  onChange={(event) => setField('workerType', event.target.value)}
-                >
-                  {Object.entries(workerTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="page-actions" style={{ marginTop: theme.spacing(3) }}>
-              <button className="button button-primary" type="submit" disabled={creating}>
-                {creating ? 'Saving...' : 'Create employee record'}
-              </button>
-              <button
-                className="button button-secondary"
-                type="button"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+          <EmployeeOnboardingForm
+            formError={formError}
+            initialValues={emptyForm}
+            submitting={creating}
+            workerTypeLabels={workerTypeLabels}
+            onCancel={() => setShowForm(false)}
+            onSubmit={(values) => void onCreate(values)}
+          />
         ) : null}
 
         <div className="table-shell">
@@ -1179,8 +1061,7 @@ export const EmployeesListPage = () => {
               </p>
             ) : null}
 
-            <section className="detail-section">
-              <h3 className="section-title">Employment</h3>
+            <DetailSection defaultOpen title="Employment">
               <div className="field-list">
                 <div className="field-row">
                   <span className="field-label">Status</span>
@@ -1231,16 +1112,17 @@ export const EmployeesListPage = () => {
                   <span className="field-value">{profile?.phone ?? '-'}</span>
                 </div>
               </div>
-            </section>
+            </DetailSection>
 
             {canEditHrRecord ? (
-              <section className="detail-section">
-                <div className="section-title-row">
-                  <h3 className="section-title">Onboarding</h3>
+              <DetailSection
+                badge={
                   <span className="table-density">
                     {onboardingCompletedCount}/{onboardingTasks.length || 7} complete
                   </span>
-                </div>
+                }
+                title="Onboarding"
+              >
                 {onboardingLoading ? (
                   <p className="page-subtitle">Loading onboarding checklist...</p>
                 ) : null}
@@ -1354,12 +1236,11 @@ export const EmployeesListPage = () => {
                     <p className="table-empty">No onboarding tasks available.</p>
                   ) : null}
                 </div>
-              </section>
+              </DetailSection>
             ) : null}
 
             {canEditHrRecord ? (
-              <section className="detail-section">
-                <h3 className="section-title">Tethr HR record</h3>
+              <DetailSection title="Tethr HR record">
                 {hrRecordLoading ? (
                   <p className="page-subtitle">Loading private HR record...</p>
                 ) : null}
@@ -1489,11 +1370,17 @@ export const EmployeesListPage = () => {
                     {savingHrRecord ? 'Saving...' : 'Save HR record'}
                   </button>
                 </form>
-              </section>
+              </DetailSection>
             ) : null}
 
-            <section className="detail-section">
-              <h3 className="section-title">Compensation</h3>
+            <DetailSection
+              badge={
+                salary ? (
+                  <span className="table-density">{formatMoney(salary.annualAmount, salary.currency)}</span>
+                ) : undefined
+              }
+              title="Compensation"
+            >
               <div className="field-list">
                 <div className="field-row">
                   <span className="field-label">Current salary</span>
@@ -1715,10 +1602,16 @@ export const EmployeesListPage = () => {
                   </button>
                 </form>
               ) : null}
-            </section>
+            </DetailSection>
 
-            <section className="detail-section">
-              <h3 className="section-title">Assessments</h3>
+            <DetailSection
+              badge={
+                assessments.length > 0 ? (
+                  <span className="table-density">{assessments.length} recorded</span>
+                ) : undefined
+              }
+              title="Assessments"
+            >
               <div className="record-list">
                 {assessments.map((assessment) => (
                   <div className="record-item" key={assessment.id}>
@@ -1808,10 +1701,16 @@ export const EmployeesListPage = () => {
                   </button>
                 </form>
               ) : null}
-            </section>
+            </DetailSection>
 
-            <section className="detail-section">
-              <h3 className="section-title">Documents</h3>
+            <DetailSection
+              badge={
+                documents.length > 0 ? (
+                  <span className="table-density">{documents.length} on file</span>
+                ) : undefined
+              }
+              title="Documents"
+            >
               <div className="record-list">
                 {documents.map((document) => {
                   const downloadAccess = documentAccesses[document.id];
@@ -2270,12 +2169,13 @@ export const EmployeesListPage = () => {
                   </button>
                 </form>
               ) : null}
-            </section>
+            </DetailSection>
           </>
         ) : (
-          <p style={{ color: 'var(--hrms-color-text-tertiary)' }}>
-            Select an employee to see details.
-          </p>
+          <div className="detail-panel-empty">
+            <IconUserCheck size={theme.icon.size.lg} stroke={theme.icon.stroke.md} />
+            <p>Select an employee from the directory to view details.</p>
+          </div>
         )}
       </aside>
     </main>
