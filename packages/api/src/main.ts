@@ -32,7 +32,7 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const port = config.get('PORT');
   await app.listen(port);
-  Logger.log(`HRMS API ready at http://localhost:${port}/graphql`, 'Bootstrap');
+  Logger.log(`HRMS API ready at http://localhost:${port}/graphql (Node ${process.version})`, 'Bootstrap');
 }
 
 void bootstrap();
