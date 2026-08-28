@@ -30,6 +30,15 @@ export const CREATE_EMPLOYEE_MUTATION = gql`
   }
 `;
 
+export const UPDATE_EMPLOYEE_PHOTO_MUTATION = gql`
+  mutation UpdateEmployeePhoto($input: UpdateEmployeePhotoInput!) {
+    updateEmployeePhoto(input: $input) {
+      employeeId
+      photoUrl
+    }
+  }
+`;
+
 export const EMPLOYEE_DETAIL_QUERY = gql`
   query EmployeeDetail($employeeId: ID!, $asOf: String!) {
     employee(id: $employeeId) {

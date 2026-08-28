@@ -12,6 +12,7 @@ import { CreateEmployeeInput } from './dto/create-employee.input';
 import { EmployeeProfileView } from './dto/employee-profile.output';
 import { EmployeeType } from './dto/employee.output';
 import { TerminateEmployeeInput } from './dto/terminate-employee.input';
+import { UpdateEmployeePhotoInput } from './dto/update-employee-photo.input';
 import { UpdateMyProfileInput } from './dto/update-my-profile.input';
 import { EmployeeProfileService } from './employee-profile.service';
 import { EmployeeService } from './employee.service';
@@ -132,6 +133,21 @@ export class EmployeeResolver {
     }
     const profile = await this.profileService.getForEmployee(user.employeeId);
     return profile ? toEmployeeProfileView(profile) : null;
+  }
+
+  @Mutation(() => EmployeeProfileView)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.employeeWrite)
+  async updateEmployeePhoto(
+    @Args('input') input: UpdateEmployeePhotoInput,
+  ): Promise<EmployeeProfileView> {
+    const user = await this.authService.getCurrentUser();
+    const profile = await this.profileService.updateForEmployee(
+      toId<EmployeeId>(input.employeeId),
+      toId<UserId>(user.id),
+      { photoUrl: input.photoUrl ?? null },
+    );
+    return toEmployeeProfileView(profile);
   }
 
   @Mutation(() => EmployeeProfileView)

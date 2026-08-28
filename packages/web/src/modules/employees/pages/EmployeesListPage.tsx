@@ -8,12 +8,14 @@ import type {
 } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
+  IconCamera,
   IconClipboardCheck,
   IconCurrencyDollar,
   IconDeviceFloppy,
   IconDownload,
   IconFileText,
   IconGift,
+  IconLoader2,
   IconPlus,
   IconProgressCheck,
   IconSignature,
@@ -46,6 +48,7 @@ import {
   REQUEST_EMPLOYEE_DOCUMENT_SIGNATURE_MUTATION,
   UPDATE_EMPLOYEE_HR_RECORD_MUTATION,
   UPDATE_EMPLOYEE_ONBOARDING_TASK_MUTATION,
+  UPDATE_EMPLOYEE_PHOTO_MUTATION,
 } from '../graphql/employee.operations';
 
 type EmployeeRecord = {
@@ -403,6 +406,7 @@ export const EmployeesListPage = () => {
   const [updateOnboardingTask, { loading: savingOnboardingTask }] = useMutation(
     UPDATE_EMPLOYEE_ONBOARDING_TASK_MUTATION,
   );
+  const [updatePhoto, { loading: savingPhoto }] = useMutation(UPDATE_EMPLOYEE_PHOTO_MUTATION);
 
   const employees = useMemo(() => data?.employees ?? [], [data]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -425,6 +429,7 @@ export const EmployeesListPage = () => {
   const [onboardingDrafts, setOnboardingDrafts] = useState<Record<string, OnboardingTaskDraft>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [photoNotice, setPhotoNotice] = useState<string | null>(null);
 
   const selected: EmployeeRecord | null =
     employees.find((employee) => employee.id === selectedId) ?? null;
@@ -576,6 +581,10 @@ export const EmployeesListPage = () => {
       note: '',
     });
   }, [defaultSalaryStructureId, salary, selected?.id]);
+
+  useEffect(() => {
+    setPhotoNotice(null);
+  }, [selected?.id]);
 
   const onRecordAssessment = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -883,6 +892,30 @@ export const EmployeesListPage = () => {
     }
   };
 
+  const onChangePhoto = (file: File): void => {
+    if (!selected) return;
+    if (file.size > 300_000) {
+      setDetailError('Image must be under 300 KB.');
+      return;
+    }
+    setDetailError(null);
+    setPhotoNotice(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      void updatePhoto({
+        variables: { input: { employeeId: selected.id, photoUrl: String(reader.result) } },
+      })
+        .then(async () => {
+          await refetchDetail();
+          setPhotoNotice('Photo updated');
+        })
+        .catch((caught: unknown) =>
+          setDetailError(caught instanceof Error ? caught.message : 'Could not save photo'),
+        );
+    };
+    reader.readAsDataURL(file);
+  };
+
   const renderAccessDescriptor = (access: DocumentAccessDescriptor, title: string): JSX.Element => (
     <div className="document-access-note">
       <div className="document-access-title">{title}</div>
@@ -1038,14 +1071,46 @@ export const EmployeesListPage = () => {
                 <h2 className="panel-title">{fullName(detailEmployee)}</h2>
                 <div className="employee-meta">{detailEmployee.employeeNumber}</div>
               </div>
-              {profile?.photoUrl ? (
-                <img alt="" className="employee-identity-photo" src={profile.photoUrl} />
-              ) : (
-                <span className="employee-avatar" style={chipStyle(colorFor(detailEmployee.id))}>
-                  {initials(detailEmployee)}
-                </span>
-              )}
+              <div className="employee-photo-slot">
+                {profile?.photoUrl ? (
+                  <img alt="" className="employee-identity-photo" src={profile.photoUrl} />
+                ) : (
+                  <span className="employee-avatar" style={chipStyle(colorFor(detailEmployee.id))}>
+                    {initials(detailEmployee)}
+                  </span>
+                )}
+                {canManageHrRecord ? (
+                  <label
+                    className={`employee-photo-edit${savingPhoto ? ' is-saving' : ''}`}
+                    htmlFor="employee-photo-input"
+                    title={savingPhoto ? 'Saving photo...' : 'Change photo'}
+                  >
+                    {savingPhoto ? (
+                      <IconLoader2
+                        className="icon-spin"
+                        size={theme.icon.size.sm}
+                        stroke={theme.icon.stroke.sm}
+                      />
+                    ) : (
+                      <IconCamera size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                    )}
+                    <input
+                      accept="image/*"
+                      disabled={savingPhoto}
+                      id="employee-photo-input"
+                      type="file"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) onChangePhoto(file);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : null}
+              </div>
             </div>
+
+            {photoNotice ? <p className="form-success">{photoNotice}</p> : null}
 
             <div className="panel-actions">
               <button className="button button-secondary" type="button">
