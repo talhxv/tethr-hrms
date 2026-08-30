@@ -147,6 +147,7 @@ export const AppShell = () => {
   const navRef = useRef<HTMLElement | null>(null);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const onClickOutside = (event: MouseEvent): void => {
@@ -162,6 +163,20 @@ export const AppShell = () => {
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  // Cmd+K (Mac) / Ctrl+K (everywhere else) jumps straight to the search
+  // field, the same shortcut every modern SaaS app trains people to reach for.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
   // navRef wraps every pill, including plain links, so clicking one doesn't
@@ -201,6 +216,7 @@ export const AppShell = () => {
   );
   const hasOtherWorkspaces = workspacesData?.hasOtherWorkspaces ?? false;
 
+  const isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
   const ThemeIcon = theme.name === 'light' ? IconMoon : IconSun;
   const section = SECTION_LABELS[pathname] ?? 'Workspace';
   const accountInitials = (user?.email ?? '?').slice(0, 2).toUpperCase();
@@ -484,7 +500,8 @@ export const AppShell = () => {
         <div className="topnav-right">
           <label className="topbar-search">
             <IconSearch size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-            <input aria-label="Search" placeholder="Search" type="search" />
+            <input aria-label="Search" placeholder="Search" ref={searchInputRef} type="search" />
+            <kbd className="topbar-search-kbd">{isMac ? '⌘K' : 'Ctrl K'}</kbd>
           </label>
 
           <div className="topbar-actions">

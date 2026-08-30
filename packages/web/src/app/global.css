@@ -130,9 +130,16 @@ button {
 .icon-button:focus-visible,
 .account-button:focus-visible,
 .button:focus-visible,
-.segmented-button:focus-visible,
-.topbar-search:focus-within {
+.segmented-button:focus-visible {
   outline: 3px solid var(--hrms-color-border-blue);
+  outline-offset: 1px;
+}
+
+/* The search bar is a personality surface, not a bare focus target — its
+   ring picks up the workspace's own chosen brand color (--chip-color, set at
+   .app-shell) instead of the fixed a11y blue every other control uses. */
+.topbar-search:focus-within {
+  outline: 1.5px solid var(--chip-color, var(--hrms-color-border-blue));
   outline-offset: 1px;
 }
 
@@ -200,6 +207,7 @@ button {
 .topbar-search {
   display: flex;
   align-items: center;
+  width: 240px;
   min-width: 0;
   height: 32px;
   gap: var(--hrms-space-2);
@@ -221,6 +229,27 @@ button {
 
 .topbar-search input::placeholder {
   color: var(--hrms-color-text-extra-light);
+}
+
+.topbar-search-kbd {
+  flex-shrink: 0;
+  padding: 1px var(--hrms-space-2);
+  color: var(--hrms-color-text-tertiary);
+  background: var(--hrms-color-background-tertiary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-sm);
+  opacity: 1;
+  font-family: inherit;
+  font-size: var(--hrms-font-size-xxs);
+  line-height: 1.4;
+  transition: opacity 0.12s ease;
+}
+
+/* Only fades once there's actual text — not on a bare click/focus, so
+   nothing shifts just from landing in the field. */
+.topbar-search input:not(:placeholder-shown) ~ .topbar-search-kbd {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .topbar-actions {
