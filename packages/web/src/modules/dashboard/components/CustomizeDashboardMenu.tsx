@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { activeViewWidgetsAtom } from '../states/dashboardViewsState';
-import { defaultLayoutFor, WIDGET_REGISTRY } from '../widgets/registry';
+import { defaultLayoutFor, visibleWidgetsFor } from '../widgets/registry';
 import type { WidgetId } from '../widgets/types';
 
 export const CustomizeDashboardMenu = () => {
@@ -24,7 +24,7 @@ export const CustomizeDashboardMenu = () => {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  const availableWidgets = WIDGET_REGISTRY.filter((widget) => widget.isVisible(user));
+  const availableWidgets = visibleWidgetsFor(user);
 
   const toggleWidget = (id: WidgetId, enabled: boolean): void => {
     setLayout((current) =>

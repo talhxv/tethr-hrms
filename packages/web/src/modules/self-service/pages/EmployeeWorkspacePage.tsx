@@ -3,11 +3,12 @@ import type { ApprovalStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
   IconCalendarEvent,
+  IconCamera,
   IconClock,
   IconDeviceFloppy,
+  IconLoader2,
   IconMessageCircle,
   IconPlaneDeparture,
-  IconSpeakerphone,
   IconUserCircle,
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
@@ -22,6 +23,7 @@ import { SUBMIT_MY_FEEDBACK_MUTATION } from '../../engagement/graphql/engagement
 import {
   MY_WORKSPACE_QUERY,
   SUBMIT_MY_LEAVE_REQUEST_MUTATION,
+  UPDATE_MY_EMPLOYEE_PHOTO_MUTATION,
   UPDATE_MY_EMPLOYEE_PROFILE_MUTATION,
 } from '../graphql/self-service.operations';
 
@@ -95,16 +97,6 @@ type SalaryRecord = {
   readonly reason: string;
 };
 
-type AnnouncementRecord = {
-  readonly id: string;
-  readonly title: string;
-  readonly body: string;
-  readonly audience: string;
-  readonly isPinned: boolean;
-  readonly publishedAt: string;
-  readonly expiresAt: string | null;
-};
-
 type WorkspaceData = {
   readonly myEmployee: EmployeeRecord;
   readonly myEmployeeProfile: EmployeeProfileRecord | null;
@@ -113,11 +105,9 @@ type WorkspaceData = {
   readonly myLeaveRequests: readonly LeaveRequestRecord[];
   readonly upcomingHolidays: readonly HolidayRecord[];
   readonly myCurrentSalaryRevision: SalaryRecord | null;
-  readonly announcements: readonly AnnouncementRecord[];
 };
 
 type ProfileForm = {
-  photoUrl: string;
   personalEmail: string;
   phone: string;
   addressLine1: string;
@@ -129,7 +119,6 @@ type ProfileForm = {
 };
 
 const emptyProfile: ProfileForm = {
-  photoUrl: '',
   personalEmail: '',
   phone: '',
   addressLine1: '',
@@ -139,6 +128,8 @@ const emptyProfile: ProfileForm = {
   countryCode: '',
   postalCode: '',
 };
+
+const MAX_PHOTO_BYTES = 300_000;
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 const addDays = (date: Date, amount: number): string => {
@@ -203,7 +194,6 @@ const workerTypeLabels: Record<string, string> = {
 };
 
 const profileFrom = (profile: EmployeeProfileRecord | null): ProfileForm => ({
-  photoUrl: profile?.photoUrl ?? '',
   personalEmail: profile?.personalEmail ?? '',
   phone: profile?.phone ?? '',
   addressLine1: profile?.addressLine1 ?? '',
@@ -231,6 +221,7 @@ export const EmployeeWorkspacePage = () => {
   const [updateProfile, { loading: savingProfile }] = useMutation(
     UPDATE_MY_EMPLOYEE_PROFILE_MUTATION,
   );
+  const [updatePhoto, { loading: savingPhoto }] = useMutation(UPDATE_MY_EMPLOYEE_PHOTO_MUTATION);
   const [leaveForm, setLeaveForm] = useState({
     leaveTypeId: '',
     startDate: '',
@@ -245,6 +236,7 @@ export const EmployeeWorkspacePage = () => {
   });
   const [leaveError, setLeaveError] = useState<string | null>(null);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
@@ -270,8 +262,6 @@ export const EmployeeWorkspacePage = () => {
       ),
     [data?.myLeaveRequests],
   );
-  const announcements = data?.announcements ?? [];
-  const latestAnnouncements = useMemo(() => announcements.slice(0, 3), [announcements]);
   const holidayGroups = useMemo<HolidayMonthGroup[]>(() => {
     const groups = new Map<string, HolidayRecord[]>();
     for (const holiday of [...(data?.upcomingHolidays ?? [])].sort((left, right) =>
@@ -306,6 +296,23 @@ export const EmployeeWorkspacePage = () => {
     } catch (caught) {
       setLeaveError(caught instanceof Error ? caught.message : 'Could not submit your request');
     }
+  };
+
+  const onChangePhoto = (file: File): void => {
+    if (file.size > MAX_PHOTO_BYTES) {
+      setPhotoError('Image must be under 300 KB.');
+      return;
+    }
+    setPhotoError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      void updatePhoto({ variables: { input: { photoUrl: String(reader.result) } } })
+        .then(() => refetch())
+        .catch((caught: unknown) =>
+          setPhotoError(caught instanceof Error ? caught.message : 'Could not save photo'),
+        );
+    };
+    reader.readAsDataURL(file);
   };
 
   const onProfileSubmit = async (event: FormEvent): Promise<void> => {
@@ -415,7 +422,7 @@ export const EmployeeWorkspacePage = () => {
           </div>
         </div>
 
-        <section className="table-shell">
+        <section className="table-shell employment-facts">
           <div className="table-title-row">
             <div className="table-title">
               <IconUserCircle size={theme.icon.size.md} /> Employment facts
@@ -471,6 +478,8 @@ export const EmployeeWorkspacePage = () => {
             </div>
           </div>
         </section>
+
+        <MyPayslipsSection />
 
         <div className="self-service-grid">
           <section className="table-shell">
@@ -545,37 +554,6 @@ export const EmployeeWorkspacePage = () => {
           </section>
         </div>
 
-        <section className="table-shell bulletin-shell">
-          <div className="table-title-row">
-            <div className="table-title">
-              <IconSpeakerphone size={theme.icon.size.md} /> News bulletin
-            </div>
-            <div className="table-density">
-              {announcements.length} update{announcements.length === 1 ? '' : 's'}
-            </div>
-          </div>
-          <div className="announcement-list compact-announcement-list">
-            {latestAnnouncements.map((announcement) => (
-              <article className="announcement-item" key={announcement.id}>
-                <div className="announcement-meta">
-                  {announcement.isPinned ? (
-                    <span className="chip" style={chipStyle('amber')}>
-                      <span className="chip-dot" />
-                      Pinned
-                    </span>
-                  ) : null}
-                  <span>{formatDate(announcement.publishedAt.slice(0, 10))}</span>
-                </div>
-                <h2 className="announcement-title">{announcement.title}</h2>
-                <p className="announcement-body">{announcement.body}</p>
-              </article>
-            ))}
-            {latestAnnouncements.length === 0 ? (
-              <p className="table-empty">No announcements are visible yet.</p>
-            ) : null}
-          </div>
-        </section>
-
         <section className="table-shell">
           <div className="table-title-row">
             <div className="table-title">
@@ -634,8 +612,6 @@ export const EmployeeWorkspacePage = () => {
           </div>
         </section>
       </section>
-
-      <MyPayslipsSection />
 
       <aside className="self-service-panel" aria-label="Employee actions">
         <section className="self-service-section">
@@ -720,19 +696,59 @@ export const EmployeeWorkspacePage = () => {
             </div>
             <IconUserCircle size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
           </div>
+          <div className="field">
+            <label htmlFor="my-photo-input">Photo</label>
+            <div className="self-service-photo">
+              <div className="employee-photo-slot self-service-photo-slot">
+                {data.myEmployeeProfile?.photoUrl ? (
+                  <img
+                    alt="Your profile"
+                    className="employee-identity-photo"
+                    src={data.myEmployeeProfile.photoUrl}
+                  />
+                ) : (
+                  <span className="employee-avatar" style={chipStyle('violet')}>
+                    {initials(employee)}
+                  </span>
+                )}
+                <label
+                  className={`employee-photo-edit${savingPhoto ? ' is-saving' : ''}`}
+                  htmlFor="my-photo-input"
+                  title={savingPhoto ? 'Saving photo...' : 'Change photo'}
+                >
+                  {savingPhoto ? (
+                    <IconLoader2
+                      className="icon-spin"
+                      size={theme.icon.size.sm}
+                      stroke={theme.icon.stroke.sm}
+                    />
+                  ) : (
+                    <IconCamera size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                  )}
+                  <input
+                    accept="image/*"
+                    disabled={savingPhoto}
+                    id="my-photo-input"
+                    type="file"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) onChangePhoto(file);
+                      event.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+              <p className="field-hint">JPG or PNG, under 300 KB.</p>
+            </div>
+            {photoError ? (
+              <p className="auth-error" role="alert">
+                {photoError}
+              </p>
+            ) : null}
+          </div>
+
           <form className="config-form" onSubmit={onProfileSubmit}>
             {profileNotice ? <p className="form-success">{profileNotice}</p> : null}
-            <div className="field">
-              <label htmlFor="profile-photo">Photo URL</label>
-              <input
-                id="profile-photo"
-                type="url"
-                value={profileForm.photoUrl}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, photoUrl: event.target.value }))
-                }
-              />
-            </div>
             <div className="field-group">
               <div className="field">
                 <label htmlFor="profile-email">Personal email</label>
@@ -889,24 +905,6 @@ export const EmployeeWorkspacePage = () => {
               {submittingFeedback ? 'Submitting...' : 'Submit feedback'}
             </button>
           </form>
-        </section>
-
-        <section className="self-service-section employment-summary">
-          <div className="panel-kicker">Employment</div>
-          <div className="field-list">
-            <div className="field-row">
-              <span className="field-label">Joined</span>
-              <span className="field-value">{formatDate(employee.hireDate)}</span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Work email</span>
-              <span className="field-value">{employee.workEmail ?? '—'}</span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Employment type</span>
-              <span className="field-value">{employee.workerType}</span>
-            </div>
-          </div>
         </section>
       </aside>
     </main>

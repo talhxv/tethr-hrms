@@ -98,7 +98,8 @@ const tethrNavigation: readonly NavigationEntry[] = [
 ];
 
 const clientNavigation: readonly NavigationEntry[] = [
-  { kind: 'link', label: 'Overview', to: '/client', icon: IconLayoutDashboard },
+  { kind: 'link', label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
+  { kind: 'link', label: 'Overview', to: '/client', icon: IconBuildingCommunity },
   {
     kind: 'group',
     label: 'People',
@@ -114,6 +115,7 @@ const clientNavigation: readonly NavigationEntry[] = [
 ];
 
 const employeeNavigation: readonly NavigationEntry[] = [
+  { kind: 'link', label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
   { kind: 'link', label: 'My workspace', to: '/me', icon: IconUserCircle },
   { kind: 'link', label: 'News', to: '/announcements', icon: IconSpeakerphone },
 ];

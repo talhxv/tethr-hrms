@@ -2246,6 +2246,30 @@ button {
   border: 0;
 }
 
+/* Editable profile photo on the employee "My workspace" page — a larger
+   preview than the 40px header/detail avatar, with the same camera control. */
+.self-service-photo {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-4);
+}
+
+.self-service-photo .field-hint {
+  margin: 0;
+}
+
+.employee-photo-slot.self-service-photo-slot .employee-avatar,
+.employee-photo-slot.self-service-photo-slot .employee-identity-photo {
+  width: 72px;
+  height: 72px;
+  font-size: var(--hrms-font-size-lg);
+}
+
+.employee-photo-slot.self-service-photo-slot .employee-photo-edit {
+  width: 26px;
+  height: 26px;
+}
+
 .employee-metrics,
 .client-metrics {
   margin-bottom: var(--hrms-space-4);
@@ -2260,6 +2284,43 @@ button {
 
 .self-service-grid .table-shell {
   min-width: 0;
+}
+
+/* Consistent vertical rhythm between the stacked cards in the employee
+   workspace's main column. */
+.employee-workspace-content > .table-shell {
+  margin-bottom: var(--hrms-space-4);
+}
+
+.employee-workspace-content > .table-shell:last-child {
+  margin-bottom: 0;
+}
+
+/* "Employment facts" fills a wide card, so its key/value list is a two-column
+   spec grid with the value stacked directly under its label — no more label
+   marooned on the left, value on the far right. */
+.employment-facts .field-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--hrms-space-4) var(--hrms-space-10);
+  padding: var(--hrms-space-4);
+}
+
+.employment-facts .field-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 0;
+}
+
+.employment-facts .field-value {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .employment-facts .field-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .table-title {
@@ -2426,7 +2487,90 @@ button {
 }
 
 .onboarding-step-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
+}
+
+/* Pinned "Getting started" panel above the dashboard grid. */
+.dashboard-getting-started {
+  margin-bottom: var(--hrms-space-4);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  overflow: hidden;
+}
+
+.dashboard-getting-started-header {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-2);
+  padding: var(--hrms-space-2) var(--hrms-space-3) var(--hrms-space-2) var(--hrms-space-4);
+}
+
+.dashboard-getting-started.is-open .dashboard-getting-started-header {
+  border-bottom: 1px solid var(--hrms-color-border-light);
+}
+
+.dashboard-getting-started-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  flex: 1;
+  min-width: 0;
+  padding: var(--hrms-space-2) 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard-getting-started-title {
+  font-weight: var(--hrms-font-weight-semi-bold);
+  color: var(--hrms-color-text-primary);
+  white-space: nowrap;
+}
+
+.dashboard-getting-started-meta {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  min-width: 0;
+}
+
+.dashboard-getting-started-count {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+  white-space: nowrap;
+}
+
+.dashboard-getting-started-bar {
+  flex: 1;
+  max-width: 220px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--hrms-color-background-secondary);
+  overflow: hidden;
+}
+
+.dashboard-getting-started-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--chip-color, var(--hrms-color-tag-blue));
+  transition: width 0.3s ease;
+}
+
+.dashboard-getting-started-chevron {
+  display: inline-flex;
+  color: var(--hrms-color-text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.dashboard-getting-started.is-open .dashboard-getting-started-chevron {
+  transform: rotate(180deg);
 }
 
 .employment-summary {

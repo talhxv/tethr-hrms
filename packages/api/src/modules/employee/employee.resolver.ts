@@ -13,6 +13,7 @@ import { EmployeeProfileView } from './dto/employee-profile.output';
 import { EmployeeType } from './dto/employee.output';
 import { TerminateEmployeeInput } from './dto/terminate-employee.input';
 import { UpdateEmployeePhotoInput } from './dto/update-employee-photo.input';
+import { UpdateMyPhotoInput } from './dto/update-my-photo.input';
 import { UpdateMyProfileInput } from './dto/update-my-profile.input';
 import { EmployeeProfileService } from './employee-profile.service';
 import { EmployeeService } from './employee.service';
@@ -162,6 +163,25 @@ export class EmployeeResolver {
     }
     return toEmployeeProfileView(
       await this.profileService.updateForEmployee(user.employeeId, toId<UserId>(user.id), input),
+    );
+  }
+
+  // Employees set their own photo the same way admins do (a data URL from a
+  // picked file), separate from the text profile form.
+  @Mutation(() => EmployeeProfileView)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.employeeSelfWrite)
+  async updateMyEmployeePhoto(
+    @Args('input') input: UpdateMyPhotoInput,
+  ): Promise<EmployeeProfileView> {
+    const user = await this.authService.getCurrentUser();
+    if (!user.employeeId) {
+      throw new NotFoundError('No employee record is linked to this account');
+    }
+    return toEmployeeProfileView(
+      await this.profileService.updateForEmployee(user.employeeId, toId<UserId>(user.id), {
+        photoUrl: input.photoUrl ?? null,
+      }),
     );
   }
 }

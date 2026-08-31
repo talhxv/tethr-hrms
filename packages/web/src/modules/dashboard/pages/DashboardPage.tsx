@@ -7,22 +7,42 @@ import {
   type DragEndEvent,
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
-import { useAtom } from 'jotai';
-import { useRef } from 'react';
+import { useAtom, useSetAtom } from 'jotai';
+import { useEffect, useRef } from 'react';
 
 import { useAuth } from '../../auth/hooks/useAuth';
 import { CustomizeDashboardMenu } from '../components/CustomizeDashboardMenu';
+import { DashboardGettingStarted } from '../components/DashboardGettingStarted';
 import { DashboardViewTabs } from '../components/DashboardViewTabs';
-import { activeViewWidgetsAtom } from '../states/dashboardViewsState';
+import {
+  activeViewWidgetsAtom,
+  dashboardSeededAtom,
+  dashboardViewsState,
+} from '../states/dashboardViewsState';
 import { DashboardWidgetCard } from '../widgets/DashboardWidgetCard';
-import { WIDGET_REGISTRY } from '../widgets/registry';
+import { defaultWidgetsForPortal, WIDGET_REGISTRY } from '../widgets/registry';
 import type { WidgetId } from '../widgets/types';
 
 export const DashboardPage = () => {
   const { user } = useAuth();
   const [layout, setLayout] = useAtom(activeViewWidgetsAtom);
+  const [seeded, setSeeded] = useAtom(dashboardSeededAtom);
+  const setViews = useSetAtom(dashboardViewsState);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const gridRef = useRef<HTMLDivElement | null>(null);
+
+  // Seed the active view once per session from the portal's default layout.
+  // Navigating away and back keeps in-session edits; a refresh reseeds.
+  useEffect(() => {
+    if (seeded || !user || user.portal === 'none') return;
+    setViews({
+      views: [
+        { id: 'overview', name: 'Overview', widgets: defaultWidgetsForPortal(user.portal) },
+      ],
+      activeViewId: 'overview',
+    });
+    setSeeded(true);
+  }, [seeded, user, setViews, setSeeded]);
 
   const visibleWidgets = layout
     .map((entry) => {
@@ -78,6 +98,10 @@ export const DashboardPage = () => {
     });
   };
 
+  // One frame while the portal's default layout is seeded — avoids flashing the
+  // empty state before the effect runs.
+  if (!seeded) return null;
+
   return (
     <main className="employees-content" style={{ display: 'block' }}>
       <header className="page-header">
@@ -91,6 +115,8 @@ export const DashboardPage = () => {
       </header>
 
       <DashboardViewTabs />
+
+      <DashboardGettingStarted />
 
       {visibleWidgets.length === 0 ? (
         <div className="dashboard-widget-empty">

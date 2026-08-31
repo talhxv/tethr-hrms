@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useDashboardViews } from '../hooks/useDashboardViews';
-import { WIDGET_REGISTRY } from '../widgets/registry';
+import { visibleWidgetsFor } from '../widgets/registry';
 import type { WidgetId } from '../widgets/types';
 
 export const CreateViewPanel = () => {
@@ -25,7 +25,7 @@ export const CreateViewPanel = () => {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  const availableWidgets = WIDGET_REGISTRY.filter((widget) => widget.isVisible(user));
+  const availableWidgets = visibleWidgetsFor(user);
 
   const toggleWidget = (id: WidgetId, enabled: boolean): void => {
     setSelectedIds((current) =>

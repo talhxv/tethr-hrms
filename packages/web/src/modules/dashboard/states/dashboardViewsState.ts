@@ -1,10 +1,6 @@
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
 
-import { DEFAULT_DASHBOARD_WIDGETS } from '../widgets/registry';
 import type { WidgetLayout } from '../widgets/types';
-
-export const DASHBOARD_VIEWS_STORAGE_KEY = 'hrms.dashboard.views';
 
 export type DashboardView = {
   readonly id: string;
@@ -19,17 +15,20 @@ export type DashboardViewsState = {
 
 const DEFAULT_VIEW_ID = 'overview';
 
+// The atom starts empty; DashboardPage seeds the active view once per session
+// from `defaultWidgetsForPortal(user.portal)` (see `dashboardSeededAtom`). The
+// dashboard is code-defined and in-memory only — identical for every workspace
+// and user, and a refresh resets everyone to their portal's default layout.
 const DEFAULT_STATE: DashboardViewsState = {
-  views: [{ id: DEFAULT_VIEW_ID, name: 'Overview', widgets: DEFAULT_DASHBOARD_WIDGETS }],
+  views: [{ id: DEFAULT_VIEW_ID, name: 'Overview', widgets: [] }],
   activeViewId: DEFAULT_VIEW_ID,
 };
 
-// Every widget layout a user has built, keyed by view — persisted per browser
-// so a refresh doesn't reset custom views.
-export const dashboardViewsState = atomWithStorage<DashboardViewsState>(
-  DASHBOARD_VIEWS_STORAGE_KEY,
-  DEFAULT_STATE,
-);
+export const dashboardViewsState = atom<DashboardViewsState>(DEFAULT_STATE);
+
+// Flipped true after DashboardPage has seeded the portal's default layout, so
+// navigating away and back keeps in-session customizations instead of reseeding.
+export const dashboardSeededAtom = atom(false);
 
 // The widget layout list of whichever view is currently active. Reading/writing
 // through this keeps the widget grid's own logic (add/remove/reorder/resize)

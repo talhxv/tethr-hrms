@@ -1,4 +1,4 @@
-import type { WorkspaceBrandColor } from '@hrms/shared';
+import type { PortalKind, WorkspaceBrandColor } from '@hrms/shared';
 
 import type { AuthUser } from '../../auth/states/authState';
 
@@ -11,9 +11,16 @@ export type WidgetId =
   | 'hiringPipeline'
   | 'announcements'
   | 'feedbackInbox'
-  | 'clientPortfolio';
+  | 'clientPortfolio'
+  | 'myLeaveBalance'
+  | 'myPayHistory'
+  | 'myEmploymentSummary'
+  | 'myTimeOff'
+  | 'upcomingHolidays';
 
 export type WidgetDisplayMode = 'chart' | 'plain';
+
+export type WidgetPortal = Exclude<PortalKind, 'none'>;
 
 export type WidgetLayout = {
   readonly id: WidgetId;
@@ -59,6 +66,9 @@ export type WidgetChartKind = 'share' | 'ordinal' | 'trend';
 export type WidgetDefinition = {
   readonly id: WidgetId;
   readonly title: string;
+  // Which portals may add this widget. The catalog is filtered by this before
+  // isVisible runs, so a portal is never offered a widget its role can't load.
+  readonly portals: readonly WidgetPortal[];
   readonly defaultColSpan: number;
   readonly defaultRowSpan: number;
   readonly accentColor: WorkspaceBrandColor;

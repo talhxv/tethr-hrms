@@ -69,15 +69,6 @@ export const MY_WORKSPACE_QUERY = gql`
       validTo
       reason
     }
-    announcements {
-      id
-      title
-      body
-      audience
-      isPinned
-      publishedAt
-      expiresAt
-    }
   }
 `;
 
@@ -111,6 +102,15 @@ export const UPDATE_MY_EMPLOYEE_PROFILE_MUTATION = gql`
       region
       countryCode
       postalCode
+    }
+  }
+`;
+
+export const UPDATE_MY_EMPLOYEE_PHOTO_MUTATION = gql`
+  mutation UpdateMyEmployeePhoto($input: UpdateMyPhotoInput!) {
+    updateMyEmployeePhoto(input: $input) {
+      employeeId
+      photoUrl
     }
   }
 `;
