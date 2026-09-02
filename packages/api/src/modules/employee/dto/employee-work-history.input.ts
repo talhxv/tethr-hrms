@@ -1,62 +1,85 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
-import { IsIn, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 @InputType()
-export class UpdateEmployeeHrRecordInput {
+export class CreateEmployeeWorkHistoryInput {
   @Field(() => ID)
-  @IsUUID()
+  @IsString()
   employeeId!: string;
 
-  @Field(() => String, { nullable: true })
-  @IsOptional()
+  @Field()
   @IsString()
-  @MaxLength(160)
-  roleTitle?: string | null;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsString()
-  @MaxLength(8000)
-  salaryBreakdown?: string | null;
-
-  @Field(() => String, { nullable: true })
-  @IsOptional()
-  @IsIn(['bank', 'cash', 'cheque'])
-  paymentMode?: string | null;
+  @MaxLength(256)
+  companyName!: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(160)
-  bankName?: string | null;
+  designation?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  salary?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  address?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
   @MaxLength(160)
-  bankAccountTitle?: string | null;
+  contact?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  @MaxLength(80)
-  bankAccountNumber?: string | null;
+  @MaxLength(64)
+  totalExperience?: string;
+}
+
+@InputType()
+export class UpdateEmployeeWorkHistoryInput {
+  @Field(() => ID)
+  @IsString()
+  id!: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  @MaxLength(80)
-  bankIban?: string | null;
+  @MaxLength(256)
+  companyName?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  @MaxLength(8000)
-  hardwareInfo?: string | null;
+  @MaxLength(160)
+  designation?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()
-  @MaxLength(20000)
-  employeeRecordForm?: string | null;
+  salary?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(512)
+  address?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  contact?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  totalExperience?: string;
 }

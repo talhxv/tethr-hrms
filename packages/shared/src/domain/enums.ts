@@ -101,3 +101,25 @@ export type InvoiceStatus = 'draft' | 'issued' | 'paid';
 export type InvoiceType = 'services' | 'expenses';
 
 export type InvoiceLineKind = 'salary' | 'fee' | 'expense' | 'catchup';
+
+export type Salutation = 'Mr' | 'Ms' | 'Mrs' | 'Mx' | 'Dr' | 'Prof';
+
+export type PreferredContactChannel = 'companyEmail' | 'personalEmail' | 'userId';
+
+export type AccommodationType = 'rented' | 'owned';
+
+export type MaritalStatus = 'single' | 'married' | 'divorced' | 'widowed';
+
+export type BloodGroup = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+
+export type EducationLevel = 'graduate' | 'postGraduate' | 'underGraduate';
+
+export type SeparationType = 'resignation' | 'termination' | 'retirement' | 'other';
+
+export type ExitInterviewStatus = 'pending' | 'scheduled' | 'completed' | 'cancelled';
+
+export type ExitInterviewDecision = 'retained' | 'exitConfirmed';
+
+export type PaymentMode = 'bank' | 'cash' | 'cheque';
+
+export type EmployeeOffboardingTaskStatus = 'notStarted' | 'inProgress' | 'completed' | 'blocked';

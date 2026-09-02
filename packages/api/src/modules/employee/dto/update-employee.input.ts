@@ -1,19 +1,17 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
 import { IsEmail, IsIn, IsInt, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
 
-// Validation lives at the boundary (architecture.md §6.5); internal code trusts
-// its inputs. The global ValidationPipe enforces these before the resolver runs.
 @InputType()
-export class CreateEmployeeInput {
-  @Field()
+export class UpdateEmployeeInput {
+  @Field(() => ID)
   @IsString()
-  @MaxLength(32)
-  employeeNumber!: string;
+  employeeId!: string;
 
-  @Field()
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
   @MaxLength(128)
-  firstName!: string;
+  firstName?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -21,10 +19,11 @@ export class CreateEmployeeInput {
   @MaxLength(128)
   middleName?: string;
 
-  @Field()
+  @Field(() => String, { nullable: true })
+  @IsOptional()
   @IsString()
   @MaxLength(128)
-  lastName!: string;
+  lastName?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
@@ -34,6 +33,7 @@ export class CreateEmployeeInput {
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsEmail()
+  @MaxLength(320)
   workEmail?: string;
 
   @Field(() => String, { nullable: true })
@@ -44,33 +44,32 @@ export class CreateEmployeeInput {
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dateOfBirth must be an ISO date (YYYY-MM-DD)' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'dateOfBirth must be an ISO date' })
   dateOfBirth?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'probationEndDate must be an ISO date (YYYY-MM-DD)',
-  })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'probationEndDate must be an ISO date' })
   probationEndDate?: string;
-
-  @Field()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'hireDate must be an ISO date (YYYY-MM-DD)' })
-  hireDate!: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'scheduledConfirmationDate must be an ISO date (YYYY-MM-DD)' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'hireDate must be an ISO date' })
+  hireDate?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'scheduledConfirmationDate must be an ISO date' })
   scheduledConfirmationDate?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'finalConfirmationDate must be an ISO date (YYYY-MM-DD)' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'finalConfirmationDate must be an ISO date' })
   finalConfirmationDate?: string;
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'contractEndDate must be an ISO date (YYYY-MM-DD)' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'contractEndDate must be an ISO date' })
   contractEndDate?: string;
 
   @Field(() => Number, { nullable: true })
@@ -81,7 +80,7 @@ export class CreateEmployeeInput {
 
   @Field(() => String, { nullable: true })
   @IsOptional()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'retirementDate must be an ISO date (YYYY-MM-DD)' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'retirementDate must be an ISO date' })
   retirementDate?: string;
 
   @Field(() => ID, { nullable: true })

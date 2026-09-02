@@ -55,6 +55,13 @@ export class HolidayService {
     });
   }
 
+  listUpcomingForCalendar(calendarId: HolidayCalendarId, from: IsoDate, to: IsoDate): Promise<Holiday[]> {
+    return this.holidays.find({
+      where: { calendarId, date: Between(from, to) } as FindOptionsWhere<Holiday>,
+      order: { date: 'ASC' },
+    });
+  }
+
   // The set of holiday dates in [from, to] for a calendar — fed to countWorkingDays
   // so holidays don't consume leave.
   async getHolidayDates(
