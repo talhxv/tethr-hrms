@@ -6,12 +6,20 @@ import { useTheme } from '../../../providers/theme/useTheme';
 export type EmployeeOnboardingFormValues = {
   readonly employeeNumber: string;
   readonly firstName: string;
+  readonly middleName: string;
   readonly lastName: string;
+  readonly salutation: string;
   readonly hireDate: string;
   readonly workEmail: string;
   readonly roleTitle: string;
   readonly dateOfBirth: string;
   readonly probationEndDate: string;
+  readonly scheduledConfirmationDate: string;
+  readonly finalConfirmationDate: string;
+  readonly contractEndDate: string;
+  readonly noticePeriodDays: string;
+  readonly retirementDate: string;
+  readonly holidayCalendarId: string;
   readonly workerType: string;
 };
 
@@ -159,6 +167,14 @@ export const EmployeeOnboardingForm = ({
             />
           </div>
           <div className="field">
+            <label htmlFor="emp-middle">Middle name</label>
+            <input
+              id="emp-middle"
+              value={form.middleName}
+              onChange={(event) => setField('middleName', event.target.value)}
+            />
+          </div>
+          <div className="field">
             <label htmlFor="emp-last">Last name</label>
             <input
               id="emp-last"
@@ -166,6 +182,22 @@ export const EmployeeOnboardingForm = ({
               value={form.lastName}
               onChange={(event) => setField('lastName', event.target.value)}
             />
+          </div>
+          <div className="field">
+            <label htmlFor="emp-salutation">Salutation</label>
+            <select
+              id="emp-salutation"
+              value={form.salutation}
+              onChange={(event) => setField('salutation', event.target.value)}
+            >
+              <option value="">Not set</option>
+              <option value="Mr">Mr</option>
+              <option value="Ms">Ms</option>
+              <option value="Mrs">Mrs</option>
+              <option value="Mx">Mx</option>
+              <option value="Dr">Dr</option>
+              <option value="Prof">Prof</option>
+            </select>
           </div>
           <div className="field">
             <label htmlFor="emp-dob">Date of birth</label>
@@ -235,6 +267,43 @@ export const EmployeeOnboardingForm = ({
               type="date"
               value={form.probationEndDate}
               onChange={(event) => setField('probationEndDate', event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="emp-scheduled">Scheduled confirmation</label>
+            <input
+              id="emp-scheduled"
+              type="date"
+              value={form.scheduledConfirmationDate}
+              onChange={(event) => setField('scheduledConfirmationDate', event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="emp-contract">Contract end</label>
+            <input
+              id="emp-contract"
+              type="date"
+              value={form.contractEndDate}
+              onChange={(event) => setField('contractEndDate', event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="emp-notice">Notice period (days)</label>
+            <input
+              id="emp-notice"
+              min={0}
+              type="number"
+              value={form.noticePeriodDays}
+              onChange={(event) => setField('noticePeriodDays', event.target.value)}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="emp-retirement">Retirement date</label>
+            <input
+              id="emp-retirement"
+              type="date"
+              value={form.retirementDate}
+              onChange={(event) => setField('retirementDate', event.target.value)}
             />
           </div>
         </div>

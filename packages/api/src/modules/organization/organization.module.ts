@@ -12,7 +12,8 @@ import { Location } from './entities/location.entity';
 import { Organization } from './entities/organization.entity';
 import { OrganizationResolver } from './organization.resolver';
 import { OrganizationService } from './organization.service';
-import { DEPARTMENT_REPOSITORY } from './organization.tokens';
+import { LOCATION_REPOSITORY, DEPARTMENT_REPOSITORY } from './organization.tokens';
+import { LocationService } from './location.service';
 
 @Module({
   imports: [
@@ -23,8 +24,10 @@ import { DEPARTMENT_REPOSITORY } from './organization.tokens';
     OrganizationService,
     OrganizationResolver,
     DepartmentService,
+    LocationService,
     provideTenantScopedRepository(DEPARTMENT_REPOSITORY, Department),
+    provideTenantScopedRepository(LOCATION_REPOSITORY, Location),
   ],
-  exports: [OrganizationService, DepartmentService],
+  exports: [OrganizationService, DepartmentService, LocationService],
 })
 export class OrganizationModule {}

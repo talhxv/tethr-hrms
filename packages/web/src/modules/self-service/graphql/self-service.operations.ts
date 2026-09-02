@@ -6,13 +6,37 @@ export const MY_WORKSPACE_QUERY = gql`
       id
       employeeNumber
       firstName
+      middleName
       lastName
+      salutation
       workEmail
       dateOfBirth
       hireDate
       probationEndDate
+      scheduledConfirmationDate
+      finalConfirmationDate
+      contractEndDate
+      noticePeriodDays
+      retirementDate
+      holidayCalendarId
       employmentStatus
       workerType
+      currentAssignment {
+        positionTitle
+        departmentName
+        locationName
+        reportsToName
+        validFrom
+        validTo
+      }
+      assignmentHistory {
+        positionTitle
+        departmentName
+        locationName
+        reportsToName
+        validFrom
+        validTo
+      }
     }
     myEmployeeProfile {
       employeeId
@@ -25,6 +49,49 @@ export const MY_WORKSPACE_QUERY = gql`
       region
       countryCode
       postalCode
+      permanentAddressLine1
+      permanentAddressLine2
+      permanentCity
+      permanentRegion
+      permanentCountryCode
+      permanentPostalCode
+      currentAccommodationType
+      permanentAccommodationType
+      preferredContactChannel
+      emergencyContactName
+      emergencyContactPhone
+      emergencyContactRelation
+    }
+    myEmployeePersonalDetails {
+      id
+      employeeId
+      passportNumber
+      passportIssueDate
+      passportIssuePlace
+      passportValidUpto
+      maritalStatus
+      bloodGroup
+      familyBackground
+      healthDetails
+      bio
+    }
+    myEducations {
+      id
+      schoolOrUniversity
+      qualification
+      level
+      yearOfPassing
+      classOrPercentage
+      majorSubjects
+    }
+    myWorkHistories {
+      id
+      companyName
+      designation
+      salary
+      address
+      contact
+      totalExperience
     }
     leaveTypes {
       id
@@ -102,6 +169,54 @@ export const UPDATE_MY_EMPLOYEE_PROFILE_MUTATION = gql`
       region
       countryCode
       postalCode
+      permanentAddressLine1
+      permanentAddressLine2
+      permanentCity
+      permanentRegion
+      permanentCountryCode
+      permanentPostalCode
+      currentAccommodationType
+      permanentAccommodationType
+      preferredContactChannel
+      emergencyContactName
+      emergencyContactPhone
+      emergencyContactRelation
+    }
+  }
+`;
+
+export const UPDATE_MY_PERSONAL_DETAILS_MUTATION = gql`
+  mutation UpdateMyPersonalDetails($input: UpdateMyPersonalDetailsInput!) {
+    updateMyPersonalDetails(input: $input) {
+      id
+      employeeId
+      passportNumber
+      maritalStatus
+      bloodGroup
+      bio
+    }
+  }
+`;
+
+export const CREATE_MY_EDUCATION_MUTATION = gql`
+  mutation CreateEmployeeEducation($input: CreateEmployeeEducationInput!) {
+    createEmployeeEducation(input: $input) {
+      id
+      schoolOrUniversity
+      qualification
+      level
+      yearOfPassing
+    }
+  }
+`;
+
+export const CREATE_MY_WORK_HISTORY_MUTATION = gql`
+  mutation CreateEmployeeWorkHistory($input: CreateEmployeeWorkHistoryInput!) {
+    createEmployeeWorkHistory(input: $input) {
+      id
+      companyName
+      designation
+      totalExperience
     }
   }
 `;

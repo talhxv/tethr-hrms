@@ -61,6 +61,15 @@ export type InvoiceId = Brand<string, 'InvoiceId'>;
 // --- Recruitment ---
 export type HiringRequestId = Brand<string, 'HiringRequestId'>;
 
+// --- Employee extended ---
+export type EmployeePersonalDetailsId = Brand<string, 'EmployeePersonalDetailsId'>;
+export type EmployeeEducationId = Brand<string, 'EmployeeEducationId'>;
+export type EmployeeWorkHistoryId = Brand<string, 'EmployeeWorkHistoryId'>;
+export type EmployeeSeparationId = Brand<string, 'EmployeeSeparationId'>;
+export type EmployeeOffboardingTaskId = Brand<string, 'EmployeeOffboardingTaskId'>;
+export type EmployeeExitInterviewId = Brand<string, 'EmployeeExitInterviewId'>;
+export type EmployeeLeaveEntitlementId = Brand<string, 'EmployeeLeaveEntitlementId'>;
+
 // --- Engagement ---
 export type AnnouncementId = Brand<string, 'AnnouncementId'>;
 export type EmployeeFeedbackId = Brand<string, 'EmployeeFeedbackId'>;

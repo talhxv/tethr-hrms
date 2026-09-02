@@ -134,6 +134,7 @@ export type UpdateEmployeeHrRecordData = {
   readonly employeeId: EmployeeId;
   readonly roleTitle?: string | null;
   readonly salaryBreakdown?: string | null;
+  readonly paymentMode?: string | null;
   readonly bankName?: string | null;
   readonly bankAccountTitle?: string | null;
   readonly bankAccountNumber?: string | null;
@@ -224,6 +225,7 @@ export class EmployeeRecordsService {
     const patch = {
       roleTitle: input.roleTitle,
       salaryBreakdown: input.salaryBreakdown,
+      paymentMode: input.paymentMode,
       bankName: input.bankName,
       bankAccountTitle: input.bankAccountTitle,
       bankAccountNumber: input.bankAccountNumber,

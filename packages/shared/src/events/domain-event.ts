@@ -6,8 +6,15 @@ import type {
   DocumentId,
   EmployeeAssessmentId,
   EmployeeDocumentLinkId,
+  EmployeeEducationId,
+  EmployeeExitInterviewId,
   EmployeeId,
   EmployeeFeedbackId,
+  EmployeeLeaveEntitlementId,
+  EmployeeOffboardingTaskId,
+  EmployeePersonalDetailsId,
+  EmployeeSeparationId,
+  EmployeeWorkHistoryId,
   HiringRequestId,
   InvoiceId,
   LeaveRequestId,
@@ -30,6 +37,12 @@ export const DOMAIN_EVENT_NAMES = [
   'employee.created',
   'employee.updated',
   'employee.terminated',
+  'employee.separationRecorded',
+  'employee.personalDetailsUpdated',
+  'employee.educationRecorded',
+  'employee.workHistoryRecorded',
+  'employee.exitInterviewRecorded',
+  'employee.offboardingTaskUpdated',
   'assignment.created',
   'assignment.ended',
   'user.created',
@@ -38,6 +51,7 @@ export const DOMAIN_EVENT_NAMES = [
   'leave.approved',
   'leave.rejected',
   'leave.cancelled',
+  'leave.entitlementUpdated',
   'timesheet.submitted',
   'timesheet.locked',
   'compensation.revised',
@@ -70,6 +84,33 @@ export type DomainEventPayloads = {
     readonly effectiveDate: string;
     readonly reason: string;
   };
+  'employee.separationRecorded': {
+    readonly employeeSeparationId: EmployeeSeparationId;
+    readonly employeeId: EmployeeId;
+    readonly type: string;
+  };
+  'employee.personalDetailsUpdated': {
+    readonly employeePersonalDetailsId: EmployeePersonalDetailsId;
+    readonly employeeId: EmployeeId;
+  };
+  'employee.educationRecorded': {
+    readonly employeeEducationId: EmployeeEducationId;
+    readonly employeeId: EmployeeId;
+  };
+  'employee.workHistoryRecorded': {
+    readonly employeeWorkHistoryId: EmployeeWorkHistoryId;
+    readonly employeeId: EmployeeId;
+  };
+  'employee.exitInterviewRecorded': {
+    readonly employeeExitInterviewId: EmployeeExitInterviewId;
+    readonly employeeId: EmployeeId;
+    readonly separationId: EmployeeSeparationId;
+  };
+  'employee.offboardingTaskUpdated': {
+    readonly employeeOffboardingTaskId: EmployeeOffboardingTaskId;
+    readonly employeeId: EmployeeId;
+    readonly status: string;
+  };
   'assignment.created': {
     readonly assignmentId: AssignmentId;
     readonly employeeId: EmployeeId;
@@ -101,6 +142,11 @@ export type DomainEventPayloads = {
   };
   'leave.rejected': { readonly leaveRequestId: LeaveRequestId; readonly employeeId: EmployeeId };
   'leave.cancelled': { readonly leaveRequestId: LeaveRequestId; readonly employeeId: EmployeeId };
+  'leave.entitlementUpdated': {
+    readonly employeeLeaveEntitlementId: EmployeeLeaveEntitlementId;
+    readonly employeeId: EmployeeId;
+    readonly leaveTypeId: LeaveTypeId;
+  };
   'timesheet.submitted': {
     readonly timesheetId: TimesheetId;
     readonly employeeId: EmployeeId;

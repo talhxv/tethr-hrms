@@ -1,4 +1,10 @@
-import type { EmploymentStatus, IsoDate, WorkerType } from '@hrms/shared';
+import type {
+  EmploymentStatus,
+  HolidayCalendarId,
+  IsoDate,
+  Salutation,
+  WorkerType,
+} from '@hrms/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { TenantScopedEntity } from '../../../core/database/entities/tenant-scoped.entity';
@@ -16,8 +22,14 @@ export class Employee extends TenantScopedEntity {
   @Column({ type: 'varchar', length: 128 })
   firstName!: string;
 
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  middleName!: string | null;
+
   @Column({ type: 'varchar', length: 128 })
   lastName!: string;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  salutation!: Salutation | null;
 
   @Column({ type: 'varchar', length: 320, nullable: true })
   workEmail!: string | null;
@@ -33,6 +45,24 @@ export class Employee extends TenantScopedEntity {
 
   @Column({ type: 'date' })
   hireDate!: IsoDate;
+
+  @Column({ type: 'date', nullable: true })
+  scheduledConfirmationDate!: IsoDate | null;
+
+  @Column({ type: 'date', nullable: true })
+  finalConfirmationDate!: IsoDate | null;
+
+  @Column({ type: 'date', nullable: true })
+  contractEndDate!: IsoDate | null;
+
+  @Column({ type: 'int', nullable: true })
+  noticePeriodDays!: number | null;
+
+  @Column({ type: 'date', nullable: true })
+  retirementDate!: IsoDate | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  holidayCalendarId!: HolidayCalendarId | null;
 
   @Column({ type: 'date', nullable: true })
   terminationDate!: IsoDate | null;
