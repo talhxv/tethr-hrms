@@ -61,6 +61,9 @@ const buildService = (options: { leaveType?: Partial<LeaveType>; managerFindOne?
   const workflowService = {
     requestApproval: jest.fn().mockResolvedValue({ id: 'approval-1' }),
   } as unknown as WorkflowService;
+  const entitlementService = {
+    resolveEntitlement: jest.fn().mockImplementation((_e: unknown, _l: unknown, fallback: number) => Promise.resolve(fallback)),
+  } as unknown as import('./employee-leave-entitlement.service').EmployeeLeaveEntitlementService;
   const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
 
   const service = new LeaveRequestService(
@@ -71,6 +74,7 @@ const buildService = (options: { leaveType?: Partial<LeaveType>; managerFindOne?
     tenantContext,
     holidayService,
     workflowService,
+    entitlementService,
     audit,
   );
   return { service, publisher };

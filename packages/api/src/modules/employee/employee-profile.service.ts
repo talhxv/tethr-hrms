@@ -1,4 +1,9 @@
-import type { EmployeeId, UserId } from '@hrms/shared';
+import type {
+  AccommodationType,
+  EmployeeId,
+  PreferredContactChannel,
+  UserId,
+} from '@hrms/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import type { FindOptionsWhere } from 'typeorm';
 
@@ -16,6 +21,18 @@ export type UpdateEmployeeProfileData = {
   readonly region?: string | null;
   readonly countryCode?: string | null;
   readonly postalCode?: string | null;
+  readonly permanentAddressLine1?: string | null;
+  readonly permanentAddressLine2?: string | null;
+  readonly permanentCity?: string | null;
+  readonly permanentRegion?: string | null;
+  readonly permanentCountryCode?: string | null;
+  readonly permanentPostalCode?: string | null;
+  readonly currentAccommodationType?: AccommodationType | null;
+  readonly permanentAccommodationType?: AccommodationType | null;
+  readonly preferredContactChannel?: PreferredContactChannel | null;
+  readonly emergencyContactName?: string | null;
+  readonly emergencyContactPhone?: string | null;
+  readonly emergencyContactRelation?: string | null;
 };
 
 @Injectable()
@@ -48,10 +65,27 @@ export class EmployeeProfileService {
         region: null,
         countryCode: null,
         postalCode: null,
+        permanentAddressLine1: null,
+        permanentAddressLine2: null,
+        permanentCity: null,
+        permanentRegion: null,
+        permanentCountryCode: null,
+        permanentPostalCode: null,
+        currentAccommodationType: null,
+        permanentAccommodationType: null,
+        preferredContactChannel: null,
+        emergencyContactName: null,
+        emergencyContactPhone: null,
+        emergencyContactRelation: null,
         updatedByUserId,
       });
 
-    Object.assign(profile, input, { updatedByUserId });
+    for (const [key, value] of Object.entries(input) as [keyof UpdateEmployeeProfileData, unknown][]) {
+      if (value !== undefined) {
+        (profile as unknown as Record<string, unknown>)[key] = value;
+      }
+    }
+    profile.updatedByUserId = updatedByUserId;
     return this.profiles.save(profile);
   }
 }

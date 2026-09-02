@@ -4,20 +4,97 @@ const EMPLOYEE_FIELDS = `
   id
   employeeNumber
   firstName
+  middleName
   lastName
+  salutation
   workEmail
   roleTitle
   dateOfBirth
   hireDate
   probationEndDate
+  scheduledConfirmationDate
+  finalConfirmationDate
+  contractEndDate
+  noticePeriodDays
+  retirementDate
+  holidayCalendarId
+  terminationDate
   employmentStatus
   workerType
+  currentAssignment {
+    id
+    positionId
+    positionTitle
+    departmentId
+    departmentName
+    locationId
+    locationName
+    assignmentType
+    isPrimary
+    reportsToEmployeeId
+    reportsToName
+    validFrom
+    validTo
+  }
+  assignmentHistory {
+    id
+    positionId
+    positionTitle
+    departmentId
+    departmentName
+    locationId
+    locationName
+    assignmentType
+    isPrimary
+    reportsToEmployeeId
+    reportsToName
+    validFrom
+    validTo
+  }
+`;
+
+const EMPLOYEE_LIST_FIELDS = `
+  id
+  employeeNumber
+  firstName
+  middleName
+  lastName
+  salutation
+  workEmail
+  roleTitle
+  dateOfBirth
+  hireDate
+  probationEndDate
+  scheduledConfirmationDate
+  finalConfirmationDate
+  contractEndDate
+  noticePeriodDays
+  retirementDate
+  holidayCalendarId
+  terminationDate
+  employmentStatus
+  workerType
+  currentAssignment {
+    id
+    positionId
+    positionTitle
+    departmentId
+    departmentName
+    locationId
+    locationName
+    assignmentType
+    isPrimary
+    reportsToEmployeeId
+    reportsToName
+    validFrom
+    validTo
+  }
 `;
 
 export const EMPLOYEES_QUERY = gql`
   query Employees {
     employees {
-      ${EMPLOYEE_FIELDS}
+      ${EMPLOYEE_LIST_FIELDS}
     }
   }
 `;
@@ -49,9 +126,91 @@ export const EMPLOYEE_DETAIL_QUERY = gql`
       photoUrl
       personalEmail
       phone
+      addressLine1
+      addressLine2
       city
       region
       countryCode
+      postalCode
+      permanentAddressLine1
+      permanentAddressLine2
+      permanentCity
+      permanentRegion
+      permanentCountryCode
+      permanentPostalCode
+      currentAccommodationType
+      permanentAccommodationType
+      preferredContactChannel
+      emergencyContactName
+      emergencyContactPhone
+      emergencyContactRelation
+    }
+    employeePersonalDetails(employeeId: $employeeId) {
+      id
+      employeeId
+      passportNumber
+      passportIssueDate
+      passportIssuePlace
+      passportValidUpto
+      maritalStatus
+      bloodGroup
+      familyBackground
+      healthDetails
+      bio
+    }
+    employeeEducations(employeeId: $employeeId) {
+      id
+      employeeId
+      schoolOrUniversity
+      qualification
+      level
+      yearOfPassing
+      classOrPercentage
+      majorSubjects
+    }
+    employeeWorkHistories(employeeId: $employeeId) {
+      id
+      employeeId
+      companyName
+      designation
+      salary
+      address
+      contact
+      totalExperience
+    }
+    employeeSeparations(employeeId: $employeeId) {
+      id
+      employeeId
+      type
+      resignationLetterDate
+      relievingDate
+      reasonForLeaving
+      leaveEncashed
+      encashmentDate
+      heldOn
+      newWorkplace
+      feedback
+    }
+    employeeExitInterviews(employeeId: $employeeId) {
+      id
+      employeeId
+      separationId
+      status
+      scheduledDate
+      interviewerUserIds
+      summary
+      finalDecision
+    }
+    employeeOffboardingTasks(employeeId: $employeeId) {
+      id
+      employeeId
+      separationId
+      taskKey
+      title
+      status
+      dueDate
+      completedAt
+      notes
     }
     currentSalaryRevision(employeeId: $employeeId, asOf: $asOf) {
       id
@@ -249,6 +408,7 @@ export const EMPLOYEE_HR_RECORD_QUERY = gql`
       employeeId
       roleTitle
       salaryBreakdown
+      paymentMode
       bankName
       bankAccountTitle
       bankAccountNumber
@@ -281,6 +441,7 @@ export const UPDATE_EMPLOYEE_HR_RECORD_MUTATION = gql`
       employeeId
       roleTitle
       salaryBreakdown
+      paymentMode
       bankName
       bankAccountTitle
       bankAccountNumber
@@ -302,6 +463,162 @@ export const UPDATE_EMPLOYEE_ONBOARDING_TASK_MUTATION = gql`
       dueDate
       completedAt
       notes
+    }
+  }
+`;
+
+export const UPDATE_EMPLOYEE_MUTATION = gql`
+  mutation UpdateEmployee($input: UpdateEmployeeInput!) {
+    updateEmployee(input: $input) {
+      ${EMPLOYEE_FIELDS}
+    }
+  }
+`;
+
+export const SEPARATE_EMPLOYEE_MUTATION = gql`
+  mutation SeparateEmployee($input: SeparateEmployeeInput!) {
+    separateEmployee(input: $input) {
+      ${EMPLOYEE_FIELDS}
+    }
+  }
+`;
+
+export const CREATE_WORKSPACE_USER_MUTATION = gql`
+  mutation CreateWorkspaceUser($input: CreateWorkspaceUserInput!) {
+    createWorkspaceUser(input: $input) {
+      id
+      email
+      employeeId
+    }
+  }
+`;
+
+export const UPDATE_EMPLOYEE_PERSONAL_DETAILS_MUTATION = gql`
+  mutation UpdateEmployeePersonalDetails($input: UpdatePersonalDetailsInput!) {
+    updateEmployeePersonalDetails(input: $input) {
+      id
+      employeeId
+      passportNumber
+      maritalStatus
+      bloodGroup
+      bio
+    }
+  }
+`;
+
+export const CREATE_EMPLOYEE_EDUCATION_MUTATION = gql`
+  mutation CreateEmployeeEducation($input: CreateEmployeeEducationInput!) {
+    createEmployeeEducation(input: $input) {
+      id
+      employeeId
+      schoolOrUniversity
+      qualification
+      level
+      yearOfPassing
+      classOrPercentage
+      majorSubjects
+    }
+  }
+`;
+
+export const UPDATE_EMPLOYEE_EDUCATION_MUTATION = gql`
+  mutation UpdateEmployeeEducation($input: UpdateEmployeeEducationInput!) {
+    updateEmployeeEducation(input: $input) {
+      id
+      employeeId
+      schoolOrUniversity
+      qualification
+      level
+      yearOfPassing
+      classOrPercentage
+      majorSubjects
+    }
+  }
+`;
+
+export const DELETE_EMPLOYEE_EDUCATION_MUTATION = gql`
+  mutation DeleteEmployeeEducation($id: ID!) {
+    deleteEmployeeEducation(id: $id)
+  }
+`;
+
+export const CREATE_EMPLOYEE_WORK_HISTORY_MUTATION = gql`
+  mutation CreateEmployeeWorkHistory($input: CreateEmployeeWorkHistoryInput!) {
+    createEmployeeWorkHistory(input: $input) {
+      id
+      employeeId
+      companyName
+      designation
+      salary
+      address
+      contact
+      totalExperience
+    }
+  }
+`;
+
+export const UPDATE_EMPLOYEE_WORK_HISTORY_MUTATION = gql`
+  mutation UpdateEmployeeWorkHistory($input: UpdateEmployeeWorkHistoryInput!) {
+    updateEmployeeWorkHistory(input: $input) {
+      id
+      employeeId
+      companyName
+      designation
+      salary
+      address
+      contact
+      totalExperience
+    }
+  }
+`;
+
+export const DELETE_EMPLOYEE_WORK_HISTORY_MUTATION = gql`
+  mutation DeleteEmployeeWorkHistory($id: ID!) {
+    deleteEmployeeWorkHistory(id: $id)
+  }
+`;
+
+export const UPSERT_EXIT_INTERVIEW_MUTATION = gql`
+  mutation UpsertExitInterview($input: UpsertExitInterviewInput!) {
+    upsertExitInterview(input: $input) {
+      id
+      employeeId
+      separationId
+      status
+      scheduledDate
+      interviewerUserIds
+      summary
+      finalDecision
+    }
+  }
+`;
+
+export const UPDATE_OFFBOARDING_TASK_MUTATION = gql`
+  mutation UpdateOffboardingTask($input: UpdateOffboardingTaskInput!) {
+    updateOffboardingTask(input: $input) {
+      id
+      employeeId
+      taskKey
+      title
+      status
+      dueDate
+      completedAt
+      notes
+    }
+  }
+`;
+
+export const EMPLOYEE_ASSIGNMENT_HISTORY_QUERY = gql`
+  query EmployeeAssignmentHistory($employeeId: ID!) {
+    employeeAssignmentHistory(employeeId: $employeeId) {
+      id
+      positionTitle
+      departmentName
+      locationName
+      reportsToName
+      validFrom
+      validTo
+      assignmentType
     }
   }
 `;
