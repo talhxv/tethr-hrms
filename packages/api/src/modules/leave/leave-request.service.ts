@@ -21,6 +21,7 @@ import { TenantContextService } from '../../core/tenancy/tenant-context.service'
 import { TenantScopedRepository } from '../../core/tenancy/tenant-scoped.repository';
 import { WorkflowService } from '../../core/workflow/workflow.service';
 
+import { EmployeeLeaveEntitlementService } from './employee-leave-entitlement.service';
 import { LeaveBalance } from './entities/leave-balance.entity';
 import { LeaveRequest } from './entities/leave-request.entity';
 import { LeaveType } from './entities/leave-type.entity';
@@ -56,6 +57,7 @@ export class LeaveRequestService {
     private readonly tenantContext: TenantContextService,
     private readonly holidayService: HolidayService,
     private readonly workflowService: WorkflowService,
+    private readonly entitlementService: EmployeeLeaveEntitlementService,
     private readonly audit: AuditService,
   ) {}
 
@@ -82,6 +84,12 @@ export class LeaveRequestService {
 
     const organizationId = this.tenantContext.getOrganizationId();
     const periodYear = Number(input.startDate.slice(0, 4));
+    const resolvedEntitlement = await this.entitlementService.resolveEntitlement(
+      input.employeeId,
+      input.leaveTypeId,
+      Number(leaveType.defaultAnnualEntitlement),
+      input.startDate,
+    );
 
     const saved = await this.dataSource.transaction(async (manager) => {
       const balance = await this.getOrCreateBalance(
@@ -90,7 +98,7 @@ export class LeaveRequestService {
         input.employeeId,
         input.leaveTypeId,
         periodYear,
-        leaveType.defaultAnnualEntitlement,
+        resolvedEntitlement.toFixed(2),
       );
       const available =
         toNumber(balance.entitledDays) - toNumber(balance.usedDays) - toNumber(balance.pendingDays);

@@ -1,5 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsEmail, IsOptional, IsString, IsUrl, Length, MaxLength } from 'class-validator';
+import { IsEmail, IsIn, IsOptional, IsString, IsUrl, Length, MaxLength } from 'class-validator';
 
 @InputType()
 export class UpdateMyProfileInput {
@@ -55,4 +55,73 @@ export class UpdateMyProfileInput {
   @IsString()
   @MaxLength(24)
   postalCode?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  permanentAddressLine1?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  permanentAddressLine2?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  permanentCity?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  permanentRegion?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @Length(2, 2)
+  permanentCountryCode?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(24)
+  permanentPostalCode?: string | null;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsIn(['rented', 'owned'])
+  currentAccommodationType?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsIn(['rented', 'owned'])
+  permanentAccommodationType?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsIn(['companyEmail', 'personalEmail', 'userId'])
+  preferredContactChannel?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  emergencyContactName?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(48)
+  emergencyContactPhone?: string;
+
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(48)
+  emergencyContactRelation?: string;
 }

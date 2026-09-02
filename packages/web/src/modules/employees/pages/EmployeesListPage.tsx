@@ -29,6 +29,7 @@ import {
   ATTACH_EMPLOYEE_DOCUMENT_MUTATION,
   AWARD_BONUS_MUTATION,
   CREATE_EMPLOYEE_MUTATION,
+  CREATE_WORKSPACE_USER_MUTATION,
   EMPLOYEE_DOCUMENT_DOWNLOAD_ACCESS_QUERY,
   EMPLOYEES_QUERY,
   EMPLOYEE_DETAIL_QUERY,
@@ -39,22 +40,47 @@ import {
   RECORD_EMPLOYEE_ASSESSMENT_MUTATION,
   REVISE_EMPLOYEE_SALARY_MUTATION,
   REQUEST_EMPLOYEE_DOCUMENT_SIGNATURE_MUTATION,
+  SEPARATE_EMPLOYEE_MUTATION,
   UPDATE_EMPLOYEE_HR_RECORD_MUTATION,
+  UPDATE_EMPLOYEE_MUTATION,
   UPDATE_EMPLOYEE_ONBOARDING_TASK_MUTATION,
+  UPDATE_OFFBOARDING_TASK_MUTATION,
+  UPSERT_EXIT_INTERVIEW_MUTATION,
 } from '../graphql/employee.operations';
+
+type AssignmentView = {
+  readonly id: string;
+  readonly positionTitle: string | null;
+  readonly departmentName: string | null;
+  readonly locationName: string | null;
+  readonly reportsToName: string | null;
+  readonly validFrom: string;
+  readonly validTo: string | null;
+  readonly assignmentType: string;
+};
 
 type EmployeeRecord = {
   readonly id: string;
   readonly employeeNumber: string;
   readonly firstName: string;
+  readonly middleName: string | null;
   readonly lastName: string;
+  readonly salutation: string | null;
   readonly workEmail: string | null;
   readonly roleTitle: string | null;
   readonly dateOfBirth: string | null;
   readonly hireDate: string;
   readonly probationEndDate: string | null;
+  readonly scheduledConfirmationDate: string | null;
+  readonly finalConfirmationDate: string | null;
+  readonly contractEndDate: string | null;
+  readonly noticePeriodDays: number | null;
+  readonly retirementDate: string | null;
+  readonly holidayCalendarId: string | null;
   readonly employmentStatus: EmploymentStatus;
   readonly workerType: WorkerType;
+  readonly currentAssignment: AssignmentView | null;
+  readonly assignmentHistory: readonly AssignmentView[];
 };
 
 type EmployeesData = { employees: ReadonlyArray<EmployeeRecord> };
@@ -64,9 +90,24 @@ type EmployeeProfileRecord = {
   readonly photoUrl: string | null;
   readonly personalEmail: string | null;
   readonly phone: string | null;
+  readonly addressLine1: string | null;
+  readonly addressLine2: string | null;
   readonly city: string | null;
   readonly region: string | null;
   readonly countryCode: string | null;
+  readonly postalCode: string | null;
+  readonly permanentAddressLine1: string | null;
+  readonly permanentAddressLine2: string | null;
+  readonly permanentCity: string | null;
+  readonly permanentRegion: string | null;
+  readonly permanentCountryCode: string | null;
+  readonly permanentPostalCode: string | null;
+  readonly currentAccommodationType: string | null;
+  readonly permanentAccommodationType: string | null;
+  readonly preferredContactChannel: string | null;
+  readonly emergencyContactName: string | null;
+  readonly emergencyContactPhone: string | null;
+  readonly emergencyContactRelation: string | null;
 };
 type SalaryRecord = {
   readonly id: string;
@@ -155,9 +196,82 @@ type BonusAwardRecord = {
   readonly reason: string;
   readonly note: string | null;
 };
+type PersonalDetailsRecord = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly passportNumber: string | null;
+  readonly passportIssueDate: string | null;
+  readonly passportIssuePlace: string | null;
+  readonly passportValidUpto: string | null;
+  readonly maritalStatus: string | null;
+  readonly bloodGroup: string | null;
+  readonly familyBackground: string | null;
+  readonly healthDetails: string | null;
+  readonly bio: string | null;
+};
+type EducationRecord = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly schoolOrUniversity: string;
+  readonly qualification: string;
+  readonly level: string;
+  readonly yearOfPassing: number | null;
+  readonly classOrPercentage: string | null;
+  readonly majorSubjects: string | null;
+};
+type WorkHistoryRecord = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly companyName: string;
+  readonly designation: string | null;
+  readonly salary: string | null;
+  readonly address: string | null;
+  readonly contact: string | null;
+  readonly totalExperience: string | null;
+};
+type SeparationRecord = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly type: string;
+  readonly resignationLetterDate: string | null;
+  readonly relievingDate: string | null;
+  readonly reasonForLeaving: string | null;
+  readonly leaveEncashed: boolean;
+  readonly encashmentDate: string | null;
+  readonly heldOn: string | null;
+  readonly newWorkplace: string | null;
+  readonly feedback: string | null;
+};
+type ExitInterviewRecord = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly separationId: string;
+  readonly status: string;
+  readonly scheduledDate: string | null;
+  readonly interviewerUserIds: readonly string[] | null;
+  readonly summary: string | null;
+  readonly finalDecision: string | null;
+};
+type OffboardingTaskRecord = {
+  readonly id: string;
+  readonly employeeId: string;
+  readonly separationId: string | null;
+  readonly taskKey: string;
+  readonly title: string;
+  readonly status: string;
+  readonly dueDate: string | null;
+  readonly completedAt: string | null;
+  readonly notes: string | null;
+};
 type EmployeeDetailData = {
   readonly employee: EmployeeRecord;
   readonly employeeProfile: EmployeeProfileRecord | null;
+  readonly employeePersonalDetails: PersonalDetailsRecord | null;
+  readonly employeeEducations: readonly EducationRecord[];
+  readonly employeeWorkHistories: readonly WorkHistoryRecord[];
+  readonly employeeSeparations: readonly SeparationRecord[];
+  readonly employeeExitInterviews: readonly ExitInterviewRecord[];
+  readonly employeeOffboardingTasks: readonly OffboardingTaskRecord[];
   readonly currentSalaryRevision: SalaryRecord | null;
   readonly employeeAssessments: readonly AssessmentRecord[];
   readonly employeeDocuments: readonly EmployeeDocumentRecord[];
@@ -168,6 +282,7 @@ type EmployeeHrRecord = {
   readonly employeeId: string;
   readonly roleTitle: string | null;
   readonly salaryBreakdown: string | null;
+  readonly paymentMode: string | null;
   readonly bankName: string | null;
   readonly bankAccountTitle: string | null;
   readonly bankAccountNumber: string | null;
@@ -302,17 +417,26 @@ const today = (): string => new Date().toISOString().slice(0, 10);
 const emptyForm = {
   employeeNumber: '',
   firstName: '',
+  middleName: '',
   lastName: '',
+  salutation: '',
   hireDate: '',
   workEmail: '',
   roleTitle: '',
   dateOfBirth: '',
   probationEndDate: '',
+  scheduledConfirmationDate: '',
+  finalConfirmationDate: '',
+  contractEndDate: '',
+  noticePeriodDays: '',
+  retirementDate: '',
+  holidayCalendarId: '',
   workerType: 'permanent',
 };
 const emptyHrRecordForm = {
   roleTitle: '',
   salaryBreakdown: '',
+  paymentMode: '',
   bankName: '',
   bankAccountTitle: '',
   bankAccountNumber: '',
@@ -398,6 +522,11 @@ export const EmployeesListPage = () => {
   const [updateOnboardingTask, { loading: savingOnboardingTask }] = useMutation(
     UPDATE_EMPLOYEE_ONBOARDING_TASK_MUTATION,
   );
+  const [updateEmployee, { loading: updatingEmployee }] = useMutation(UPDATE_EMPLOYEE_MUTATION);
+  const [separateEmployee, { loading: separatingEmployee }] = useMutation(SEPARATE_EMPLOYEE_MUTATION);
+  const [createWorkspaceUser, { loading: creatingWorkspaceUser }] = useMutation(CREATE_WORKSPACE_USER_MUTATION);
+  const [updateOffboardingTask, { loading: savingOffboardingTask }] = useMutation(UPDATE_OFFBOARDING_TASK_MUTATION);
+  const [upsertExitInterview, { loading: savingExitInterview }] = useMutation(UPSERT_EXIT_INTERVIEW_MUTATION);
 
   const employees = useMemo(() => data?.employees ?? [], [data]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -419,6 +548,37 @@ export const EmployeesListPage = () => {
   const [bonusForm, setBonusForm] = useState(emptyBonusForm);
   const [hrRecordForm, setHrRecordForm] = useState(emptyHrRecordForm);
   const [onboardingDrafts, setOnboardingDrafts] = useState<Record<string, OnboardingTaskDraft>>({});
+  const [offboardingDrafts, setOffboardingDrafts] = useState<Record<string, { status: string; dueDate: string; notes: string }>>({});
+  const [separationForm, setSeparationForm] = useState({
+    type: 'resignation' as string,
+    effectiveDate: today(),
+    reason: '',
+    resignationLetterDate: '',
+    relievingDate: '',
+    newWorkplace: '',
+    feedback: '',
+    leaveEncashed: false,
+  });
+  const [showSeparation, setShowSeparation] = useState(false);
+  const [exitInterviewForm, setExitInterviewForm] = useState({
+    status: 'pending' as string,
+    scheduledDate: '',
+    summary: '',
+    finalDecision: '' as string,
+  });
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({
+    middleName: '',
+    salutation: '',
+    scheduledConfirmationDate: '',
+    finalConfirmationDate: '',
+    contractEndDate: '',
+    noticePeriodDays: '',
+    retirementDate: '',
+    holidayCalendarId: '',
+    workEmail: '',
+    roleTitle: '',
+  });
   const [formError, setFormError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
 
@@ -475,6 +635,12 @@ export const EmployeesListPage = () => {
     [onboardingData?.employeeOnboardingTasks],
   );
   const profile = detailData?.employeeProfile ?? null;
+  const personalDetails = detailData?.employeePersonalDetails ?? null;
+  const educations = detailData?.employeeEducations ?? [];
+  const workHistories = detailData?.employeeWorkHistories ?? [];
+  const separations = detailData?.employeeSeparations ?? [];
+  const exitInterviews = detailData?.employeeExitInterviews ?? [];
+  const offboardingTasks = detailData?.employeeOffboardingTasks ?? [];
   const salary = detailData?.currentSalaryRevision ?? null;
   const salaryStructures = useMemo(
     () => salaryStructuresData?.salaryStructures ?? [],
@@ -492,6 +658,9 @@ export const EmployeesListPage = () => {
   const documents = detailData?.employeeDocuments ?? [];
   const bonuses = detailData?.bonusAwards ?? [];
   const onboardingCompletedCount = onboardingTasks.filter(
+    (task) => task.status === 'completed',
+  ).length;
+  const offboardingCompletedCount = offboardingTasks.filter(
     (task) => task.status === 'completed',
   ).length;
   const canRecordAssessment =
@@ -516,12 +685,20 @@ export const EmployeesListPage = () => {
           input: {
             employeeNumber: form.employeeNumber,
             firstName: form.firstName,
+            middleName: form.middleName || undefined,
             lastName: form.lastName,
+            salutation: form.salutation || undefined,
             hireDate: form.hireDate,
             workEmail: form.workEmail ? form.workEmail : undefined,
             roleTitle: form.roleTitle ? form.roleTitle : undefined,
             dateOfBirth: form.dateOfBirth ? form.dateOfBirth : undefined,
             probationEndDate: form.probationEndDate ? form.probationEndDate : undefined,
+            scheduledConfirmationDate: form.scheduledConfirmationDate || undefined,
+            finalConfirmationDate: form.finalConfirmationDate || undefined,
+            contractEndDate: form.contractEndDate || undefined,
+            noticePeriodDays: form.noticePeriodDays ? Number(form.noticePeriodDays) : undefined,
+            retirementDate: form.retirementDate || undefined,
+            holidayCalendarId: form.holidayCalendarId || undefined,
             workerType: form.workerType,
           },
         },
@@ -544,6 +721,7 @@ export const EmployeesListPage = () => {
     setHrRecordForm({
       roleTitle: hrRecord?.roleTitle ?? detailEmployee?.roleTitle ?? '',
       salaryBreakdown: hrRecord?.salaryBreakdown ?? '',
+      paymentMode: hrRecord?.paymentMode ?? '',
       bankName: hrRecord?.bankName ?? '',
       bankAccountTitle: hrRecord?.bankAccountTitle ?? '',
       bankAccountNumber: hrRecord?.bankAccountNumber ?? '',
@@ -569,6 +747,21 @@ export const EmployeesListPage = () => {
   }, [onboardingTasks]);
 
   useEffect(() => {
+    setOffboardingDrafts(
+      Object.fromEntries(
+        offboardingTasks.map((task) => [
+          task.taskKey,
+          {
+            status: task.status,
+            dueDate: task.dueDate ?? '',
+            notes: task.notes ?? '',
+          },
+        ]),
+      ),
+    );
+  }, [offboardingTasks]);
+
+  useEffect(() => {
     setSalaryRevisionForm({
       salaryStructureId: defaultSalaryStructureId,
       effectiveDate: today(),
@@ -577,6 +770,52 @@ export const EmployeesListPage = () => {
       note: '',
     });
   }, [defaultSalaryStructureId, salary, selected?.id]);
+
+  useEffect(() => {
+    if (detailEmployee) {
+      setEditForm({
+        middleName: detailEmployee.middleName ?? '',
+        salutation: detailEmployee.salutation ?? '',
+        scheduledConfirmationDate: detailEmployee.scheduledConfirmationDate ?? '',
+        finalConfirmationDate: detailEmployee.finalConfirmationDate ?? '',
+        contractEndDate: detailEmployee.contractEndDate ?? '',
+        noticePeriodDays: detailEmployee.noticePeriodDays !== null && detailEmployee.noticePeriodDays !== undefined ? String(detailEmployee.noticePeriodDays) : '',
+        retirementDate: detailEmployee.retirementDate ?? '',
+        holidayCalendarId: detailEmployee.holidayCalendarId ?? '',
+        workEmail: detailEmployee.workEmail ?? '',
+        roleTitle: detailEmployee.roleTitle ?? '',
+      });
+    }
+  }, [detailEmployee]);
+
+  const onUpdateEmployee = async (event: FormEvent): Promise<void> => {
+    event.preventDefault();
+    if (!selected) return;
+    setDetailError(null);
+    try {
+      await updateEmployee({
+        variables: {
+          input: {
+            employeeId: selected.id,
+            middleName: editForm.middleName || null,
+            salutation: editForm.salutation || null,
+            scheduledConfirmationDate: editForm.scheduledConfirmationDate || null,
+            finalConfirmationDate: editForm.finalConfirmationDate || null,
+            contractEndDate: editForm.contractEndDate || null,
+            noticePeriodDays: editForm.noticePeriodDays ? Number(editForm.noticePeriodDays) : null,
+            retirementDate: editForm.retirementDate || null,
+            holidayCalendarId: editForm.holidayCalendarId || null,
+            workEmail: editForm.workEmail || null,
+            roleTitle: editForm.roleTitle || null,
+          },
+        },
+      });
+      setShowEdit(false);
+      await Promise.all([refetchDetail(), refetch()]);
+    } catch (caught) {
+      setDetailError(caught instanceof Error ? caught.message : 'Could not update employee');
+    }
+  };
 
   const onRecordAssessment = async (event: FormEvent): Promise<void> => {
     event.preventDefault();
@@ -846,6 +1085,7 @@ export const EmployeesListPage = () => {
             employeeId: selected.id,
             roleTitle: hrRecordForm.roleTitle || null,
             salaryBreakdown: hrRecordForm.salaryBreakdown || null,
+            paymentMode: hrRecordForm.paymentMode || null,
             bankName: hrRecordForm.bankName || null,
             bankAccountTitle: hrRecordForm.bankAccountTitle || null,
             bankAccountNumber: hrRecordForm.bankAccountNumber || null,
@@ -858,6 +1098,102 @@ export const EmployeesListPage = () => {
       await Promise.all([refetchHrRecord(), refetchDetail(), refetch()]);
     } catch (caught) {
       setDetailError(caught instanceof Error ? caught.message : 'Could not save HR record');
+    }
+  };
+
+  const onSeparate = async (event: FormEvent): Promise<void> => {
+    event.preventDefault();
+    if (!selected) return;
+    setDetailError(null);
+    try {
+      await separateEmployee({
+        variables: {
+          input: {
+            employeeId: selected.id,
+            type: separationForm.type,
+            effectiveDate: separationForm.effectiveDate,
+            reason: separationForm.reason || undefined,
+            resignationLetterDate: separationForm.resignationLetterDate || undefined,
+            relievingDate: separationForm.relievingDate || undefined,
+            newWorkplace: separationForm.newWorkplace || undefined,
+            feedback: separationForm.feedback || undefined,
+            leaveEncashed: separationForm.leaveEncashed,
+          },
+        },
+      });
+      setShowSeparation(false);
+      await Promise.all([refetchDetail(), refetch()]);
+    } catch (caught) {
+      setDetailError(caught instanceof Error ? caught.message : 'Could not record separation');
+    }
+  };
+
+  const onSaveOffboardingTask = async (task: OffboardingTaskRecord): Promise<void> => {
+    if (!selected) return;
+    const draft = offboardingDrafts[task.taskKey];
+    if (!draft) return;
+    setDetailError(null);
+    try {
+      await updateOffboardingTask({
+        variables: {
+          input: {
+            employeeId: selected.id,
+            taskKey: task.taskKey,
+            status: draft.status,
+            dueDate: draft.dueDate || null,
+            notes: draft.notes || null,
+          },
+        },
+      });
+      await refetchDetail();
+    } catch (caught) {
+      setDetailError(caught instanceof Error ? caught.message : 'Could not save offboarding task');
+    }
+  };
+
+  const onUpsertExitInterview = async (event: FormEvent): Promise<void> => {
+    event.preventDefault();
+    if (!selected || separations.length === 0) return;
+    const separationId = separations[0]?.id;
+    if (!separationId) return;
+    setDetailError(null);
+    try {
+      await upsertExitInterview({
+        variables: {
+          input: {
+            employeeId: selected.id,
+            separationId,
+            status: exitInterviewForm.status,
+            scheduledDate: exitInterviewForm.scheduledDate || undefined,
+            summary: exitInterviewForm.summary || undefined,
+            finalDecision: exitInterviewForm.finalDecision || undefined,
+          },
+        },
+      });
+      await refetchDetail();
+    } catch (caught) {
+      setDetailError(caught instanceof Error ? caught.message : 'Could not save exit interview');
+    }
+  };
+
+  const onCreateLogin = async (): Promise<void> => {
+    if (!selected) return;
+    setDetailError(null);
+    try {
+      await createWorkspaceUser({
+        variables: {
+          input: {
+            email: detailEmployee?.workEmail ?? `${selected.employeeNumber}@example.com`,
+            password: 'Temp1234!',
+            employeeId: selected.id,
+            roleId: undefined,
+          },
+        },
+      });
+      setDetailError('Login created for ' + selected.employeeNumber);
+      await refetchDetail();
+    } catch (caught) {
+      setDetailError(caught instanceof Error ? caught.message : 'Could not create login');
     }
   };
 
@@ -996,6 +1332,30 @@ export const EmployeesListPage = () => {
                 />
               </div>
               <div className="field">
+                <label htmlFor="emp-middle">Middle name</label>
+                <input
+                  id="emp-middle"
+                  value={form.middleName}
+                  onChange={(event) => setField('middleName', event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="emp-salutation">Salutation</label>
+                <select
+                  id="emp-salutation"
+                  value={form.salutation}
+                  onChange={(event) => setField('salutation', event.target.value)}
+                >
+                  <option value="">—</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Ms">Ms</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Mx">Mx</option>
+                  <option value="Dr">Dr</option>
+                  <option value="Prof">Prof</option>
+                </select>
+              </div>
+              <div className="field">
                 <label htmlFor="emp-hire">Hire date</label>
                 <input
                   id="emp-hire"
@@ -1038,6 +1398,43 @@ export const EmployeesListPage = () => {
                   type="date"
                   value={form.probationEndDate}
                   onChange={(event) => setField('probationEndDate', event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="emp-scheduled">Scheduled confirmation</label>
+                <input
+                  id="emp-scheduled"
+                  type="date"
+                  value={form.scheduledConfirmationDate}
+                  onChange={(event) => setField('scheduledConfirmationDate', event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="emp-contract">Contract end</label>
+                <input
+                  id="emp-contract"
+                  type="date"
+                  value={form.contractEndDate}
+                  onChange={(event) => setField('contractEndDate', event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="emp-notice">Notice period (days)</label>
+                <input
+                  id="emp-notice"
+                  type="number"
+                  min={0}
+                  value={form.noticePeriodDays}
+                  onChange={(event) => setField('noticePeriodDays', event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="emp-retirement">Retirement date</label>
+                <input
+                  id="emp-retirement"
+                  type="date"
+                  value={form.retirementDate}
+                  onChange={(event) => setField('retirementDate', event.target.value)}
                 />
               </div>
               <div className="field">
@@ -1180,7 +1577,14 @@ export const EmployeesListPage = () => {
             ) : null}
 
             <section className="detail-section">
-              <h3 className="section-title">Employment</h3>
+              <div className="section-title-row">
+                <h3 className="section-title">Employment</h3>
+                {canEditHrRecord ? (
+                  <button className="button button-secondary" type="button" onClick={() => setShowEdit((v) => !v)}>
+                    {showEdit ? 'Cancel' : 'Edit'}
+                  </button>
+                ) : null}
+              </div>
               <div className="field-list">
                 <div className="field-row">
                   <span className="field-label">Status</span>
@@ -1230,7 +1634,267 @@ export const EmployeesListPage = () => {
                   <span className="field-label">Phone</span>
                   <span className="field-value">{profile?.phone ?? '-'}</span>
                 </div>
+                {detailEmployee.middleName ? (
+                  <div className="field-row">
+                    <span className="field-label">Middle name</span>
+                    <span className="field-value">{detailEmployee.middleName}</span>
+                  </div>
+                ) : null}
+                {detailEmployee.salutation ? (
+                  <div className="field-row">
+                    <span className="field-label">Salutation</span>
+                    <span className="field-value">{detailEmployee.salutation}</span>
+                  </div>
+                ) : null}
+                {detailEmployee.scheduledConfirmationDate ? (
+                  <div className="field-row">
+                    <span className="field-label">Scheduled confirmation</span>
+                    <span className="field-value">{formatDate(detailEmployee.scheduledConfirmationDate)}</span>
+                  </div>
+                ) : null}
+                {detailEmployee.contractEndDate ? (
+                  <div className="field-row">
+                    <span className="field-label">Contract end</span>
+                    <span className="field-value">{formatDate(detailEmployee.contractEndDate)}</span>
+                  </div>
+                ) : null}
+                {detailEmployee.noticePeriodDays !== null ? (
+                  <div className="field-row">
+                    <span className="field-label">Notice period</span>
+                    <span className="field-value">{detailEmployee.noticePeriodDays} days</span>
+                  </div>
+                ) : null}
               </div>
+              {showEdit && canEditHrRecord ? (
+                <form className="config-form compact-form" onSubmit={onUpdateEmployee} style={{ marginTop: theme.spacing(3) }}>
+                  <div className="field-group">
+                    <div className="field"><label htmlFor="edit-middle">Middle name</label><input id="edit-middle" value={editForm.middleName} onChange={(e) => setEditForm((c) => ({ ...c, middleName: e.target.value }))} /></div>
+                    <div className="field"><label htmlFor="edit-salutation">Salutation</label><select id="edit-salutation" value={editForm.salutation} onChange={(e) => setEditForm((c) => ({ ...c, salutation: e.target.value }))}><option value="">—</option><option value="Mr">Mr</option><option value="Ms">Ms</option><option value="Mrs">Mrs</option><option value="Mx">Mx</option><option value="Dr">Dr</option><option value="Prof">Prof</option></select></div>
+                  </div>
+                  <div className="field-group">
+                    <div className="field"><label htmlFor="edit-scheduled">Scheduled confirmation</label><input id="edit-scheduled" type="date" value={editForm.scheduledConfirmationDate} onChange={(e) => setEditForm((c) => ({ ...c, scheduledConfirmationDate: e.target.value }))} /></div>
+                    <div className="field"><label htmlFor="edit-final">Final confirmation</label><input id="edit-final" type="date" value={editForm.finalConfirmationDate} onChange={(e) => setEditForm((c) => ({ ...c, finalConfirmationDate: e.target.value }))} /></div>
+                  </div>
+                  <div className="field-group">
+                    <div className="field"><label htmlFor="edit-contract">Contract end</label><input id="edit-contract" type="date" value={editForm.contractEndDate} onChange={(e) => setEditForm((c) => ({ ...c, contractEndDate: e.target.value }))} /></div>
+                    <div className="field"><label htmlFor="edit-notice">Notice days</label><input id="edit-notice" type="number" min={0} value={editForm.noticePeriodDays} onChange={(e) => setEditForm((c) => ({ ...c, noticePeriodDays: e.target.value }))} /></div>
+                  </div>
+                  <div className="field"><label htmlFor="edit-retirement">Retirement date</label><input id="edit-retirement" type="date" value={editForm.retirementDate} onChange={(e) => setEditForm((c) => ({ ...c, retirementDate: e.target.value }))} /></div>
+                  <div className="field"><label htmlFor="edit-workemail">Work email</label><input id="edit-workemail" type="email" value={editForm.workEmail} onChange={(e) => setEditForm((c) => ({ ...c, workEmail: e.target.value }))} /></div>
+                  <div className="field"><label htmlFor="edit-role">Role</label><input id="edit-role" value={editForm.roleTitle} onChange={(e) => setEditForm((c) => ({ ...c, roleTitle: e.target.value }))} /></div>
+                  <button className="button button-primary" type="submit" disabled={updatingEmployee}>{updatingEmployee ? 'Saving…' : 'Save changes'}</button>
+                </form>
+              ) : null}
+            </section>
+
+            <section className="detail-section">
+              <h3 className="section-title">Organization</h3>
+              <div className="field-list">
+                <div className="field-row">
+                  <span className="field-label">Department</span>
+                  <span className="field-value">{detailEmployee.currentAssignment?.departmentName ?? 'Not assigned'}</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">Designation</span>
+                  <span className="field-value">{detailEmployee.currentAssignment?.positionTitle ?? detailEmployee.roleTitle ?? '-'}</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">Location</span>
+                  <span className="field-value">{detailEmployee.currentAssignment?.locationName ?? '-'}</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">Manager</span>
+                  <span className="field-value">{detailEmployee.currentAssignment?.reportsToName ?? '-'}</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">Assignment type</span>
+                  <span className="field-value">{detailEmployee.currentAssignment?.assignmentType ?? '-'}</span>
+                </div>
+              </div>
+              {detailEmployee.assignmentHistory && detailEmployee.assignmentHistory.length > 1 ? (
+                <div style={{ marginTop: theme.spacing(3) }}>
+                  <div className="field-label" style={{ marginBottom: theme.spacing(2) }}>Assignment history ({detailEmployee.assignmentHistory.length})</div>
+                  <div className="record-list">
+                    {detailEmployee.assignmentHistory.map((history) => (
+                      <div className="record-item" key={history.id}>
+                        <div>
+                          <div className="employee-primary">{history.positionTitle ?? 'Assignment'} {history.departmentName ? `· ${history.departmentName}` : ''}</div>
+                          <div className="employee-secondary">{formatDate(history.validFrom)} - {history.validTo ? formatDate(history.validTo) : 'Present'} {history.reportsToName ? `· Reports to ${history.reportsToName}` : ''}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="detail-section">
+              <h3 className="section-title">Contact & emergency</h3>
+              <div className="field-list">
+                <div className="field-row">
+                  <span className="field-label">Preferred contact</span>
+                  <span className="field-value">{profile?.preferredContactChannel ?? '-'}</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">Emergency contact</span>
+                  <span className="field-value">{profile?.emergencyContactName ? `${profile.emergencyContactName} (${profile.emergencyContactRelation ?? '-'}) - ${profile.emergencyContactPhone ?? '-'}` : '-'}</span>
+                </div>
+                <div className="field-row">
+                  <span className="field-label">Permanent address</span>
+                  <span className="field-value">{profile?.permanentAddressLine1 ? `${profile.permanentAddressLine1}, ${profile.permanentCity ?? ''}` : '-'}</span>
+                </div>
+              </div>
+            </section>
+
+            {personalDetails ? (
+              <section className="detail-section">
+                <h3 className="section-title">Personal details</h3>
+                <div className="field-list">
+                  <div className="field-row"><span className="field-label">Passport</span><span className="field-value">{personalDetails.passportNumber ?? '-'}</span></div>
+                  <div className="field-row"><span className="field-label">Marital status</span><span className="field-value">{personalDetails.maritalStatus ?? '-'}</span></div>
+                  <div className="field-row"><span className="field-label">Blood group</span><span className="field-value">{personalDetails.bloodGroup ?? '-'}</span></div>
+                  <div className="field-row"><span className="field-label">Bio</span><span className="field-value">{personalDetails.bio ?? '-'}</span></div>
+                </div>
+              </section>
+            ) : null}
+
+            {educations.length > 0 ? (
+              <section className="detail-section">
+                <h3 className="section-title">Education ({educations.length})</h3>
+                <div className="record-list">
+                  {educations.map((edu) => (
+                    <div className="record-item" key={edu.id}>
+                      <div>
+                        <div className="employee-primary">{edu.qualification} — {edu.schoolOrUniversity}</div>
+                        <div className="employee-secondary">{edu.level} {edu.yearOfPassing ? `· ${edu.yearOfPassing}` : ''} {edu.majorSubjects ? `· ${edu.majorSubjects}` : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {workHistories.length > 0 ? (
+              <section className="detail-section">
+                <h3 className="section-title">External work history ({workHistories.length})</h3>
+                <div className="record-list">
+                  {workHistories.map((history) => (
+                    <div className="record-item" key={history.id}>
+                      <div>
+                        <div className="employee-primary">{history.companyName} {history.designation ? `— ${history.designation}` : ''}</div>
+                        <div className="employee-secondary">{history.totalExperience ?? ''} {history.salary ? `· Salary ${history.salary}` : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <section className="detail-section">
+              <div className="section-title-row">
+                <h3 className="section-title">Separation</h3>
+                <button className="button button-secondary" type="button" onClick={() => setShowSeparation((v) => !v)}>
+                  {showSeparation ? 'Cancel' : 'Initiate separation'}
+                </button>
+              </div>
+              {separations.length > 0 ? (
+                <div className="record-list">
+                  {separations.map((sep) => (
+                    <div className="record-item" key={sep.id}>
+                      <div>
+                        <div className="employee-primary">{sep.type} — {sep.relievingDate ? formatDate(sep.relievingDate) : '-'}</div>
+                        <div className="employee-secondary">{sep.reasonForLeaving ?? '-'} {sep.newWorkplace ? `· Next: ${sep.newWorkplace}` : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="page-subtitle">No separation on file.</p>
+              )}
+              {showSeparation ? (
+                <form className="config-form compact-form" onSubmit={onSeparate} style={{ marginTop: theme.spacing(3) }}>
+                  <div className="field">
+                    <label htmlFor="sep-type">Type</label>
+                    <select id="sep-type" value={separationForm.type} onChange={(e) => setSeparationForm((c) => ({ ...c, type: e.target.value }))}>
+                      <option value="resignation">Resignation</option>
+                      <option value="termination">Termination</option>
+                      <option value="retirement">Retirement</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="field-group">
+                    <div className="field"><label htmlFor="sep-effective">Effective date</label><input id="sep-effective" type="date" required value={separationForm.effectiveDate} onChange={(e) => setSeparationForm((c) => ({ ...c, effectiveDate: e.target.value }))} /></div>
+                    <div className="field"><label htmlFor="sep-relieving">Relieving date</label><input id="sep-relieving" type="date" value={separationForm.relievingDate} onChange={(e) => setSeparationForm((c) => ({ ...c, relievingDate: e.target.value }))} /></div>
+                  </div>
+                  <div className="field"><label htmlFor="sep-reason">Reason</label><textarea id="sep-reason" value={separationForm.reason} onChange={(e) => setSeparationForm((c) => ({ ...c, reason: e.target.value }))} /></div>
+                  <div className="field"><label htmlFor="sep-new">New workplace</label><input id="sep-new" value={separationForm.newWorkplace} onChange={(e) => setSeparationForm((c) => ({ ...c, newWorkplace: e.target.value }))} /></div>
+                  <div className="field"><label htmlFor="sep-feedback">Feedback</label><textarea id="sep-feedback" value={separationForm.feedback} onChange={(e) => setSeparationForm((c) => ({ ...c, feedback: e.target.value }))} /></div>
+                  <button className="button button-primary" type="submit" disabled={separatingEmployee}>{separatingEmployee ? 'Saving…' : 'Confirm separation'}</button>
+                </form>
+              ) : null}
+              {offboardingTasks.length > 0 ? (
+                <div style={{ marginTop: theme.spacing(4) }}>
+                  <div className="section-title-row"><h4 className="section-title">Offboarding checklist</h4><span className="table-density">{offboardingCompletedCount}/{offboardingTasks.length} complete</span></div>
+                  <div className="record-list">
+                    {offboardingTasks.map((task) => {
+                      const draft = offboardingDrafts[task.taskKey] ?? { status: task.status, dueDate: task.dueDate ?? '', notes: task.notes ?? '' };
+                      const hasChange = draft.status !== task.status || draft.dueDate !== (task.dueDate ?? '') || draft.notes !== (task.notes ?? '');
+                      return (
+                        <div className="record-item" key={task.taskKey}>
+                          <div>
+                            <div className="employee-primary">{task.title}</div>
+                            <div className="record-inline-actions">
+                              <span className="chip" style={chipStyle(task.status === 'completed' ? 'green' : task.status === 'inProgress' ? 'amber' : 'gray')}><span className="chip-dot" />{task.status}</span>
+                            </div>
+                            <div className="onboarding-task-controls">
+                              <div className="field"><label>Status</label><select value={draft.status} onChange={(e) => setOffboardingDrafts((c) => ({ ...c, [task.taskKey]: { ...draft, status: e.target.value } }))}><option value="notStarted">Not started</option><option value="inProgress">In progress</option><option value="completed">Completed</option><option value="blocked">Blocked</option></select></div>
+                              <div className="field"><label>Due date</label><input type="date" value={draft.dueDate} onChange={(e) => setOffboardingDrafts((c) => ({ ...c, [task.taskKey]: { ...draft, dueDate: e.target.value } }))} /></div>
+                            </div>
+                            <div className="field"><label>Notes</label><textarea value={draft.notes} onChange={(e) => setOffboardingDrafts((c) => ({ ...c, [task.taskKey]: { ...draft, notes: e.target.value } }))} /></div>
+                            <button className="button button-secondary" disabled={!hasChange || savingOffboardingTask} type="button" onClick={() => void onSaveOffboardingTask(task)}>Save task</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
+              {separations.length > 0 ? (
+                <div style={{ marginTop: theme.spacing(4) }}>
+                  <h4 className="section-title">Exit interview</h4>
+                  {exitInterviews.length > 0 ? (
+                    <div className="record-list">
+                      {exitInterviews.map((interview) => (
+                        <div className="record-item" key={interview.id}>
+                          <div>
+                            <div className="employee-primary">{interview.status} {interview.scheduledDate ? `· ${formatDate(interview.scheduledDate)}` : ''}</div>
+                            <div className="employee-secondary">{interview.summary ?? 'No summary'} {interview.finalDecision ? `· Decision: ${interview.finalDecision}` : ''}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="page-subtitle">No exit interview recorded.</p>
+                  )}
+                  <form className="config-form compact-form" onSubmit={onUpsertExitInterview} style={{ marginTop: theme.spacing(3) }}>
+                    <div className="field-group">
+                      <div className="field"><label>Status</label><select value={exitInterviewForm.status} onChange={(e) => setExitInterviewForm((c) => ({ ...c, status: e.target.value }))}><option value="pending">Pending</option><option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></div>
+                      <div className="field"><label>Scheduled date</label><input type="date" value={exitInterviewForm.scheduledDate} onChange={(e) => setExitInterviewForm((c) => ({ ...c, scheduledDate: e.target.value }))} /></div>
+                    </div>
+                    <div className="field"><label>Summary</label><textarea value={exitInterviewForm.summary} onChange={(e) => setExitInterviewForm((c) => ({ ...c, summary: e.target.value }))} /></div>
+                    <div className="field"><label>Final decision</label><select value={exitInterviewForm.finalDecision} onChange={(e) => setExitInterviewForm((c) => ({ ...c, finalDecision: e.target.value }))}><option value="">—</option><option value="retained">Retained</option><option value="exitConfirmed">Exit confirmed</option></select></div>
+                    <button className="button button-secondary" type="submit" disabled={savingExitInterview}>{savingExitInterview ? 'Saving…' : 'Save interview'}</button>
+                  </form>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="detail-section">
+              <h3 className="section-title">Access</h3>
+              <p className="page-subtitle">Create a login for this employee or manage their account.</p>
+              <button className="button button-secondary" type="button" onClick={() => void onCreateLogin()} disabled={creatingWorkspaceUser}>
+                {creatingWorkspaceUser ? 'Creating…' : 'Create login'}
+              </button>
             </section>
 
             {canEditHrRecord ? (
@@ -1391,6 +2055,24 @@ export const EmployeesListPage = () => {
                         }))
                       }
                     />
+                  </div>
+                  <div className="field">
+                    <label htmlFor="hr-payment-mode">Payment mode</label>
+                    <select
+                      id="hr-payment-mode"
+                      value={hrRecordForm.paymentMode}
+                      onChange={(event) =>
+                        setHrRecordForm((current) => ({
+                          ...current,
+                          paymentMode: event.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">—</option>
+                      <option value="bank">Bank</option>
+                      <option value="cash">Cash</option>
+                      <option value="cheque">Cheque</option>
+                    </select>
                   </div>
                   <div className="field-group">
                     <div className="field">

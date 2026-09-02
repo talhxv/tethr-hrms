@@ -14,8 +14,14 @@ export class EmployeeType {
   @Field()
   firstName!: string;
 
+  @Field(() => String, { nullable: true })
+  middleName!: string | null;
+
   @Field()
   lastName!: string;
+
+  @Field(() => String, { nullable: true })
+  salutation!: string | null;
 
   @Field(() => String, { nullable: true })
   workEmail!: string | null;
@@ -31,6 +37,24 @@ export class EmployeeType {
 
   @Field()
   hireDate!: string;
+
+  @Field(() => String, { nullable: true })
+  scheduledConfirmationDate!: string | null;
+
+  @Field(() => String, { nullable: true })
+  finalConfirmationDate!: string | null;
+
+  @Field(() => String, { nullable: true })
+  contractEndDate!: string | null;
+
+  @Field(() => Number, { nullable: true })
+  noticePeriodDays!: number | null;
+
+  @Field(() => String, { nullable: true })
+  retirementDate!: string | null;
+
+  @Field(() => ID, { nullable: true })
+  holidayCalendarId!: string | null;
 
   @Field(() => String, { nullable: true })
   terminationDate!: string | null;

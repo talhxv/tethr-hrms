@@ -24,13 +24,20 @@ type EmployeeRecord = {
   readonly id: string;
   readonly employeeNumber: string;
   readonly firstName: string;
+  readonly middleName: string | null;
   readonly lastName: string;
+  readonly salutation: string | null;
   readonly workEmail: string | null;
   readonly dateOfBirth: string | null;
   readonly hireDate: string;
   readonly probationEndDate: string | null;
+  readonly scheduledConfirmationDate: string | null;
+  readonly contractEndDate: string | null;
+  readonly holidayCalendarId: string | null;
   readonly employmentStatus: string;
   readonly workerType: string;
+  readonly currentAssignment: { readonly departmentName: string | null; readonly positionTitle: string | null; readonly locationName: string | null; readonly reportsToName: string | null } | null;
+  readonly assignmentHistory: readonly { readonly positionTitle: string | null; readonly departmentName: string | null; readonly locationName: string | null; readonly reportsToName: string | null; readonly validFrom: string; readonly validTo: string | null }[];
 };
 
 type EmployeeProfileRecord = {
@@ -44,6 +51,18 @@ type EmployeeProfileRecord = {
   readonly region: string | null;
   readonly countryCode: string | null;
   readonly postalCode: string | null;
+  readonly permanentAddressLine1: string | null;
+  readonly permanentAddressLine2: string | null;
+  readonly permanentCity: string | null;
+  readonly permanentRegion: string | null;
+  readonly permanentCountryCode: string | null;
+  readonly permanentPostalCode: string | null;
+  readonly currentAccommodationType: string | null;
+  readonly permanentAccommodationType: string | null;
+  readonly preferredContactChannel: string | null;
+  readonly emergencyContactName: string | null;
+  readonly emergencyContactPhone: string | null;
+  readonly emergencyContactRelation: string | null;
 };
 
 type LeaveTypeRecord = {
@@ -103,6 +122,9 @@ type AnnouncementRecord = {
 type WorkspaceData = {
   readonly myEmployee: EmployeeRecord;
   readonly myEmployeeProfile: EmployeeProfileRecord | null;
+  readonly myEmployeePersonalDetails: { readonly id: string; readonly bio: string | null; readonly maritalStatus: string | null; readonly bloodGroup: string | null } | null;
+  readonly myEducations: readonly { readonly id: string; readonly schoolOrUniversity: string }[];
+  readonly myWorkHistories: readonly { readonly id: string; readonly companyName: string }[];
   readonly leaveTypes: readonly LeaveTypeRecord[];
   readonly myLeaveBalances: readonly LeaveBalanceRecord[];
   readonly myLeaveRequests: readonly LeaveRequestRecord[];
@@ -121,6 +143,18 @@ type ProfileForm = {
   region: string;
   countryCode: string;
   postalCode: string;
+  permanentAddressLine1: string;
+  permanentAddressLine2: string;
+  permanentCity: string;
+  permanentRegion: string;
+  permanentCountryCode: string;
+  permanentPostalCode: string;
+  currentAccommodationType: string;
+  permanentAccommodationType: string;
+  preferredContactChannel: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelation: string;
 };
 
 const emptyProfile: ProfileForm = {
@@ -133,6 +167,18 @@ const emptyProfile: ProfileForm = {
   region: '',
   countryCode: '',
   postalCode: '',
+  permanentAddressLine1: '',
+  permanentAddressLine2: '',
+  permanentCity: '',
+  permanentRegion: '',
+  permanentCountryCode: '',
+  permanentPostalCode: '',
+  currentAccommodationType: '',
+  permanentAccommodationType: '',
+  preferredContactChannel: '',
+  emergencyContactName: '',
+  emergencyContactPhone: '',
+  emergencyContactRelation: '',
 };
 
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -207,6 +253,18 @@ const profileFrom = (profile: EmployeeProfileRecord | null): ProfileForm => ({
   region: profile?.region ?? '',
   countryCode: profile?.countryCode ?? '',
   postalCode: profile?.postalCode ?? '',
+  permanentAddressLine1: profile?.permanentAddressLine1 ?? '',
+  permanentAddressLine2: profile?.permanentAddressLine2 ?? '',
+  permanentCity: profile?.permanentCity ?? '',
+  permanentRegion: profile?.permanentRegion ?? '',
+  permanentCountryCode: profile?.permanentCountryCode ?? '',
+  permanentPostalCode: profile?.permanentPostalCode ?? '',
+  currentAccommodationType: profile?.currentAccommodationType ?? '',
+  permanentAccommodationType: profile?.permanentAccommodationType ?? '',
+  preferredContactChannel: profile?.preferredContactChannel ?? '',
+  emergencyContactName: profile?.emergencyContactName ?? '',
+  emergencyContactPhone: profile?.emergencyContactPhone ?? '',
+  emergencyContactRelation: profile?.emergencyContactRelation ?? '',
 });
 
 export const EmployeeWorkspacePage = () => {
@@ -293,6 +351,7 @@ export const EmployeeWorkspacePage = () => {
             startDate: leaveForm.startDate,
             endDate: leaveForm.endDate,
             reason: leaveForm.reason || undefined,
+            holidayCalendarId: employee?.holidayCalendarId ?? undefined,
           },
         },
       });

@@ -1,4 +1,4 @@
-import type { EmployeeId, UserId } from '@hrms/shared';
+import type { EmployeeId, PaymentMode, UserId } from '@hrms/shared';
 import { Column, Entity, Index } from 'typeorm';
 
 import { TenantScopedEntity } from '../../../core/database/entities/tenant-scoped.entity';
@@ -14,6 +14,9 @@ export class EmployeeHrRecord extends TenantScopedEntity {
 
   @Column({ type: 'text', nullable: true })
   salaryBreakdown!: string | null;
+
+  @Column({ type: 'varchar', length: 16, nullable: true })
+  paymentMode!: PaymentMode | null;
 
   @Column({ type: 'varchar', length: 160, nullable: true })
   bankName!: string | null;

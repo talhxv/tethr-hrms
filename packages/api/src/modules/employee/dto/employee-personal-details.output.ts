@@ -1,7 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 
-@ObjectType('EmployeeHrRecord')
-export class EmployeeHrRecordView {
+@ObjectType('EmployeePersonalDetails')
+export class EmployeePersonalDetailsView {
   @Field(() => ID)
   id!: string;
 
@@ -9,29 +9,29 @@ export class EmployeeHrRecordView {
   employeeId!: string;
 
   @Field(() => String, { nullable: true })
-  roleTitle!: string | null;
+  passportNumber!: string | null;
 
   @Field(() => String, { nullable: true })
-  salaryBreakdown!: string | null;
+  passportIssueDate!: string | null;
 
   @Field(() => String, { nullable: true })
-  paymentMode!: string | null;
+  passportIssuePlace!: string | null;
 
   @Field(() => String, { nullable: true })
-  bankName!: string | null;
+  passportValidUpto!: string | null;
 
   @Field(() => String, { nullable: true })
-  bankAccountTitle!: string | null;
+  maritalStatus!: string | null;
 
   @Field(() => String, { nullable: true })
-  bankAccountNumber!: string | null;
+  bloodGroup!: string | null;
 
   @Field(() => String, { nullable: true })
-  bankIban!: string | null;
+  familyBackground!: string | null;
 
   @Field(() => String, { nullable: true })
-  hardwareInfo!: string | null;
+  healthDetails!: string | null;
 
   @Field(() => String, { nullable: true })
-  employeeRecordForm!: string | null;
+  bio!: string | null;
 }
