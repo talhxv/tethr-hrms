@@ -711,20 +711,18 @@ button {
 .page-frame {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--hrms-layout-side-panel-width);
+  align-items: start;
   gap: var(--hrms-space-6);
-  min-height: 0;
 }
 
 .employees-content {
   min-width: 0;
   padding: var(--hrms-space-6);
-  overflow: auto;
 }
 
 .employee-detail-panel {
   min-width: 0;
   padding: var(--hrms-space-5);
-  overflow: auto;
   background: var(--hrms-color-background-secondary);
   border: 1px solid var(--hrms-color-border-light);
   border-radius: var(--hrms-radius-md);
@@ -911,7 +909,10 @@ button {
 .dashboard-widget-title {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   font-size: var(--hrms-font-size-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .dashboard-widget-body {
@@ -1436,6 +1437,223 @@ button {
   margin-top: var(--hrms-between-siblings-gap);
   color: var(--hrms-color-text-tertiary);
   font-size: var(--hrms-font-size-xs);
+}
+
+.table-title-row-end {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-3);
+}
+
+.segmented-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hrms-space-1);
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+/* Org chart — a top-down reporting tree built from each employee's manager.
+   Nodes are the same compact identity card the directory uses; connectors are
+   pure CSS pseudo-elements so there's no layout library to carry. */
+.org-chart {
+  padding: var(--hrms-space-6);
+  overflow-x: auto;
+}
+
+.org-chart-empty {
+  padding: var(--hrms-space-6);
+  color: var(--hrms-color-text-secondary);
+}
+
+.org-tree,
+.org-tree ul {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.org-tree ul {
+  position: relative;
+  padding-top: var(--hrms-space-6);
+}
+
+.org-tree ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: var(--hrms-space-6);
+  border-left: 1px solid var(--hrms-color-border-medium);
+}
+
+.org-tree li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--hrms-space-6) var(--hrms-space-4) 0;
+}
+
+.org-tree li::before,
+.org-tree li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  width: 50%;
+  height: var(--hrms-space-6);
+  border-top: 1px solid var(--hrms-color-border-medium);
+}
+
+.org-tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 1px solid var(--hrms-color-border-medium);
+}
+
+.org-tree li:only-child {
+  padding-top: 0;
+}
+
+.org-tree li:only-child::before,
+.org-tree li:only-child::after {
+  display: none;
+}
+
+.org-tree li:first-child::before,
+.org-tree li:last-child::after {
+  border: 0 none;
+}
+
+.org-tree li:last-child::before {
+  border-right: 1px solid var(--hrms-color-border-medium);
+}
+
+/* The root row has nothing above it, so it carries no connectors. It shrink-
+   wraps its content (inline-flex) but stays at least as wide as the scroll
+   area, so a small tree centres while a large one stays fully scrollable. */
+.org-tree-root {
+  display: inline-flex;
+  min-width: 100%;
+  flex-wrap: wrap;
+  gap: var(--hrms-space-5);
+}
+
+.org-tree-root > li {
+  padding-top: 0;
+}
+
+.org-tree-root > li::before,
+.org-tree-root > li::after {
+  display: none;
+}
+
+.org-node-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.org-node {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  width: 216px;
+  padding: var(--hrms-space-3);
+  text-align: left;
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  cursor: pointer;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.org-node:hover {
+  background: var(--hrms-color-background-secondary);
+  border-color: var(--hrms-color-border-medium);
+}
+
+.org-node.is-selected {
+  border-color: var(--hrms-color-border-strong);
+  box-shadow: var(--hrms-box-shadow-light);
+}
+
+.org-node:focus-visible {
+  outline: 3px solid var(--hrms-color-border-blue);
+  outline-offset: 1px;
+}
+
+.org-node-avatar {
+  width: 32px;
+  height: 32px;
+}
+
+.org-node-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.org-node-name {
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.org-node-role {
+  margin-top: var(--hrms-between-siblings-gap);
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.org-node-status {
+  position: absolute;
+  top: var(--hrms-space-2);
+  right: var(--hrms-space-2);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--hrms-radius-rounded);
+  background: var(--chip-color);
+}
+
+.org-node-toggle {
+  position: absolute;
+  bottom: calc(-1 * var(--hrms-space-3));
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 20px;
+  padding: 0 6px;
+  transform: translateX(-50%);
+  color: var(--hrms-color-text-secondary);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-pill);
+  font-size: var(--hrms-font-size-xxs);
+  font-weight: var(--hrms-font-weight-medium);
+  cursor: pointer;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.org-node-toggle:hover {
+  color: var(--hrms-color-text-primary);
+  border-color: var(--hrms-color-border-strong);
+  background: var(--hrms-color-background-secondary);
+}
+
+.org-node-toggle:focus-visible {
+  outline: 3px solid var(--hrms-color-border-blue);
+  outline-offset: 1px;
 }
 
 .chip {
@@ -2124,7 +2342,10 @@ button {
   margin: var(--hrms-space-4) 0;
 }
 
-/* Client and employee portals */
+/* Client and employee portals. The page scrolls as one unit (the document
+   scrolls) — neither column is its own scroll container, and `align-items:
+   start` keeps a short column from being stretched to the taller one, which
+   is what produced a stray scrollbar on the side panel. */
 .employee-workspace,
 .client-workspace,
 .workspace-users-page,
@@ -2135,8 +2356,8 @@ button {
 .leave-page {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--hrms-layout-side-panel-width);
+  align-items: start;
   gap: var(--hrms-space-6);
-  min-height: 0;
 }
 
 .employee-workspace-content,
@@ -2149,7 +2370,6 @@ button {
 .leave-content {
   min-width: 0;
   padding: var(--hrms-space-6);
-  overflow: auto;
 }
 
 .self-service-panel,
@@ -2161,7 +2381,6 @@ button {
 .leave-panel {
   min-width: 0;
   padding: var(--hrms-space-5);
-  overflow: auto;
   background: var(--hrms-color-background-secondary);
   border: 1px solid var(--hrms-color-border-light);
   border-radius: var(--hrms-radius-md);
@@ -2286,13 +2505,15 @@ button {
   min-width: 0;
 }
 
-/* Consistent vertical rhythm between the stacked cards in the employee
-   workspace's main column. */
-.employee-workspace-content > .table-shell {
+/* Consistent vertical rhythm between the stacked cards in the employee and
+   client workspace main columns. */
+.employee-workspace-content > .table-shell,
+.client-workspace-content > .table-shell {
   margin-bottom: var(--hrms-space-4);
 }
 
-.employee-workspace-content > .table-shell:last-child {
+.employee-workspace-content > .table-shell:last-child,
+.client-workspace-content > .table-shell:last-child {
   margin-bottom: 0;
 }
 
@@ -2417,36 +2638,159 @@ button {
   min-width: 0;
 }
 
-.self-service-section,
-.client-action-block {
+.self-service-section {
   padding: var(--hrms-space-5) 0;
   border-bottom: 1px solid var(--hrms-color-border-light);
 }
 
-.self-service-section:first-child,
-.client-action-block:first-child {
+.self-service-section:first-child {
   padding-top: 0;
 }
 
-.self-service-section:last-child,
-.client-action-block:last-child {
+.self-service-section:last-child {
   padding-bottom: 0;
   border-bottom: 0;
 }
 
-.client-action-block p {
-  margin: var(--hrms-space-3) 0 var(--hrms-space-4);
-  color: var(--hrms-color-text-secondary);
+/* Client "People overview" — compact quick-actions panel (replaces the old
+   stacked kicker/heading/paragraph/button blocks). */
+.client-actions-head {
+  margin-bottom: var(--hrms-space-4);
 }
 
-.client-action-block .button {
-  width: 100%;
-  justify-content: center;
+.client-actions-head .panel-title {
+  margin-top: var(--hrms-space-1);
+}
+
+.quick-action-list {
+  display: grid;
+  gap: var(--hrms-space-2);
+}
+
+.quick-action {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-3);
+  color: inherit;
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
   text-decoration: none;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.quick-action:hover {
+  background: var(--hrms-color-background-secondary);
+  border-color: var(--hrms-color-border-medium);
+}
+
+.quick-action.is-primary {
+  border-color: var(--hrms-color-accent-accent6);
+}
+
+.quick-action-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--hrms-color-text-secondary);
+  background: var(--hrms-color-background-secondary);
+  border-radius: var(--hrms-radius-sm);
+}
+
+.quick-action.is-primary .quick-action-icon {
+  color: var(--hrms-color-accent-accent11);
+  background: var(--hrms-color-accent-accent3);
+}
+
+.quick-action-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.quick-action-title {
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+  line-height: var(--hrms-line-height-md);
+}
+
+.quick-action-desc {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+  line-height: var(--hrms-line-height-md);
+}
+
+.quick-action-arrow {
+  color: var(--hrms-color-text-light);
+}
+
+.quick-action:hover .quick-action-arrow {
+  color: var(--hrms-color-text-tertiary);
+}
+
+/* The customizable widget board, shared by the Tethr Dashboard and the
+   client "People overview" section. */
+.dashboard-board {
+  margin-bottom: var(--hrms-space-5);
+}
+
+.dashboard-board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--hrms-space-3);
+}
+
+.dashboard-board-toolbar .dashboard-view-tabs {
+  margin-bottom: var(--hrms-space-4);
+}
+
+.dashboard-board-toolbar.is-compact {
+  justify-content: flex-end;
+  margin-bottom: var(--hrms-space-4);
+}
+
+/* On the client "People overview" the board lives in the narrower main
+   column (beside the actions panel), so it fits fewer widgets per row than
+   the full-width Tethr dashboard. The widget-grid media queries key off the
+   viewport, so this container-scoped override is what actually applies. */
+.client-workspace-content .dashboard-widget-grid {
+  --dashboard-columns: 2;
+}
+
+@media (max-width: 960px) {
+  .client-workspace-content .dashboard-widget-grid {
+    --dashboard-columns: 1;
+  }
 }
 
 .client-onboarding {
   margin-bottom: var(--hrms-space-4);
+}
+
+/* A table-title row that is also a collapse toggle for the card below it. */
+.collapse-toggle {
+  width: 100%;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collapse-chevron {
+  color: var(--hrms-color-text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.collapse-chevron.is-open {
+  transform: rotate(180deg);
 }
 
 .onboarding-step-list {

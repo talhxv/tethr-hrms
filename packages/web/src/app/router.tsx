@@ -40,7 +40,7 @@ export const AppRouter = () => (
       <Route path="/access" element={<AccessPendingPage />} />
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route element={<RequirePortal portals={['tethr', 'client', 'employee']} />}>
+          <Route element={<RequirePortal portals={['tethr']} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
           <Route element={<RequirePortal portals={['tethr']} />}>

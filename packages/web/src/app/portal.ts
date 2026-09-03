@@ -1,11 +1,13 @@
 import type { PortalKind } from '@hrms/shared';
 
-// The widget Dashboard is the landing page for every portal — one consistent
-// home across all workspaces. Each portal keeps its own navigation and its
-// own detail pages (/client, /me); those are just no longer the entry point.
+// One home per portal, no duplication. Tethr manages many clients and has no
+// hand-built overview, so the customizable widget Dashboard is its home. Client
+// and employee each have a purpose-built landing page instead.
 export const portalHome = (portal: PortalKind): string => {
-  if (portal === 'none') return '/access';
-  return '/dashboard';
+  if (portal === 'tethr') return '/dashboard';
+  if (portal === 'client') return '/client';
+  if (portal === 'employee') return '/me';
+  return '/access';
 };
 
 export const portalLabel = (portal: PortalKind): string => {

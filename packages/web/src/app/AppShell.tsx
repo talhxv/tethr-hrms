@@ -1,4 +1,4 @@
-﻿import { useApolloClient, useMutation, useQuery } from '@apollo/client';
+﻿import { useApolloClient, useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { WORKSPACE_BRAND_COLORS, type PortalKind, type WorkspaceBrandColor } from '@hrms/shared';
 import {
   IconArrowsRightLeft,
@@ -22,10 +22,13 @@ import {
   IconUsersGroup,
   type TablerIcon,
 } from '@tabler/icons-react';
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
-import { HAS_OTHER_WORKSPACES_QUERY } from '../modules/auth/graphql/auth.operations';
+import {
+  HAS_OTHER_WORKSPACES_QUERY,
+  SWITCHABLE_WORKSPACES_QUERY,
+} from '../modules/auth/graphql/auth.operations';
 import { useAuth, type WorkspaceOption } from '../modules/auth/hooks/useAuth';
 import {
   MY_ORGANIZATION_QUERY,
@@ -98,7 +101,6 @@ const tethrNavigation: readonly NavigationEntry[] = [
 ];
 
 const clientNavigation: readonly NavigationEntry[] = [
-  { kind: 'link', label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
   { kind: 'link', label: 'Overview', to: '/client', icon: IconBuildingCommunity },
   {
     kind: 'group',
@@ -115,7 +117,6 @@ const clientNavigation: readonly NavigationEntry[] = [
 ];
 
 const employeeNavigation: readonly NavigationEntry[] = [
-  { kind: 'link', label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
   { kind: 'link', label: 'My workspace', to: '/me', icon: IconUserCircle },
   { kind: 'link', label: 'News', to: '/announcements', icon: IconSpeakerphone },
 ];
@@ -140,7 +141,7 @@ const SECTION_LABELS: Record<string, string> = {
 
 export const AppShell = () => {
   const { theme, toggle } = useTheme();
-  const { user, logout, login, selectWorkspace, isBusy: authBusy } = useAuth();
+  const { user, logout, switchWorkspace, isBusy: authBusy } = useAuth();
   const apolloClient = useApolloClient();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -188,22 +189,22 @@ export const AppShell = () => {
     setOpenMenu(null);
   }, [pathname]);
 
-  // The workspace switcher's own multi-step state (trigger -> password ->
-  // pick a workspace), reset whenever its dropdown isn't the open one so it
-  // always restarts fresh rather than reopening mid-flow.
-  const [switchStep, setSwitchStep] = useState<'trigger' | 'password' | 'picker'>('trigger');
-  const [switchPassword, setSwitchPassword] = useState('');
-  const [switchPendingSelection, setSwitchPendingSelection] = useState<{
-    readonly selectionToken: string;
-    readonly workspaces: readonly WorkspaceOption[];
-  } | null>(null);
+  // The workspace switcher is two steps now — trigger -> pick a workspace —
+  // with no password step: the picker loads the caller's other workspaces and
+  // entering one mints a session straight from the current one. Reset whenever
+  // the dropdown isn't the open one so it always restarts fresh.
+  const [switchStep, setSwitchStep] = useState<'trigger' | 'picker'>('trigger');
   const [switchError, setSwitchError] = useState<string | null>(null);
+  const [loadSwitchableWorkspaces, { data: switchableData, loading: loadingSwitchable }] =
+    useLazyQuery<{ readonly switchableWorkspaces: readonly WorkspaceOption[] }>(
+      SWITCHABLE_WORKSPACES_QUERY,
+      { fetchPolicy: 'network-only' },
+    );
+  const switchableWorkspaces = switchableData?.switchableWorkspaces ?? [];
 
   useEffect(() => {
     if (openMenu !== 'workspace') {
       setSwitchStep('trigger');
-      setSwitchPassword('');
-      setSwitchPendingSelection(null);
       setSwitchError(null);
     }
   }, [openMenu]);
@@ -276,12 +277,10 @@ export const AppShell = () => {
     navigate('/login', { replace: true });
   };
 
-  // Switches in place instead of bouncing out to /login: still re-verifies a
-  // password (each workspace can hold a different one for this same email —
-  // auth.service.ts — so there's no safe way to mint a session for another
-  // org without checking it), but does it inline in the same dropdown via the
-  // existing login/selectWorkspace mutations, reusing exactly the flow the
-  // login-time picker already uses.
+  // Switches in place instead of bouncing out to /login, with no password
+  // step: the caller already holds a valid session and every workspace in the
+  // picker is one of their own accounts (same email), so `switchWorkspace`
+  // mints the new session straight from the current one.
   const finishWorkspaceSwitch = async (portal: PortalKind): Promise<void> => {
     setOpenMenu(null);
     navigate(portalHome(portal), { replace: true });
@@ -290,39 +289,16 @@ export const AppShell = () => {
     await apolloClient.resetStore();
   };
 
-  const onSubmitSwitchPassword = async (event: FormEvent): Promise<void> => {
-    event.preventDefault();
-    if (!user?.email) return;
+  const openWorkspacePicker = (): void => {
     setSwitchError(null);
-    try {
-      const outcome = await login(user.email, switchPassword);
-      if (outcome.kind === 'authenticated') {
-        await finishWorkspaceSwitch(outcome.session.user.portal);
-        return;
-      }
-      const otherWorkspaces = outcome.workspaces.filter(
-        (workspace) => workspace.organizationId !== user.organizationId,
-      );
-      if (otherWorkspaces.length === 1) {
-        const session = await selectWorkspace(
-          outcome.selectionToken,
-          otherWorkspaces[0].organizationId,
-        );
-        await finishWorkspaceSwitch(session.user.portal);
-        return;
-      }
-      setSwitchPendingSelection({ selectionToken: outcome.selectionToken, workspaces: otherWorkspaces });
-      setSwitchStep('picker');
-    } catch (caught) {
-      setSwitchError(caught instanceof Error ? caught.message : 'Could not verify that password');
-    }
+    setSwitchStep('picker');
+    void loadSwitchableWorkspaces();
   };
 
   const onPickSwitchWorkspace = async (organizationId: string): Promise<void> => {
-    if (!switchPendingSelection) return;
     setSwitchError(null);
     try {
-      const session = await selectWorkspace(switchPendingSelection.selectionToken, organizationId);
+      const session = await switchWorkspace(organizationId);
       await finishWorkspaceSwitch(session.user.portal);
     } catch (caught) {
       setSwitchError(caught instanceof Error ? caught.message : 'Could not open that workspace');
@@ -410,51 +386,12 @@ export const AppShell = () => {
                   {switchStep === 'trigger' ? (
                     <button
                       className="dropdown-nav-item"
-                      onClick={() => setSwitchStep('password')}
+                      onClick={openWorkspacePicker}
                       type="button"
                     >
                       <IconArrowsRightLeft size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
                       <span>Switch workspace</span>
                     </button>
-                  ) : null}
-
-                  {switchStep === 'password' ? (
-                    <form onSubmit={(event) => void onSubmitSwitchPassword(event)}>
-                      <p className="account-dropdown-hint">
-                        Re-enter your password for {user?.email}.
-                      </p>
-                      {switchError ? (
-                        <p className="auth-error" role="alert">
-                          {switchError}
-                        </p>
-                      ) : null}
-                      <div className="field">
-                        <label htmlFor="switch-workspace-password">Password</label>
-                        <input
-                          autoFocus
-                          autoComplete="current-password"
-                          id="switch-workspace-password"
-                          required
-                          type="password"
-                          value={switchPassword}
-                          onChange={(event) => setSwitchPassword(event.target.value)}
-                        />
-                      </div>
-                      <button
-                        className="button button-primary button-full"
-                        disabled={authBusy}
-                        type="submit"
-                      >
-                        {authBusy ? 'Checking…' : 'Continue'}
-                      </button>
-                      <button
-                        className="link-button"
-                        onClick={() => setSwitchStep('trigger')}
-                        type="button"
-                      >
-                        Cancel
-                      </button>
-                    </form>
                   ) : null}
 
                   {switchStep === 'picker' ? (
@@ -465,19 +402,25 @@ export const AppShell = () => {
                           {switchError}
                         </p>
                       ) : null}
-                      <div className="workspace-option-list">
-                        {switchPendingSelection?.workspaces.map((workspace) => (
-                          <button
-                            key={workspace.organizationId}
-                            className="button button-secondary button-full"
-                            disabled={authBusy}
-                            type="button"
-                            onClick={() => void onPickSwitchWorkspace(workspace.organizationId)}
-                          >
-                            {workspace.organizationName}
-                          </button>
-                        ))}
-                      </div>
+                      {loadingSwitchable ? (
+                        <p className="account-dropdown-hint">Loading…</p>
+                      ) : switchableWorkspaces.length === 0 ? (
+                        <p className="account-dropdown-hint">You have no other workspaces.</p>
+                      ) : (
+                        <div className="workspace-option-list">
+                          {switchableWorkspaces.map((workspace) => (
+                            <button
+                              key={workspace.organizationId}
+                              className="button button-secondary button-full"
+                              disabled={authBusy}
+                              type="button"
+                              onClick={() => void onPickSwitchWorkspace(workspace.organizationId)}
+                            >
+                              {workspace.organizationName}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : null}
                 </div>

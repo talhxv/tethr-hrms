@@ -90,6 +90,18 @@ export class AuthService {
     return verified;
   }
 
+  // Every account for an email, across every workspace. Same cross-tenant
+  // trust boundary as findVerifiedUsers / hasOtherWorkspaces — this one backs
+  // the in-app workspace switcher, which trusts the caller's current valid
+  // session instead of re-checking a password (each account can hold its own
+  // password, but they're the same person, so a live session for one is taken
+  // as authority to enter another).
+  async findAccountsForEmail(email: string): Promise<User[]> {
+    return this.userRepository.find({
+      where: { email: email.toLowerCase() } as FindOptionsWhere<User>,
+    });
+  }
+
   // Public-facing precheck for signup: does any workspace already have an
   // account for this email? Deliberately returns only a boolean — never org
   // names or a count — so an unauthenticated caller can't enumerate which

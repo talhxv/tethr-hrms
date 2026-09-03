@@ -190,4 +190,46 @@ export class AccountService {
       workspaces,
     };
   }
+
+  // The other workspaces the signed-in user can jump to, with display names.
+  // Unlike the login picker this needs no password: the caller already holds a
+  // valid session, and every account here shares their email (same person).
+  async listSwitchableWorkspaces(): Promise<
+    readonly { readonly organizationId: string; readonly organizationName: string }[]
+  > {
+    const current = await this.authService.getCurrentUser();
+    const accounts = await this.authService.findAccountsForEmail(current.email);
+    const others = accounts.filter(
+      (account) =>
+        account.organizationId !== current.organizationId && account.status !== 'disabled',
+    );
+    return Promise.all(
+      others.map(async (account) => {
+        const organization = await this.organizationService.getById(
+          toId<OrganizationId>(account.organizationId),
+        );
+        return {
+          organizationId: account.organizationId,
+          organizationName:
+            organization?.displayName ?? organization?.legalName ?? account.organizationId,
+        };
+      }),
+    );
+  }
+
+  // Mint a session for another of the caller's workspaces straight from their
+  // current session — no password step. Only ever crosses to an account that
+  // shares the caller's email; a disabled or non-existent account is refused.
+  async switchWorkspace(targetOrganizationId: string): Promise<AuthResult> {
+    const current = await this.authService.getCurrentUser();
+    const accounts = await this.authService.findAccountsForEmail(current.email);
+    const target = accounts.find(
+      (account) =>
+        account.organizationId === targetOrganizationId && account.status !== 'disabled',
+    );
+    if (!target) {
+      throw new UnauthenticatedError('You do not have an account in that workspace');
+    }
+    return { user: target, token: this.authService.issueToken(target) };
+  }
 }

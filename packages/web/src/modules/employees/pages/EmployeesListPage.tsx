@@ -15,10 +15,12 @@ import {
   IconDownload,
   IconFileText,
   IconGift,
+  IconLayoutList,
   IconLoader2,
   IconPlus,
   IconProgressCheck,
   IconSignature,
+  IconSitemap,
   IconUpload,
   IconUserCheck,
 } from '@tabler/icons-react';
@@ -31,6 +33,7 @@ import {
   EmployeeOnboardingForm,
   type EmployeeOnboardingFormValues,
 } from '../components/EmployeeOnboardingForm';
+import { EmployeeOrgChart } from '../components/EmployeeOrgChart';
 import {
   ADD_EMPLOYEE_DOCUMENT_VERSION_MUTATION,
   ATTACH_EMPLOYEE_DOCUMENT_MUTATION,
@@ -61,6 +64,7 @@ type AssignmentView = {
   readonly positionTitle: string | null;
   readonly departmentName: string | null;
   readonly locationName: string | null;
+  readonly reportsToEmployeeId: string | null;
   readonly reportsToName: string | null;
   readonly validFrom: string;
   readonly validTo: string | null;
@@ -539,6 +543,7 @@ export const EmployeesListPage = () => {
 
   const employees = useMemo(() => data?.employees ?? [], [data]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'directory' | 'orgChart'>('directory');
   const [showForm, setShowForm] = useState(false);
   const [assessmentForm, setAssessmentForm] = useState(emptyAssessmentForm);
   const [documentForm, setDocumentForm] = useState(emptyDocumentForm);
@@ -1323,11 +1328,35 @@ export const EmployeesListPage = () => {
 
         <div className="table-shell">
           <div className="table-title-row">
-            <div className="table-title">Employee directory</div>
-            <div className="table-density">
-              {loading
-                ? 'Loading…'
-                : `${employees.length} record${employees.length === 1 ? '' : 's'}`}
+            <div className="table-title">
+              {viewMode === 'orgChart' ? 'Org chart' : 'Employee directory'}
+            </div>
+            <div className="table-title-row-end">
+              <span className="table-density">
+                {loading
+                  ? 'Loading…'
+                  : `${employees.length} record${employees.length === 1 ? '' : 's'}`}
+              </span>
+              <div className="segmented-control" role="group" aria-label="Employee view">
+                <button
+                  aria-pressed={viewMode === 'directory'}
+                  className={`segmented-button${viewMode === 'directory' ? ' is-active' : ''}`}
+                  type="button"
+                  onClick={() => setViewMode('directory')}
+                >
+                  <IconLayoutList size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                  Directory
+                </button>
+                <button
+                  aria-pressed={viewMode === 'orgChart'}
+                  className={`segmented-button${viewMode === 'orgChart' ? ' is-active' : ''}`}
+                  type="button"
+                  onClick={() => setViewMode('orgChart')}
+                >
+                  <IconSitemap size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                  Org chart
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1341,6 +1370,12 @@ export const EmployeesListPage = () => {
                 ? 'No employees yet. Use Onboard employee to add your first.'
                 : 'No employees are available in this workspace yet.'}
             </p>
+          ) : viewMode === 'orgChart' ? (
+            <EmployeeOrgChart
+              employees={employees}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
           ) : (
             <div className="employee-table-wrap">
               <table className="employee-table">

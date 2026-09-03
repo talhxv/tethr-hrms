@@ -1,7 +1,12 @@
 import { useApolloClient, useMutation } from '@apollo/client';
 import { useAtom } from 'jotai';
 
-import { LOGIN_MUTATION, SELECT_WORKSPACE_MUTATION, SIGN_UP_MUTATION } from '../graphql/auth.operations';
+import {
+  LOGIN_MUTATION,
+  SELECT_WORKSPACE_MUTATION,
+  SIGN_UP_MUTATION,
+  SWITCH_WORKSPACE_MUTATION,
+} from '../graphql/auth.operations';
 import { authState, type AuthSession } from '../states/authState';
 
 export type WorkspaceOption = {
@@ -28,6 +33,8 @@ type LoginData = {
 };
 type SelectWorkspaceVars = { input: { selectionToken: string; organizationId: string } };
 type SelectWorkspaceData = { selectWorkspace: AuthSession };
+type SwitchWorkspaceVars = { organizationId: string };
+type SwitchWorkspaceData = { switchWorkspace: AuthSession };
 type SignUpVars = { input: { organizationName: string; email: string; password: string } };
 type SignUpData = { signUp: AuthSession };
 
@@ -39,6 +46,10 @@ export const useAuth = () => {
     SelectWorkspaceData,
     SelectWorkspaceVars
   >(SELECT_WORKSPACE_MUTATION);
+  const [switchWorkspaceMutation, { loading: switchingWorkspace }] = useMutation<
+    SwitchWorkspaceData,
+    SwitchWorkspaceVars
+  >(SWITCH_WORKSPACE_MUTATION);
   const [signUpMutation, { loading: signingUp }] = useMutation<SignUpData, SignUpVars>(
     SIGN_UP_MUTATION,
   );
@@ -77,6 +88,16 @@ export const useAuth = () => {
     throw new Error('Workspace selection did not return a session');
   };
 
+  // In-app workspace switch: no password, straight from the current session.
+  const switchWorkspace = async (organizationId: string): Promise<AuthSession> => {
+    const { data } = await switchWorkspaceMutation({ variables: { organizationId } });
+    if (data) {
+      setSession(data.switchWorkspace);
+      return data.switchWorkspace;
+    }
+    throw new Error('Workspace switch did not return a session');
+  };
+
   const signUp = async (
     organizationName: string,
     email: string,
@@ -100,9 +121,10 @@ export const useAuth = () => {
   return {
     user: session?.user ?? null,
     isAuthenticated: Boolean(session?.token),
-    isBusy: loggingIn || signingUp || selectingWorkspace,
+    isBusy: loggingIn || signingUp || selectingWorkspace || switchingWorkspace,
     login,
     selectWorkspace,
+    switchWorkspace,
     signUp,
     logout,
   };

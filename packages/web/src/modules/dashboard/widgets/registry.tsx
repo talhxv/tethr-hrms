@@ -27,8 +27,8 @@ const canManageTethrHr = (user: AuthUser | null): boolean =>
 const canManageClients = (user: AuthUser | null): boolean => hasAnyRole(user, 'tethrAdmin');
 
 const DEFAULT_ROW_SPAN = 3;
-const CHART_ROW_SPAN = 6;
-const SHARE_CHART_ROW_SPAN = 5;
+const CHART_ROW_SPAN = 5;
+const SHARE_CHART_ROW_SPAN = 4;
 
 export const WIDGET_REGISTRY: readonly WidgetDefinition[] = [
   {
@@ -52,7 +52,7 @@ export const WIDGET_REGISTRY: readonly WidgetDefinition[] = [
     defaultColSpan: 1,
     defaultRowSpan: SHARE_CHART_ROW_SPAN,
     accentColor: 'green',
-    defaultEnabled: false,
+    defaultEnabled: true,
     isVisible: () => true,
     fields: LEAVE_OVERVIEW_FIELDS,
     defaultFieldIds: ['leaveTypes', 'pending'],

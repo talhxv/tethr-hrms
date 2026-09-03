@@ -55,10 +55,14 @@
 | Build      | `npm run build`        | ✅ all 5 packages (api/worker via tsc+tsc-alias, web via Vite)         |
 
 Node/npm now work from WSL, and dependencies have been refreshed with Linux
-optional native packages required by ESLint's resolver and Rollup. The current
-tool environment can run the Node dev servers, but it cannot access the Docker
-socket at `/var/run/docker.sock`; Docker lifecycle checks may still need a normal
-WSL terminal.
+optional native packages required by ESLint's resolver and Rollup.
+
+> **Local environment (current):** the database is a hosted Supabase Postgres —
+> connection settings live in `packages/api/.env`, no local Postgres or Docker
+> required. `npm run start:dev -w @hrms/api` serves GraphQL at
+> http://localhost:3000/graphql. Redis (and `docker compose up -d redis`) is only
+> needed to run `packages/worker`. The dated "Verified running locally (Docker)"
+> notes below describe earlier runs against a local Docker Postgres/Redis stack.
 
 ### Verified running locally (Docker) — 2026-06-20
 

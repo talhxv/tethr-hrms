@@ -5,6 +5,7 @@ import {
   IconArrowUpRight,
   IconBriefcase,
   IconChecklist,
+  IconChevronDown,
   IconCircleCheck,
   IconCurrencyDollar,
   IconLock,
@@ -18,12 +19,13 @@ import { Link } from 'react-router-dom';
 import { downloadBase64File } from '../../../app/download';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
-import { CLIENT_WORKSPACE_QUERY } from '../graphql/client-workspace.operations';
 import {
   CLIENT_INVOICES_QUERY,
   CLIENT_INVOICE_ADDENDUM_PDF_QUERY,
   CLIENT_INVOICE_PDF_QUERY,
 } from '../../billing/graphql/billing.operations';
+import { DashboardWidgetBoard } from '../../dashboard/components/DashboardWidgetBoard';
+import { CLIENT_WORKSPACE_QUERY } from '../graphql/client-workspace.operations';
 
 type EmployeeRecord = {
   readonly id: string;
@@ -78,19 +80,11 @@ const formatDate = (value: string): string =>
 export const ClientWorkspacePage = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const { data, loading, error } = useQuery<ClientWorkspaceData>(CLIENT_WORKSPACE_QUERY);
   const employees = data?.employees ?? [];
   const hiringRequests = data?.hiringRequests ?? [];
   const salaryStructures = data?.salaryStructures ?? [];
-  const activeEmployees = employees.filter(
-    (employee) => employee.employmentStatus === 'active',
-  ).length;
-  const onLeaveEmployees = employees.filter(
-    (employee) => employee.employmentStatus === 'onLeave',
-  ).length;
-  const activeHiringRequests = hiringRequests.filter(
-    (request) => request.status !== 'filled' && request.status !== 'cancelled',
-  ).length;
   const compensationReady = salaryStructures.length > 0;
   const isClientAdmin = user?.roleKeys.includes('clientAdmin') === true;
   const onboardingSteps: readonly OnboardingStep[] = [
@@ -133,6 +127,38 @@ export const ClientWorkspacePage = () => {
     },
   ];
 
+  const quickActions: readonly QuickAction[] = [
+    {
+      title: 'Employee directory',
+      description: 'Records, statuses and core details',
+      to: '/employees',
+      icon: IconUsersGroup,
+      primary: true,
+    },
+    {
+      title: 'Hiring requests',
+      description: 'Submit roles, track Tethr intake',
+      to: '/hiring',
+      icon: IconBriefcase,
+    },
+    ...(isClientAdmin
+      ? [
+          {
+            title: 'Workspace users',
+            description: 'Invite teammates, link accounts',
+            to: '/users',
+            icon: IconUserPlus,
+          },
+          {
+            title: 'Compensation',
+            description: 'Salary history and adjustments',
+            to: '/compensation',
+            icon: IconCurrencyDollar,
+          },
+        ]
+      : []),
+  ];
+
   return (
     <main className="client-workspace">
       <section className="client-workspace-content" aria-labelledby="client-workspace-title">
@@ -145,36 +171,29 @@ export const ClientWorkspacePage = () => {
           </div>
         </header>
 
-        <div className="metric-strip client-metrics">
-          <div className="metric-card">
-            <div className="metric-label">Total employees</div>
-            <div className="metric-value">{loading ? '—' : employees.length}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Active</div>
-            <div className="metric-value">{loading ? '—' : activeEmployees}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">On leave</div>
-            <div className="metric-value">{loading ? '—' : onLeaveEmployees}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Hiring requests</div>
-            <div className="metric-value">{loading ? '—' : activeHiringRequests}</div>
-          </div>
-        </div>
+        <DashboardWidgetBoard showViewTabs={false} />
 
         <section className="table-shell client-onboarding" aria-labelledby="client-onboarding">
-          <div className="table-title-row">
-            <div className="table-title" id="client-onboarding">
+          <button
+            aria-expanded={onboardingOpen}
+            className="table-title-row collapse-toggle"
+            type="button"
+            onClick={() => setOnboardingOpen((open) => !open)}
+          >
+            <span className="table-title" id="client-onboarding">
+              <IconChevronDown
+                className={`collapse-chevron${onboardingOpen ? ' is-open' : ''}`}
+                size={theme.icon.size.sm}
+                stroke={theme.icon.stroke.sm}
+              />
               <IconChecklist size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
               Client onboarding
-            </div>
-            <div className="table-density">
-              {onboardingSteps.filter((step) => step.complete).length}/{onboardingSteps.length}{' '}
-              ready
-            </div>
-          </div>
+            </span>
+            <span className="table-density">
+              {onboardingSteps.filter((step) => step.complete).length}/{onboardingSteps.length} ready
+            </span>
+          </button>
+          {onboardingOpen ? (
           <div className="onboarding-step-list">
             {onboardingSteps.map((step) => {
               const StepIcon = step.icon;
@@ -209,6 +228,7 @@ export const ClientWorkspacePage = () => {
               );
             })}
           </div>
+          ) : null}
         </section>
 
         <section className="table-shell">
@@ -275,58 +295,51 @@ export const ClientWorkspacePage = () => {
             </div>
           )}
         </section>
+
+        <ClientInvoicesSection />
       </section>
 
-      <ClientInvoicesSection />
-
-      <aside className="client-workspace-panel" aria-label="Client actions">
-        <section className="client-action-block">
+      <aside className="client-workspace-panel client-actions-panel" aria-label="Client actions">
+        <div className="client-actions-head">
           <div className="panel-kicker">People operations</div>
-          <h2 className="panel-title">Manage your team</h2>
-          <p>
-            Review employment records, statuses, and core details for everyone in your organization.
-          </p>
-          <Link className="button button-primary" to="/employees">
-            <IconUsersGroup size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-            Open employee directory
-          </Link>
-        </section>
-        <section className="client-action-block">
-          <div className="panel-kicker">Hiring</div>
-          <h2 className="panel-title">Request a role</h2>
-          <p>
-            Submit a hiring brief and follow Tethr&apos;s progress from intake through fulfillment.
-          </p>
-          <Link className="button button-secondary" to="/hiring">
-            <IconBriefcase size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-            Open hiring requests
-          </Link>
-        </section>
-        {isClientAdmin ? (
-          <section className="client-action-block">
-            <div className="panel-kicker">Workspace access</div>
-            <h2 className="panel-title">Invite teammates</h2>
-            <p>Add client members and link employee self-service users to employee records.</p>
-            <Link className="button button-secondary" to="/users">
-              <IconUserPlus size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-              Open users
-            </Link>
-          </section>
-        ) : null}
-        {isClientAdmin ? (
-          <section className="client-action-block">
-            <div className="panel-kicker">Compensation</div>
-            <h2 className="panel-title">Salary changes</h2>
-            <p>Review salary history and record approved adjustments for your workforce.</p>
-            <Link className="button button-secondary" to="/compensation">
-              <IconCurrencyDollar size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-              Open compensation
-            </Link>
-          </section>
-        ) : null}
+          <h2 className="panel-title">Run your workspace</h2>
+        </div>
+        <nav className="quick-action-list">
+          {quickActions.map((action) => {
+            const ActionIcon = action.icon;
+            return (
+              <Link
+                className={`quick-action${action.primary ? ' is-primary' : ''}`}
+                key={action.to}
+                to={action.to}
+              >
+                <span className="quick-action-icon">
+                  <ActionIcon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                </span>
+                <span className="quick-action-copy">
+                  <span className="quick-action-title">{action.title}</span>
+                  <span className="quick-action-desc">{action.description}</span>
+                </span>
+                <IconArrowUpRight
+                  className="quick-action-arrow"
+                  size={theme.icon.size.sm}
+                  stroke={theme.icon.stroke.sm}
+                />
+              </Link>
+            );
+          })}
+        </nav>
       </aside>
     </main>
   );
+};
+
+type QuickAction = {
+  readonly title: string;
+  readonly description: string;
+  readonly to: string;
+  readonly icon: TablerIcon;
+  readonly primary?: boolean;
 };
 
 type ClientInvoiceRow = {
