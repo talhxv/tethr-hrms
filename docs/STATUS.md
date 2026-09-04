@@ -1,6 +1,41 @@
 # Foundation Status
 
-> As of 2026-08-24 (`finance` branch). Phases 0–2 plus the V1 portal foundation are complete; **Finance F1 (payroll core) and F2 (billing core) are built and smoke-verified** — see [finance-plan.md](finance-plan.md) for the agreed scope. What follows is the pre-Finance status record.
+> As of 2026-09-04 (`feat/attendance-module-and-ux-revamp`). Phases 0–2 plus the V1 portal foundation are complete; Finance F1 (payroll core) and F2 (billing core) are built and smoke-verified — see [finance-plan.md](finance-plan.md). **Attendance is now exposed and guarded**, and the employee/onboarding surfaces have been reworked. Sections below run newest-first.
+
+## Attendance exposure + authorization fix (2026-09-04)
+
+**Security.** `modules/attendance` was fully built but had never been wired to authorization: `attendance.resolver.ts` was the only module resolver carrying no `@UseGuards`/`@RequirePermissions`, there is no `APP_GUARD`, and `PERMISSIONS` had no attendance entries at all. Because `PermissionsGuard` returns `true` when a handler has no metadata, every clock and timesheet operation was reachable by any caller, for any `employeeId`.
+
+- Added `attendance:own:read` / `own:write` / `team:read` / `approve`, split the way leave is, and granted them across the six system roles (employees get the `own:*` pair; Tethr HR and client admins get `team:read` + `approve`; Tethr Finance gets `team:read` since payroll needs hours).
+- Guarded every attendance operation.
+- Added `clockInMe` / `clockOutMe` / `myTimeEntries`, which resolve the employee from the session the way `submitMyLeaveRequest` does — holding `attendance:own:write` can no longer clock a colleague in. The admin `clockIn(employeeId)` now sits behind `attendance:approve`, since clocking someone else in is a correction, not self-service.
+- Dropped the `submittedByUserId` / `approvedByUserId` **arguments** from `submitTimesheet` / `approveTimesheet` and took the actor from the session — they were free text, so the audit trail could be attributed to anyone.
+- **Regression test:** `core/authz/resolver-guards.spec.ts` walks every `*.resolver.ts` and fails on any operation lacking `@RequirePermissions` outside an explicit public allowlist. Writing it surfaced **seven pre-existing gaps**, listed in `KNOWN_UNGUARDED` so they stay visible: `clients`, and the six `createEmployeeEducation` / `updateEmployeeEducation` / `deleteEmployeeEducation` / `create|update|deleteEmployeeWorkHistory` mutations — same bug class, any authenticated caller can write education and work history for any employee id. A third test makes that list shrink-only. **Still open; close before real users.**
+- **Role permission drift** (the F2 follow-up noted below) now has a tool rather than a re-seed: `npm run sync:role-permissions -w @hrms/api` backfills additively — it only adds permissions a definition lists and a row lacks, never removes, so admin customisations survive. The persisted rows happened to be current when checked (57/57 rows matched), but `ensureSystemRole` still returns existing rows untouched, so the underlying drift remains by design.
+
+**Time & attendance UI** (People sub-nav, Tethr + client portals, `/attendance`): employee picker plus date range; **Time entries** tab with a manual "record hours" form for corrections; **Timesheets** tab exposing the open → submit → approve → lock lifecycle, each row offering only the action its status allows. Write actions render only for `tethrAdmin` / `tethrHr` / `clientAdmin`. Clock in/out deliberately lives in the *employee* portal instead — `clockInMe` needs a session linked to an employee, and Tethr staff are not employees.
+
+**Verified live**, not just compiled: logged in as `employee@demo.test` and exercised `clockInMe` → clock event, `clockOutMe` → time entry, `myTimeEntries` → reads back. Unauthenticated calls now return `UNAUTHENTICATED` (401) rather than the old validation failure.
+
+**Constraint worth knowing:** there is no workspace-wide attendance query — `timeEntries` and `timesheets` are both per-employee, which is why the page is scoped by a picker rather than showing a roster grid. A roster view needs a new resolver.
+
+## UX rework (2026-09-04)
+
+Driven by Deel as the reference; the recurring fault was full records crammed into a 500px rail or a single wide auto-fit grid.
+
+- **Onboarding intakes** (employee and workspace) are now full-page stepped flows: titled cards, a vertical step rail with per-step hints, a sticky footer, and a review step with per-section Edit. Shared chrome lives in `web/src/components/onboarding/` so `modules/clients` and `modules/employees` don't import each other.
+- **Employee record** moved from thirteen accordions in the preview rail to `/employees/:employeeId` — a sticky identity column plus five tabs (Profile, Job & pay, Documents, Onboarding, Access & exit). `DetailSection` now defaults to open, since the tabs do the narrowing. The rail is a preview: headline facts and an "Open record" button, costing no extra query. `EmployeesListPage` went 3,027 → 443 lines; shared types/formatters extracted to `modules/employees/employee.shared.ts`.
+- **Org chart** is its own sub-nav tab (`/employees/org-chart`), sharing the page component so selection and the rail are common.
+- **Directory** gained search, multi-select status/worker-type filter chips with count badges, a live row count, and three real empty states. "Onboard employee" became a grouped `ActionMenu` whose shortcuts prefill worker type.
+- **Employee self-service**: profile promoted to `/me/profile` with the same identity-column layout. This surfaced **eleven fields that were being sent to `updateMyEmployeeProfile` but had no inputs** — permanent address, both accommodation types, contact channel, and emergency contact. No data was being lost (`profileFrom` hydrated them), but employees could not set them. The `/me` rail is now a pinned clock card plus Request leave / Feedback tabs.
+- **Client portfolio** side panel replaced a static role glossary with a live rollup plus a "needs attention" list for clients that have no workspace, each linking into a pre-scoped onboarding flow.
+- Added `finalConfirmationDate` to employee onboarding — it was already sent to `createEmployee` but nothing ever set it.
+
+**Gates:** typecheck clean across all packages, **132 tests passing** (api 107 incl. 3 new guard specs, shared 20, ui 5), 0 lint errors, production build clean.
+
+---
+
+> The sections below are the pre-Finance status record (as of 2026-08-24, `finance` branch).
 
 ## Finance F2 — billing core (this branch)
 
