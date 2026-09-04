@@ -1345,6 +1345,17 @@ button {
 
 .employee-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.employee-name-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.employee-name-link:hover {
+  text-decoration: underline;
 }
 
 .data-table-wrap {
@@ -2943,6 +2954,73 @@ button {
 
   .metric-card:nth-child(-n + 2) {
     border-bottom: 1px solid var(--hrms-color-border-light);
+  }
+
+  /* Both nav rows scroll sideways instead of crushing their items: the top
+     pills are a centred 3-column grid and the sub-nav is centred flex, and
+     neither fits five or six entries on a phone. */
+  .app-topnav {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: var(--hrms-space-2);
+    padding: 0 var(--hrms-space-3);
+  }
+
+  .app-subnav {
+    justify-content: flex-start;
+    padding: var(--hrms-space-1) var(--hrms-space-3);
+  }
+
+  .topnav-pills,
+  .app-subnav {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topnav-pills::-webkit-scrollbar,
+  .app-subnav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .subnav-tab,
+  .topnav-pills > * {
+    flex: 0 0 auto;
+  }
+
+  /* Paired form fields stack. Without this every two-column group — onboarding,
+     the HR record, the attendance forms — stays two-up at 360px. */
+  .field-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Popovers are anchored to a trigger that can sit near either edge, so cap
+     them to the viewport rather than letting a fixed min-width push the page
+     sideways. */
+  .action-menu-panel,
+  .filter-menu-panel {
+    min-width: 0;
+    width: max-content;
+    max-width: calc(100vw - var(--hrms-space-8));
+  }
+
+  .directory-search {
+    max-width: none;
+  }
+
+  .attendance-picker {
+    max-width: none;
+  }
+
+  .onboarding-card,
+  .profile-identity {
+    padding: var(--hrms-space-4);
+  }
+
+  .profile-page {
+    padding: var(--hrms-space-4);
+  }
+
+  .onboarding-flow-title {
+    font-size: var(--hrms-font-size-lg);
   }
 }
 

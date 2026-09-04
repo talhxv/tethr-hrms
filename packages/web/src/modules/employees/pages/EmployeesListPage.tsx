@@ -344,7 +344,15 @@ export const EmployeesListPage = () => {
                             {initials(employee)}
                           </span>
                           <div className="truncate">
-                            <div className="employee-primary">{fullName(employee)}</div>
+                            {/* A real link, not just the row click: the preview
+                                rail is hidden below 1100px, so on a phone this
+                                is the only route into the record. */}
+                            <Link
+                              className="employee-primary employee-name-link"
+                              to={`/employees/${employee.id}`}
+                            >
+                              {fullName(employee)}
+                            </Link>
                             <div className="employee-secondary">{employee.employeeNumber}</div>
                           </div>
                         </div>
