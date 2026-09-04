@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { WorkspaceUsersPage } from '../modules/access/pages/WorkspaceUsersPage';
+import { TimeAttendancePage } from '../modules/attendance/pages/TimeAttendancePage';
 import { useAuth } from '../modules/auth/hooks/useAuth';
 import { AccessPendingPage } from '../modules/auth/pages/AccessPendingPage';
 import { LoginPage } from '../modules/auth/pages/LoginPage';
@@ -11,6 +12,7 @@ import { ClientWorkspacePage } from '../modules/client/pages/ClientWorkspacePage
 import { ClientPortfolioPage } from '../modules/clients/pages/ClientPortfolioPage';
 import { CompensationPage } from '../modules/compensation/pages/CompensationPage';
 import { DashboardPage } from '../modules/dashboard/pages/DashboardPage';
+import { EmployeeProfilePage } from '../modules/employees/pages/EmployeeProfilePage';
 import { EmployeesListPage } from '../modules/employees/pages/EmployeesListPage';
 import { AnnouncementsPage } from '../modules/engagement/pages/AnnouncementsPage';
 import { FeedbackInboxPage } from '../modules/engagement/pages/FeedbackInboxPage';
@@ -19,6 +21,7 @@ import { PayrollPage } from '../modules/payroll/pages/PayrollPage';
 import { PayrollRunDetailPage } from '../modules/payroll/pages/PayrollRunDetailPage';
 import { HiringRequestsPage } from '../modules/recruitment/pages/HiringRequestsPage';
 import { EmployeeWorkspacePage } from '../modules/self-service/pages/EmployeeWorkspacePage';
+import { MyProfilePage } from '../modules/self-service/pages/MyProfilePage';
 
 import { AppShell } from './AppShell';
 import { portalHome } from './portal';
@@ -64,6 +67,11 @@ export const AppRouter = () => (
           </Route>
           <Route element={<RequirePortal portals={['tethr', 'client']} />}>
             <Route path="/employees" element={<EmployeesListPage />} />
+            {/* Same page, org-chart view: the preview rail and its selection are
+                shared, so the view is a route rather than a separate component. */}
+            <Route path="/employees/org-chart" element={<EmployeesListPage />} />
+            <Route path="/employees/:employeeId" element={<EmployeeProfilePage />} />
+            <Route path="/attendance" element={<TimeAttendancePage />} />
             <Route path="/hiring" element={<HiringRequestsPage />} />
             <Route path="/leave" element={<LeaveTriagePage />} />
           </Route>
@@ -92,6 +100,7 @@ export const AppRouter = () => (
           </Route>
           <Route element={<RequirePortal portals={['employee']} />}>
             <Route path="/me" element={<EmployeeWorkspacePage />} />
+            <Route path="/me/profile" element={<MyProfilePage />} />
           </Route>
           <Route path="/" element={<PortalHomeRedirect />} />
         </Route>

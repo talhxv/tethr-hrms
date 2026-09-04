@@ -3,18 +3,18 @@ import type { ApprovalStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
   IconCalendarEvent,
-  IconCamera,
+  IconChevronRight,
   IconClock,
-  IconDeviceFloppy,
-  IconLoader2,
   IconMessageCircle,
   IconPlaneDeparture,
   IconUserCircle,
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
+import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useTheme } from '../../../providers/theme/useTheme';
 import { downloadBase64File } from '../../../app/download';
+import { ClockInOutCard } from '../../attendance/components/ClockInOutCard';
 import {
   MY_PAYSLIP_PDF_QUERY,
   MY_PAYSLIPS_QUERY,
@@ -23,8 +23,6 @@ import { SUBMIT_MY_FEEDBACK_MUTATION } from '../../engagement/graphql/engagement
 import {
   MY_WORKSPACE_QUERY,
   SUBMIT_MY_LEAVE_REQUEST_MUTATION,
-  UPDATE_MY_EMPLOYEE_PHOTO_MUTATION,
-  UPDATE_MY_EMPLOYEE_PROFILE_MUTATION,
 } from '../graphql/self-service.operations';
 
 type EmployeeRecord = {
@@ -129,53 +127,17 @@ type WorkspaceData = {
   readonly myCurrentSalaryRevision: SalaryRecord | null;
 };
 
-type ProfileForm = {
-  personalEmail: string;
-  phone: string;
-  addressLine1: string;
-  addressLine2: string;
-  city: string;
-  region: string;
-  countryCode: string;
-  postalCode: string;
-  permanentAddressLine1: string;
-  permanentAddressLine2: string;
-  permanentCity: string;
-  permanentRegion: string;
-  permanentCountryCode: string;
-  permanentPostalCode: string;
-  currentAccommodationType: string;
-  permanentAccommodationType: string;
-  preferredContactChannel: string;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelation: string;
-};
+type SelfServiceTabKey = 'leave' | 'feedback';
 
-const emptyProfile: ProfileForm = {
-  personalEmail: '',
-  phone: '',
-  addressLine1: '',
-  addressLine2: '',
-  city: '',
-  region: '',
-  countryCode: '',
-  postalCode: '',
-  permanentAddressLine1: '',
-  permanentAddressLine2: '',
-  permanentCity: '',
-  permanentRegion: '',
-  permanentCountryCode: '',
-  permanentPostalCode: '',
-  currentAccommodationType: '',
-  permanentAccommodationType: '',
-  preferredContactChannel: '',
-  emergencyContactName: '',
-  emergencyContactPhone: '',
-  emergencyContactRelation: '',
-};
-
-const MAX_PHOTO_BYTES = 300_000;
+// The rail used to stack three full forms end to end. They are one at a time
+// now — the clock-in card stays pinned above, since it is glanceable and small.
+const SELF_SERVICE_TABS: ReadonlyArray<{
+  readonly key: SelfServiceTabKey;
+  readonly label: string;
+}> = [
+  { key: 'leave', label: 'Request leave' },
+  { key: 'feedback', label: 'Feedback' },
+];
 
 const today = (): string => new Date().toISOString().slice(0, 10);
 const addDays = (date: Date, amount: number): string => {
@@ -239,28 +201,6 @@ const workerTypeLabels: Record<string, string> = {
   temporary: 'Temporary',
 };
 
-const profileFrom = (profile: EmployeeProfileRecord | null): ProfileForm => ({
-  personalEmail: profile?.personalEmail ?? '',
-  phone: profile?.phone ?? '',
-  addressLine1: profile?.addressLine1 ?? '',
-  addressLine2: profile?.addressLine2 ?? '',
-  city: profile?.city ?? '',
-  region: profile?.region ?? '',
-  countryCode: profile?.countryCode ?? '',
-  postalCode: profile?.postalCode ?? '',
-  permanentAddressLine1: profile?.permanentAddressLine1 ?? '',
-  permanentAddressLine2: profile?.permanentAddressLine2 ?? '',
-  permanentCity: profile?.permanentCity ?? '',
-  permanentRegion: profile?.permanentRegion ?? '',
-  permanentCountryCode: profile?.permanentCountryCode ?? '',
-  permanentPostalCode: profile?.permanentPostalCode ?? '',
-  currentAccommodationType: profile?.currentAccommodationType ?? '',
-  permanentAccommodationType: profile?.permanentAccommodationType ?? '',
-  preferredContactChannel: profile?.preferredContactChannel ?? '',
-  emergencyContactName: profile?.emergencyContactName ?? '',
-  emergencyContactPhone: profile?.emergencyContactPhone ?? '',
-  emergencyContactRelation: profile?.emergencyContactRelation ?? '',
-});
 
 export const EmployeeWorkspacePage = () => {
   const { theme } = useTheme();
@@ -276,31 +216,21 @@ export const EmployeeWorkspacePage = () => {
   const [submitFeedback, { loading: submittingFeedback }] = useMutation(
     SUBMIT_MY_FEEDBACK_MUTATION,
   );
-  const [updateProfile, { loading: savingProfile }] = useMutation(
-    UPDATE_MY_EMPLOYEE_PROFILE_MUTATION,
-  );
-  const [updatePhoto, { loading: savingPhoto }] = useMutation(UPDATE_MY_EMPLOYEE_PHOTO_MUTATION);
   const [leaveForm, setLeaveForm] = useState({
     leaveTypeId: '',
     startDate: '',
     endDate: '',
     reason: '',
   });
-  const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfile);
+  const [selfServiceTab, setSelfServiceTab] = useState<SelfServiceTabKey>('leave');
   const [feedbackForm, setFeedbackForm] = useState({
     category: 'general',
     subject: '',
     body: '',
   });
   const [leaveError, setLeaveError] = useState<string | null>(null);
-  const [profileNotice, setProfileNotice] = useState<string | null>(null);
-  const [photoError, setPhotoError] = useState<string | null>(null);
   const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setProfileForm(profileFrom(data?.myEmployeeProfile ?? null));
-  }, [data?.myEmployeeProfile]);
 
   const employee = data?.myEmployee;
   const currentSalary = data?.myCurrentSalaryRevision ?? null;
@@ -355,37 +285,6 @@ export const EmployeeWorkspacePage = () => {
     } catch (caught) {
       setLeaveError(caught instanceof Error ? caught.message : 'Could not submit your request');
     }
-  };
-
-  const onChangePhoto = (file: File): void => {
-    if (file.size > MAX_PHOTO_BYTES) {
-      setPhotoError('Image must be under 300 KB.');
-      return;
-    }
-    setPhotoError(null);
-    const reader = new FileReader();
-    reader.onload = () => {
-      void updatePhoto({ variables: { input: { photoUrl: String(reader.result) } } })
-        .then(() => refetch())
-        .catch((caught: unknown) =>
-          setPhotoError(caught instanceof Error ? caught.message : 'Could not save photo'),
-        );
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const onProfileSubmit = async (event: FormEvent): Promise<void> => {
-    event.preventDefault();
-    setProfileNotice(null);
-    await updateProfile({
-      variables: {
-        input: Object.fromEntries(
-          Object.entries(profileForm).map(([key, value]) => [key, value || null]),
-        ),
-      },
-    });
-    setProfileNotice('Profile updated');
-    await refetch();
   };
 
   const onFeedbackSubmit = async (event: FormEvent): Promise<void> => {
@@ -673,6 +572,35 @@ export const EmployeeWorkspacePage = () => {
       </section>
 
       <aside className="self-service-panel" aria-label="Employee actions">
+        <ClockInOutCard />
+
+        {/* Profile is a page of its own — addresses and emergency contact need
+            more room than this rail has. */}
+        <Link className="quick-action self-service-profile-link" to="/me/profile">
+          <span className="quick-action-icon">
+            <IconUserCircle size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+          </span>
+          <span className="quick-action-copy">
+            <span className="quick-action-title">Your profile</span>
+            <span className="quick-action-desc">Contact details, addresses, emergency contact</span>
+          </span>
+          <IconChevronRight size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+        </Link>
+
+        <nav className="self-service-tabs profile-tabs" aria-label="Self-service actions">
+          {SELF_SERVICE_TABS.map((entry) => (
+            <button
+              aria-current={selfServiceTab === entry.key}
+              className={`profile-tab${selfServiceTab === entry.key ? ' is-active' : ''}`}
+              key={entry.key}
+              type="button"
+              onClick={() => setSelfServiceTab(entry.key)}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </nav>
+        {selfServiceTab === 'leave' ? (
         <section className="self-service-section">
           <div className="panel-title-row">
             <div>
@@ -746,166 +674,10 @@ export const EmployeeWorkspacePage = () => {
             </button>
           </form>
         </section>
+        ) : null}
 
-        <section className="self-service-section">
-          <div className="panel-title-row">
-            <div>
-              <div className="panel-kicker">Personal details</div>
-              <h2 className="panel-title">Profile</h2>
-            </div>
-            <IconUserCircle size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
-          </div>
-          <div className="field">
-            <label htmlFor="my-photo-input">Photo</label>
-            <div className="self-service-photo">
-              <div className="employee-photo-slot self-service-photo-slot">
-                {data.myEmployeeProfile?.photoUrl ? (
-                  <img
-                    alt="Your profile"
-                    className="employee-identity-photo"
-                    src={data.myEmployeeProfile.photoUrl}
-                  />
-                ) : (
-                  <span className="employee-avatar" style={chipStyle('violet')}>
-                    {initials(employee)}
-                  </span>
-                )}
-                <label
-                  className={`employee-photo-edit${savingPhoto ? ' is-saving' : ''}`}
-                  htmlFor="my-photo-input"
-                  title={savingPhoto ? 'Saving photo...' : 'Change photo'}
-                >
-                  {savingPhoto ? (
-                    <IconLoader2
-                      className="icon-spin"
-                      size={theme.icon.size.sm}
-                      stroke={theme.icon.stroke.sm}
-                    />
-                  ) : (
-                    <IconCamera size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
-                  )}
-                  <input
-                    accept="image/*"
-                    disabled={savingPhoto}
-                    id="my-photo-input"
-                    type="file"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) onChangePhoto(file);
-                      event.target.value = '';
-                    }}
-                  />
-                </label>
-              </div>
-              <p className="field-hint">JPG or PNG, under 300 KB.</p>
-            </div>
-            {photoError ? (
-              <p className="auth-error" role="alert">
-                {photoError}
-              </p>
-            ) : null}
-          </div>
 
-          <form className="config-form" onSubmit={onProfileSubmit}>
-            {profileNotice ? <p className="form-success">{profileNotice}</p> : null}
-            <div className="field-group">
-              <div className="field">
-                <label htmlFor="profile-email">Personal email</label>
-                <input
-                  id="profile-email"
-                  type="email"
-                  value={profileForm.personalEmail}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, personalEmail: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-phone">Phone</label>
-                <input
-                  id="profile-phone"
-                  value={profileForm.phone}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, phone: event.target.value }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="field">
-              <label htmlFor="profile-address-1">Address</label>
-              <input
-                id="profile-address-1"
-                value={profileForm.addressLine1}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, addressLine1: event.target.value }))
-                }
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="profile-address-2">Address line 2</label>
-              <input
-                id="profile-address-2"
-                value={profileForm.addressLine2}
-                onChange={(event) =>
-                  setProfileForm((current) => ({ ...current, addressLine2: event.target.value }))
-                }
-              />
-            </div>
-            <div className="field-group">
-              <div className="field">
-                <label htmlFor="profile-city">City</label>
-                <input
-                  id="profile-city"
-                  value={profileForm.city}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, city: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-region">Region</label>
-                <input
-                  id="profile-region"
-                  value={profileForm.region}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, region: event.target.value }))
-                  }
-                />
-              </div>
-            </div>
-            <div className="field-group">
-              <div className="field">
-                <label htmlFor="profile-country">Country code</label>
-                <input
-                  id="profile-country"
-                  maxLength={2}
-                  value={profileForm.countryCode}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({
-                      ...current,
-                      countryCode: event.target.value.toUpperCase(),
-                    }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-postal">Postal code</label>
-                <input
-                  id="profile-postal"
-                  value={profileForm.postalCode}
-                  onChange={(event) =>
-                    setProfileForm((current) => ({ ...current, postalCode: event.target.value }))
-                  }
-                />
-              </div>
-            </div>
-            <button className="button button-secondary" disabled={savingProfile} type="submit">
-              <IconDeviceFloppy size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-              {savingProfile ? 'Saving...' : 'Save profile'}
-            </button>
-          </form>
-        </section>
-
+        {selfServiceTab === 'feedback' ? (
         <section className="self-service-section">
           <div className="panel-title-row">
             <div>
@@ -965,6 +737,7 @@ export const EmployeeWorkspacePage = () => {
             </button>
           </form>
         </section>
+        ) : null}
       </aside>
     </main>
   );

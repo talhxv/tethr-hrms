@@ -1,14 +1,13 @@
 import { useMutation, useQuery } from '@apollo/client';
-import {
-  IconBuildingCommunity,
-  IconDeviceFloppy,
-  IconPlus,
-  IconRefresh,
-  IconUserShield,
-} from '@tabler/icons-react';
-import { useMemo, useState, type FormEvent } from 'react';
+import { IconBuildingCommunity, IconPlus, IconRefresh } from '@tabler/icons-react';
+import { useMemo, useState } from 'react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
+import {
+  NEW_CLIENT_OPTION,
+  WorkspaceOnboardingForm,
+  type WorkspaceOnboardingFormValues,
+} from '../components/WorkspaceOnboardingForm';
 import { CLIENTS_QUERY, ONBOARD_CLIENT_MUTATION } from '../graphql/client.operations';
 
 type WorkspaceSummaryRecord = {
@@ -30,9 +29,7 @@ type ClientsData = {
   readonly clients: readonly ClientRecord[];
 };
 
-const NEW_CLIENT_OPTION = 'new';
-
-const emptyForm = {
+const emptyForm: WorkspaceOnboardingFormValues = {
   clientId: NEW_CLIENT_OPTION,
   legalName: '',
   displayName: '',
@@ -55,41 +52,53 @@ export const ClientPortfolioPage = () => {
   const [onboardClient, { loading: onboarding }] = useMutation(ONBOARD_CLIENT_MUTATION);
   const clients = useMemo(() => data?.clients ?? [], [data]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  // Which client the flow opens pre-scoped to — set when onboarding is started
+  // from the "Needs attention" list so the client select arrives already filled.
+  const [pendingClientId, setPendingClientId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const newestClient = clients[0] ?? null;
-  const currencies = new Set(
-    clients.flatMap((client) => client.workspaces.map((workspace) => workspace.defaultCurrency)),
-  ).size;
+  const currencyList = Array.from(
+    new Set(
+      clients.flatMap((client) =>
+        client.workspaces.map((workspace) => workspace.defaultCurrency),
+      ),
+    ),
+  );
   const totalWorkspaces = clients.reduce((sum, client) => sum + client.workspaces.length, 0);
+  const clientsWithWorkspace = clients.filter((client) => client.workspaces.length > 0).length;
+  const incompleteClients = clients.filter((client) => client.workspaces.length === 0);
+  const isDemoClient = (name: string): boolean => /\(demo\)/i.test(name);
+  const liveClientCount = clients.filter((client) => !isDemoClient(client.name)).length;
+  const demoClientCount = clients.length - liveClientCount;
 
-  const setField = (key: keyof typeof emptyForm, value: string): void =>
-    setForm((current) => ({ ...current, [key]: value }));
+  const startOnboarding = (clientId?: string): void => {
+    setPendingClientId(clientId ?? null);
+    setFormError(null);
+    setShowForm(true);
+  };
 
-  const onSubmit = async (event: FormEvent): Promise<void> => {
-    event.preventDefault();
+  const onSubmit = async (values: WorkspaceOnboardingFormValues): Promise<void> => {
     setFormError(null);
     setNotice(null);
     try {
       const result = await onboardClient({
         variables: {
           input: {
-            clientId: form.clientId === NEW_CLIENT_OPTION ? null : form.clientId,
-            legalName: form.legalName.trim(),
-            displayName: form.displayName.trim() || null,
-            defaultLocale: form.defaultLocale.trim() || null,
-            defaultCurrency: form.defaultCurrency.trim().toUpperCase(),
-            adminEmail: form.adminEmail.trim(),
-            adminPassword: form.adminPassword,
-            hrAdminEmail: form.hrAdminEmail.trim(),
-            hrAdminPassword: form.hrAdminPassword,
+            clientId: values.clientId === NEW_CLIENT_OPTION ? null : values.clientId,
+            legalName: values.legalName.trim(),
+            displayName: values.displayName.trim() || null,
+            defaultLocale: values.defaultLocale.trim() || null,
+            defaultCurrency: values.defaultCurrency.trim().toUpperCase(),
+            adminEmail: values.adminEmail.trim(),
+            adminPassword: values.adminPassword,
+            hrAdminEmail: values.hrAdminEmail.trim(),
+            hrAdminPassword: values.hrAdminPassword,
           },
         },
       });
       const adminEmail = result.data?.onboardClient.initialAdmin.email;
       const hrAdminEmail = result.data?.onboardClient.initialHrAdmin.email;
-      setForm(emptyForm);
       setShowForm(false);
       setNotice(
         adminEmail && hrAdminEmail
@@ -101,6 +110,25 @@ export const ClientPortfolioPage = () => {
       setFormError(caught instanceof Error ? caught.message : 'Could not onboard this workspace');
     }
   };
+
+  // The intake takes over the page rather than sitting above the table, so the
+  // flow is not competing with the portfolio it is about to add to.
+  if (showForm) {
+    return (
+      <main className="onboarding-page">
+        <WorkspaceOnboardingForm
+          clients={clients}
+          formError={formError}
+          initialValues={
+            pendingClientId ? { ...emptyForm, clientId: pendingClientId } : emptyForm
+          }
+          submitting={onboarding}
+          onCancel={() => setShowForm(false)}
+          onSubmit={(values) => void onSubmit(values)}
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="client-portfolio-page">
@@ -116,7 +144,7 @@ export const ClientPortfolioPage = () => {
             <button
               className="button button-primary"
               type="button"
-              onClick={() => setShowForm((visible) => !visible)}
+              onClick={() => startOnboarding()}
             >
               <IconPlus size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
               New workspace
@@ -135,7 +163,7 @@ export const ClientPortfolioPage = () => {
           </div>
           <div className="metric-card">
             <div className="metric-label">Currencies</div>
-            <div className="metric-value">{loading ? '...' : currencies}</div>
+            <div className="metric-value">{loading ? '...' : currencyList.length}</div>
           </div>
           <div className="metric-card">
             <div className="metric-label">Newest</div>
@@ -146,126 +174,6 @@ export const ClientPortfolioPage = () => {
         </div>
 
         {notice ? <p className="form-success">{notice}</p> : null}
-
-        {showForm ? (
-          <form className="table-shell workspace-user-form" onSubmit={onSubmit}>
-            {formError ? (
-              <p className="auth-error" role="alert">
-                {formError}
-              </p>
-            ) : null}
-            <div className="field-group">
-              <div className="field">
-                <label htmlFor="client-select">Client</label>
-                <select
-                  id="client-select"
-                  value={form.clientId}
-                  onChange={(event) => setField('clientId', event.target.value)}
-                >
-                  <option value={NEW_CLIENT_OPTION}>+ New client</option>
-                  {clients.map((client) => (
-                    <option key={client.id} value={client.id}>
-                      {client.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label htmlFor="client-legal-name">Workspace legal name</label>
-                <input
-                  id="client-legal-name"
-                  required
-                  value={form.legalName}
-                  onChange={(event) => setField('legalName', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-display-name">Workspace display name</label>
-                <input
-                  id="client-display-name"
-                  value={form.displayName}
-                  onChange={(event) => setField('displayName', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-locale">Locale</label>
-                <input
-                  id="client-locale"
-                  required
-                  value={form.defaultLocale}
-                  onChange={(event) => setField('defaultLocale', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-currency">Currency</label>
-                <input
-                  id="client-currency"
-                  maxLength={3}
-                  required
-                  value={form.defaultCurrency}
-                  onChange={(event) =>
-                    setField('defaultCurrency', event.target.value.toUpperCase())
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-admin-email">Client admin email</label>
-                <input
-                  id="client-admin-email"
-                  required
-                  type="email"
-                  value={form.adminEmail}
-                  onChange={(event) => setField('adminEmail', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-admin-password">Initial password</label>
-                <input
-                  id="client-admin-password"
-                  minLength={8}
-                  required
-                  type="password"
-                  value={form.adminPassword}
-                  onChange={(event) => setField('adminPassword', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-hr-admin-email">Tethr HR email</label>
-                <input
-                  id="client-hr-admin-email"
-                  required
-                  type="email"
-                  value={form.hrAdminEmail}
-                  onChange={(event) => setField('hrAdminEmail', event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="client-hr-admin-password">Tethr HR initial password</label>
-                <input
-                  id="client-hr-admin-password"
-                  minLength={8}
-                  required
-                  type="password"
-                  value={form.hrAdminPassword}
-                  onChange={(event) => setField('hrAdminPassword', event.target.value)}
-                />
-              </div>
-            </div>
-            <div className="page-actions">
-              <button className="button button-primary" disabled={onboarding} type="submit">
-                <IconDeviceFloppy size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-                {onboarding ? 'Onboarding...' : 'Onboard workspace'}
-              </button>
-              <button
-                className="button button-secondary"
-                type="button"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : null}
 
         <section className="table-shell">
           <div className="table-title-row">
@@ -328,33 +236,77 @@ export const ClientPortfolioPage = () => {
         </section>
       </section>
 
-      <aside className="client-portfolio-panel" aria-label="Client onboarding summary">
+      <aside className="client-portfolio-panel" aria-label="Portfolio at a glance">
         <section className="self-service-section">
           <div className="panel-title-row">
             <div>
-              <div className="panel-kicker">Onboarding</div>
-              <h2 className="panel-title">Client setup</h2>
+              <div className="panel-kicker">Portfolio</div>
+              <h2 className="panel-title">At a glance</h2>
             </div>
-            <IconUserShield size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
+            <IconBuildingCommunity size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
           </div>
           <div className="field-list">
             <div className="field-row">
-              <span className="field-label">Client user</span>
-              <span className="field-value">Client administrator (view + approve)</span>
+              <span className="field-label">Workspace coverage</span>
+              <span className="field-value">
+                {loading ? '...' : `${clientsWithWorkspace} of ${clients.length} clients`}
+              </span>
             </div>
             <div className="field-row">
-              <span className="field-label">Tethr user</span>
-              <span className="field-value">Tethr administrator (runs HR ops)</span>
+              <span className="field-label">Live / demo</span>
+              <span className="field-value">
+                {loading ? '...' : `${liveClientCount} live · ${demoClientCount} demo`}
+              </span>
             </div>
             <div className="field-row">
-              <span className="field-label">Portal</span>
-              <span className="field-value">Client + Tethr</span>
+              <span className="field-label">Currencies</span>
+              <span className="field-value">
+                {loading ? '...' : currencyList.join(', ') || '—'}
+              </span>
             </div>
             <div className="field-row">
-              <span className="field-label">Next step</span>
-              <span className="field-value">Add teammates</span>
+              <span className="field-label">Newest</span>
+              <span className="field-value">
+                {loading
+                  ? '...'
+                  : newestClient
+                    ? `${newestClient.name} · ${formatDate(newestClient.createdAt)}`
+                    : '—'}
+              </span>
             </div>
           </div>
+        </section>
+
+        <section className="self-service-section">
+          <div className="section-title-row">
+            <h3 className="section-title">Needs attention</h3>
+            {incompleteClients.length > 0 ? (
+              <span className="chip chip-amber">{incompleteClients.length}</span>
+            ) : null}
+          </div>
+          {incompleteClients.length === 0 ? (
+            <p className="field-hint">
+              {loading
+                ? 'Checking clients...'
+                : 'Every client has at least one workspace.'}
+            </p>
+          ) : (
+            <ul className="portfolio-attention-list">
+              {incompleteClients.map((client) => (
+                <li key={client.id} className="portfolio-attention-item">
+                  <span className="portfolio-attention-name">{client.name}</span>
+                  <span className="portfolio-attention-note">No workspace yet</span>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => startOnboarding(client.id)}
+                  >
+                    Add workspace
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </aside>
     </main>

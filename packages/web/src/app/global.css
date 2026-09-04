@@ -1927,48 +1927,718 @@ button {
   gap: var(--hrms-space-3);
 }
 
-.onboarding-wizard .section-title-row {
-  margin-bottom: var(--hrms-space-4);
+/* ---------------------------------------------------------------------------
+   Time & attendance. A single-column page (no side panel), since the employee
+   picker in the toolbar already scopes what is shown.
+   --------------------------------------------------------------------------- */
+.page-frame-wide {
+  display: block;
 }
 
-.stepper {
-  display: flex;
-  align-items: center;
-  margin: 0 0 var(--hrms-space-5);
-  padding: 0;
-  list-style: none;
+.attendance-picker {
+  flex: 1 1 260px;
+  max-width: 320px;
+  margin-bottom: 0;
 }
 
-.stepper-step {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.stepper-step:last-child {
+.attendance-range {
   flex: 0 0 auto;
+  margin-bottom: 0;
 }
 
-.stepper-step-button {
+.directory-toolbar .field label {
+  font-size: var(--hrms-font-size-xxs);
+}
+
+.directory-toolbar .field input,
+.directory-toolbar .field select {
+  height: 34px;
+}
+
+.attendance-form {
+  margin-top: var(--hrms-space-4);
+  padding: var(--hrms-space-5);
+}
+
+.attendance-row-actions {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: var(--hrms-space-2);
-  padding: var(--hrms-space-1) var(--hrms-space-2) var(--hrms-space-1) var(--hrms-space-1);
+}
+
+.attendance-row-actions .button {
+  height: 28px;
+  padding: 0 var(--hrms-space-2);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.clock-actions {
+  margin-top: var(--hrms-space-4);
+}
+
+/* Self-service rail: one form at a time behind tabs, so the panel stops being a
+   single long scroll of leave + profile + feedback stacked together. */
+.self-service-tabs {
+  margin: var(--hrms-space-4) 0 0;
+}
+
+.self-service-tabs .profile-tab {
+  padding: var(--hrms-space-2) var(--hrms-space-3);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.self-service-panel .self-service-tabs + .self-service-section {
+  padding-top: var(--hrms-space-4);
+}
+
+.self-service-profile-link {
+  margin-top: var(--hrms-space-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The profile page is one long form rather than a stepped flow, so its footer
+   carries a plain save rather than step navigation. */
+.profile-page .onboarding-flow-footer {
+  max-width: none;
+}
+
+.profile-page .onboarding-flow-footer .button-secondary {
+  text-decoration: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Employee profile page.
+
+   The record used to be thirteen accordions stacked in the 500px preview rail.
+   It now gets its own route: a sticky identity column that never scrolls away,
+   and tabs that split those thirteen sections so no tab is more than a
+   screenful.
+   --------------------------------------------------------------------------- */
+/* Capped and centred: an uncapped grid let the content column take the whole
+   viewport, which stretched every input to the window width regardless of what
+   it holds. */
+.profile-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--hrms-space-6);
+}
+
+/* Form-shaped profile pages get the same narrow measure as the onboarding flow —
+   a field is only as wide as it needs to be readable, not as wide as the screen. */
+.profile-page-narrow {
+  max-width: 1000px;
+}
+
+.profile-page-narrow .profile-content {
+  max-width: 640px;
+}
+
+.profile-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hrms-space-1);
+  margin-bottom: var(--hrms-space-4);
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+  text-decoration: none;
+}
+
+.profile-back:hover {
+  color: var(--hrms-color-text-primary);
+}
+
+.profile-frame {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  align-items: start;
+  gap: var(--hrms-space-6);
+}
+
+.profile-identity {
+  position: sticky;
+  top: var(--hrms-space-6);
+  min-width: 0;
+  padding: var(--hrms-space-5);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
+}
+
+.profile-identity .employee-photo-slot {
+  margin-bottom: var(--hrms-space-3);
+}
+
+.profile-name {
+  margin: 0;
+  font-size: var(--hrms-font-size-lg);
+  font-weight: var(--hrms-font-weight-semi-bold);
+  line-height: var(--hrms-line-height-md);
+}
+
+.profile-identity-status {
+  margin-top: var(--hrms-space-3);
+}
+
+.profile-identity-facts {
+  margin-top: var(--hrms-space-4);
+  padding-top: var(--hrms-space-4);
+  border-top: 1px solid var(--hrms-color-border-light);
+}
+
+/* A grid, not a block: the cards carry no margin of their own — the onboarding
+   flow spaces them with its column gap, and without one here they sat edge to
+   edge with only their borders between them. */
+.profile-content {
+  display: grid;
+  gap: var(--hrms-space-5);
+  align-content: start;
+  min-width: 0;
+}
+
+.profile-tabs {
+  display: flex;
+  gap: var(--hrms-space-1);
+  margin-bottom: var(--hrms-space-4);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--hrms-color-border-light);
+}
+
+/* Inside the profile grid the column gap already separates the tabs from the
+   first card, so the tab strip drops its own margin. */
+.profile-content > .profile-tabs {
+  margin-bottom: 0;
+}
+
+.profile-tab {
+  padding: var(--hrms-space-3) var(--hrms-space-4);
   color: var(--hrms-color-text-tertiary);
   background: transparent;
   border: 0;
-  border-radius: var(--hrms-radius-pill);
+  border-bottom: 2px solid transparent;
   cursor: pointer;
+  font: inherit;
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+  white-space: nowrap;
+}
+
+.profile-tab:hover {
+  color: var(--hrms-color-text-primary);
+}
+
+.profile-tab.is-active {
+  color: var(--hrms-color-text-primary);
+  border-bottom-color: var(--hrms-color-accent-accent9);
+}
+
+/* Sections inside a tab sit on cards rather than running together, since a tab
+   holds only two to six of them. */
+.profile-content .detail-section {
+  padding: var(--hrms-space-2) var(--hrms-space-5);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-top: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
+}
+
+.profile-content .detail-section-body {
+  padding-bottom: var(--hrms-space-3);
+}
+
+/* Preview rail on the directory — headline facts and a way through, nothing
+   more. */
+.preview-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--hrms-space-3);
+}
+
+.preview-status {
+  margin-top: var(--hrms-space-4);
+}
+
+.preview-facts {
+  margin: var(--hrms-space-4) 0;
+  padding-top: var(--hrms-space-4);
+  border-top: 1px solid var(--hrms-color-border-light);
+}
+
+.employee-detail-panel .button-full {
+  justify-content: center;
+  text-decoration: none;
+}
+
+@media (max-width: 1100px) {
+  .profile-frame {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-identity {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-page {
+    padding: var(--hrms-space-4);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Action menu — a primary button that opens a grouped menu of related actions
+   rather than committing to one ("Add people ⌄").
+   --------------------------------------------------------------------------- */
+.action-menu {
+  position: relative;
+}
+
+.action-menu-caret {
+  transition: transform 0.15s ease;
+}
+
+.action-menu-caret.is-open {
+  transform: rotate(180deg);
+}
+
+.action-menu-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + var(--hrms-space-2));
+  right: 0;
+  display: grid;
+  min-width: 260px;
+  padding: var(--hrms-space-2);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-strong);
+}
+
+.action-menu-section + .action-menu-section {
+  margin-top: var(--hrms-space-2);
+  padding-top: var(--hrms-space-2);
+  border-top: 1px solid var(--hrms-color-border-light);
+}
+
+.action-menu-section-label {
+  padding: var(--hrms-space-1) var(--hrms-space-2) var(--hrms-space-2);
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xxs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.action-menu-item {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-2);
+  color: var(--hrms-color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.action-menu-item:hover {
+  color: var(--hrms-color-text-primary);
+  background: var(--hrms-color-background-tertiary);
+}
+
+.action-menu-item-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.action-menu-item-label {
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.action-menu-item-description {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xxs);
+}
+
+/* ---------------------------------------------------------------------------
+   Directory toolbar — search, multi-select filter chips, and a live row count,
+   sitting between the page header and the table (Deel's People table pattern).
+   --------------------------------------------------------------------------- */
+.directory-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--hrms-space-2);
+  margin-bottom: var(--hrms-space-4);
+}
+
+.directory-search {
+  display: flex;
+  align-items: center;
+  flex: 1 1 260px;
+  max-width: 360px;
+  gap: var(--hrms-space-2);
+  height: 34px;
+  padding: 0 var(--hrms-space-3);
+  color: var(--hrms-color-text-tertiary);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-sm);
+}
+
+.directory-search:focus-within {
+  outline: 3px solid var(--hrms-color-border-blue);
+  outline-offset: 1px;
+}
+
+.directory-search input {
+  min-width: 0;
+  width: 100%;
+  color: var(--hrms-color-text-primary);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  font-size: var(--hrms-font-size-xs);
+}
+
+.directory-search input:focus-visible {
+  outline: none;
+}
+
+.filter-menu {
+  position: relative;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hrms-space-2);
+  height: 34px;
+  padding: 0 var(--hrms-space-3);
+  color: var(--hrms-color-text-secondary);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+  white-space: nowrap;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.filter-chip:hover {
+  border-color: var(--hrms-color-border-strong);
+}
+
+.filter-chip.is-active {
+  color: var(--hrms-color-text-primary);
+  border-color: var(--hrms-color-border-strong);
+}
+
+.filter-chip-count {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--hrms-space-1);
+  color: var(--hrms-color-text-inverted);
+  background: var(--hrms-color-accent-accent9);
+  border-radius: var(--hrms-radius-pill);
+  font-size: var(--hrms-font-size-xxs);
+  font-weight: var(--hrms-font-weight-semi-bold);
+}
+
+.filter-menu-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--hrms-space-1));
+  left: 0;
+  display: grid;
+  min-width: 200px;
+  padding: var(--hrms-space-2);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-sm);
+  box-shadow: var(--hrms-box-shadow-strong);
+}
+
+.filter-menu-option {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-2);
+  padding: var(--hrms-space-2);
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+  font-size: var(--hrms-font-size-xs);
+  white-space: nowrap;
+}
+
+.filter-menu-option:hover {
+  background: var(--hrms-color-background-tertiary);
+}
+
+.filter-menu-clear {
+  margin-top: var(--hrms-space-1);
+  padding: var(--hrms-space-2);
+  color: var(--hrms-color-accent-accent9);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--hrms-color-border-light);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--hrms-font-size-xs);
+  text-align: left;
+}
+
+.directory-clear {
+  font-size: var(--hrms-font-size-xs);
+}
+
+.directory-count {
+  margin-left: auto;
+  color: var(--hrms-color-text-tertiary);
   font-size: var(--hrms-font-size-xs);
   font-weight: var(--hrms-font-weight-medium);
   white-space: nowrap;
 }
 
-.stepper-step-button:disabled {
+/* Centred empty state — replaces the left-aligned paragraph that used to sit
+   inside the table shell. Covers "nothing yet", "nothing matched", and errors. */
+.directory-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-12) var(--hrms-space-6);
+  color: var(--hrms-color-text-tertiary);
+  text-align: center;
+}
+
+.directory-empty-title {
+  margin: 0;
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-md);
+  font-weight: var(--hrms-font-weight-semi-bold);
+}
+
+.directory-empty p {
+  max-width: 44ch;
+  margin: 0;
+  font-size: var(--hrms-font-size-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   Employee onboarding flow.
+
+   A dedicated, full-page intake: a narrow single-column stack of titled cards
+   on the left, a vertical step rail on the right, and a sticky action footer.
+   The form column is deliberately capped well short of the viewport — grouped,
+   near-single-column fields read far faster than one wide auto-fit grid.
+   --------------------------------------------------------------------------- */
+.onboarding-page {
+  padding: var(--hrms-space-6);
+}
+
+.onboarding-flow {
+  display: block;
+  max-width: 1060px;
+  margin: 0 auto;
+}
+
+.onboarding-flow-header {
+  margin-bottom: var(--hrms-space-5);
+}
+
+.onboarding-flow-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--hrms-space-1);
+  margin-bottom: var(--hrms-space-3);
+  padding: 0;
+  color: var(--hrms-color-text-tertiary);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.onboarding-flow-back:hover {
+  color: var(--hrms-color-text-primary);
+}
+
+.onboarding-flow-title {
+  margin: 0;
+  font-size: var(--hrms-font-size-xl);
+  font-weight: var(--hrms-font-weight-semi-bold);
+  line-height: var(--hrms-line-height-md);
+}
+
+.onboarding-flow-subtitle {
+  max-width: 60ch;
+  margin: var(--hrms-space-2) 0 0;
+  color: var(--hrms-color-text-secondary);
+  font-size: var(--hrms-font-size-sm);
+}
+
+.onboarding-flow-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: var(--hrms-space-6);
+}
+
+.onboarding-flow-main {
+  display: grid;
+  gap: var(--hrms-space-5);
+  min-width: 0;
+  max-width: 640px;
+}
+
+.onboarding-card {
+  padding: var(--hrms-space-5);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
+}
+
+.onboarding-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--hrms-space-3);
+  margin-bottom: var(--hrms-space-4);
+}
+
+.onboarding-card-title {
+  margin: 0;
+  font-size: var(--hrms-font-size-md);
+  font-weight: var(--hrms-font-weight-semi-bold);
+  line-height: var(--hrms-line-height-md);
+}
+
+.onboarding-card-note {
+  max-width: 52ch;
+  margin: var(--hrms-space-1) 0 0;
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.onboarding-card-edit {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: var(--hrms-space-1);
+  padding: var(--hrms-space-1) var(--hrms-space-2);
+  color: var(--hrms-color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.onboarding-card-edit:hover {
+  color: var(--hrms-color-text-primary);
+  border-color: var(--hrms-color-border-strong);
+}
+
+/* Fields stack one per row. The last one loses its bottom margin so the card
+   padding is what sets the gap to the card edge. */
+.onboarding-card-body > .field:last-child,
+.onboarding-card-body > .onboarding-field-pair:last-child .field {
+  margin-bottom: 0;
+}
+
+.onboarding-card-body > .field-hint:first-child {
+  margin-top: 0;
+}
+
+.onboarding-field-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 var(--hrms-space-3);
+}
+
+/* For a pair whose first field holds a short code — a 2-letter country, a
+   currency — an equal split just leaves a wide empty box. */
+.onboarding-field-pair.is-code-first {
+  grid-template-columns: 140px minmax(0, 1fr);
+}
+
+.onboarding-card .field input,
+.onboarding-card .field select {
+  height: 40px;
+  background: var(--hrms-color-background-primary);
+}
+
+.required-mark {
+  color: var(--hrms-color-text-danger);
+}
+
+/* Vertical step rail, Deel-style: the active step is a filled row rather than a
+   dot on a horizontal line, so it survives long step names. */
+.onboarding-flow-rail {
+  position: sticky;
+  top: var(--hrms-space-6);
+  display: grid;
+  gap: var(--hrms-space-4);
+  min-width: 0;
+}
+
+.step-rail {
+  display: grid;
+  gap: var(--hrms-space-1);
+  margin: 0;
+  padding: var(--hrms-space-2);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
+  list-style: none;
+}
+
+.step-rail-button {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  width: 100%;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-3);
+  color: var(--hrms-color-text-tertiary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.step-rail-button:disabled {
   cursor: default;
 }
 
-.stepper-step-index {
+.step-rail-item:not(.is-active) .step-rail-button:not(:disabled):hover {
+  background: var(--hrms-color-background-tertiary);
+}
+
+.step-rail-index {
   display: grid;
   place-items: center;
   width: 22px;
@@ -1980,30 +2650,136 @@ button {
   font-weight: var(--hrms-font-weight-semi-bold);
 }
 
-.stepper-step.is-active .stepper-step-button,
-.stepper-step.is-complete .stepper-step-button {
+.step-rail-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.step-rail-label {
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.step-rail-hint {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xxs);
+}
+
+.step-rail-item.is-active .step-rail-button {
+  color: var(--hrms-color-text-primary);
+  background: var(--hrms-color-background-tertiary);
+}
+
+.step-rail-item.is-complete .step-rail-button {
   color: var(--hrms-color-text-primary);
 }
 
-.stepper-step.is-active .stepper-step-index {
+.step-rail-item.is-active .step-rail-index {
   color: var(--hrms-color-text-inverted);
   background: var(--hrms-color-accent-accent9);
 }
 
-.stepper-step.is-complete .stepper-step-index {
+.step-rail-item.is-complete .step-rail-index {
   color: var(--hrms-color-text-inverted);
   background: var(--hrms-color-tag-green);
 }
 
-.stepper-connector {
-  flex: 1;
-  height: 1px;
-  margin: 0 var(--hrms-space-2);
-  background: var(--hrms-color-border-light);
+.onboarding-help {
+  padding: var(--hrms-space-3) var(--hrms-space-4);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  box-shadow: var(--hrms-box-shadow-light);
 }
 
-.stepper-step.is-complete .stepper-connector {
-  background: var(--hrms-color-tag-green);
+.onboarding-help-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrms-space-2);
+  color: var(--hrms-color-text-primary);
+  cursor: pointer;
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+  list-style: none;
+}
+
+.onboarding-help-summary::-webkit-details-marker {
+  display: none;
+}
+
+.onboarding-help[open] .onboarding-help-summary svg {
+  transform: rotate(180deg);
+}
+
+.onboarding-help-summary svg {
+  flex: 0 0 auto;
+  color: var(--hrms-color-text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.onboarding-help-body {
+  padding-top: var(--hrms-space-3);
+}
+
+.onboarding-help-body p {
+  margin: 0 0 var(--hrms-space-2);
+  color: var(--hrms-color-text-secondary);
+  font-size: var(--hrms-font-size-xs);
+  line-height: var(--hrms-line-height-lg);
+}
+
+.onboarding-help-body p:last-child {
+  margin-bottom: 0;
+}
+
+.onboarding-flow-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrms-space-4);
+  margin-top: var(--hrms-space-5);
+  padding: var(--hrms-space-4) 0;
+  background: var(--hrms-color-background-primary);
+  border-top: 1px solid var(--hrms-color-border-light);
+}
+
+.onboarding-flow-progress {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+@media (max-width: 1100px) {
+  .onboarding-flow-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onboarding-flow-rail {
+    position: static;
+    order: -1;
+  }
+
+  .onboarding-flow-main {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .onboarding-page {
+    padding: var(--hrms-space-4);
+  }
+
+  .onboarding-field-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onboarding-flow-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .onboarding-review .field-row {
@@ -2650,6 +3426,54 @@ button {
 .self-service-section:last-child {
   padding-bottom: 0;
   border-bottom: 0;
+}
+
+/* Client portfolio — "Needs attention" list in the side panel. Each row names a
+   client that was created without a workspace (an incomplete onboarding) and
+   offers a one-click jump into the New workspace form, pre-scoped to it. */
+.chip-amber {
+  --chip-color: var(--hrms-color-tag-amber);
+}
+
+.portfolio-attention-list {
+  display: grid;
+  gap: var(--hrms-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portfolio-attention-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--hrms-space-1) var(--hrms-space-3);
+  padding: var(--hrms-space-3);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-sm);
+}
+
+.portfolio-attention-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.portfolio-attention-note {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+  text-align: right;
+}
+
+.portfolio-attention-item .link-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  font-size: var(--hrms-font-size-xs);
 }
 
 /* Client "People overview" — compact quick-actions panel (replaces the old

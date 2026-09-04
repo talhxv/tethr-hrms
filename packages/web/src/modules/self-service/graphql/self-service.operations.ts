@@ -229,3 +229,46 @@ export const UPDATE_MY_EMPLOYEE_PHOTO_MUTATION = gql`
     }
   }
 `;
+
+// Just the employee identity plus the editable profile — the profile page has no
+// use for leave balances, payslips, or holidays, so it does not pull them.
+export const MY_PROFILE_QUERY = gql`
+  query MyProfile {
+    myEmployee {
+      id
+      employeeNumber
+      firstName
+      lastName
+      workEmail
+      employmentStatus
+      currentAssignment {
+        departmentName
+        positionTitle
+      }
+    }
+    myEmployeeProfile {
+      employeeId
+      photoUrl
+      personalEmail
+      phone
+      addressLine1
+      addressLine2
+      city
+      region
+      countryCode
+      postalCode
+      permanentAddressLine1
+      permanentAddressLine2
+      permanentCity
+      permanentRegion
+      permanentCountryCode
+      permanentPostalCode
+      currentAccommodationType
+      permanentAccommodationType
+      preferredContactChannel
+      emergencyContactName
+      emergencyContactPhone
+      emergencyContactRelation
+    }
+  }
+`;

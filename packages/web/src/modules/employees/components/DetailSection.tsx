@@ -10,10 +10,13 @@ type DetailSectionProps = {
   readonly children: ReactNode;
 };
 
+// Open by default: the profile page's tabs already narrow the record down to a
+// few sections, so collapsing them again would hide content for no reason. The
+// toggle stays for anyone who wants to fold a long one away.
 export const DetailSection = ({
   title,
   badge,
-  defaultOpen = false,
+  defaultOpen = true,
   children,
 }: DetailSectionProps) => {
   const { theme } = useTheme();
