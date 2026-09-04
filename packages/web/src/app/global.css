@@ -3162,66 +3162,90 @@ button {
     white-space: nowrap;
   }
 
+  /* Rows are separated by a rule rather than boxed as cards — at two lines each,
+     a border, radius and gap per row is more chrome than content. */
   .data-table tbody,
   .employee-table tbody {
-    display: grid;
-    gap: var(--hrms-space-2);
-    padding: var(--hrms-space-3);
+    display: block;
+    padding: 0;
   }
 
   .data-table tbody tr,
   .employee-table tbody tr {
-    display: grid;
-    gap: var(--hrms-space-1);
-    padding: var(--hrms-space-3);
-    background: var(--hrms-color-background-primary);
-    border: 1px solid var(--hrms-color-border-light);
-    border-radius: var(--hrms-radius-md);
+    display: block;
+    padding: var(--hrms-space-3) var(--hrms-space-4);
+    border-bottom: 1px solid var(--hrms-color-border-light);
   }
 
-  /* Label above value rather than beside it: a two-column cell leaves the value
-     roughly 170px at this width, which clips the moment a workspace or email is
-     longer than a word. */
+  .data-table tbody tr:last-child,
+  .employee-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  /* Two lines per record, not one block per column. Stacking every cell turned a
+     four-column table into twelve blocks and produced a scroll far longer than
+     the data justified. The identity is the first line; everything else flows
+     inline as a labelled meta line that wraps. */
   .data-table tbody td,
   .employee-table tbody td {
-    display: block;
+    display: inline;
     min-width: 0;
     width: auto;
     max-width: none;
+    /* The desktop rule pins every cell to a 44px row height; left in, it padded
+       each title out by ~28px of empty space. */
+    height: auto;
     padding: 0;
     border: 0;
+    color: var(--hrms-color-text-secondary);
+    font-size: var(--hrms-font-size-xs);
+    line-height: var(--hrms-line-height-lg);
   }
 
   .data-table tbody td::before,
   .employee-table tbody td::before {
-    content: attr(data-label);
-    display: block;
-    margin-bottom: 2px;
+    content: attr(data-label) " ";
     color: var(--hrms-color-text-tertiary);
     font-size: var(--hrms-font-size-xxs);
-    font-weight: var(--hrms-font-weight-medium);
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
   }
 
-  .data-table tbody td:not(:last-child),
-  .employee-table tbody td:not(:last-child) {
-    margin-bottom: var(--hrms-space-2);
+  /* Separator between meta items, never a trailing one. */
+  .data-table tbody td:not(:last-child)::after,
+  .employee-table tbody td:not(:last-child)::after {
+    content: " · ";
+    color: var(--hrms-color-text-light);
   }
 
-  /* The first cell is the record's identity: no label, full width, and it reads
-     as the card's title. */
+  /* The first cell is the record's identity: its own line, no label, no
+     separator, and the only thing set at full text size. */
   .data-table tbody td:first-child,
   .employee-table tbody td:first-child {
-    margin-bottom: var(--hrms-space-3);
-    padding-bottom: var(--hrms-space-2);
-    border-bottom: 1px solid var(--hrms-color-border-light);
+    display: block;
+    margin-bottom: var(--hrms-space-1);
+    color: var(--hrms-color-text-primary);
     font-size: var(--hrms-font-size-sm);
     font-weight: var(--hrms-font-weight-semi-bold);
+    line-height: var(--hrms-line-height-md);
   }
 
   .data-table tbody td:first-child::before,
-  .employee-table tbody td:first-child::before {
+  .data-table tbody td:first-child::after,
+  .employee-table tbody td:first-child::before,
+  .employee-table tbody td:first-child::after {
+    content: none;
+  }
+
+  /* Row actions stay a block: buttons do not belong in a run of text. */
+  .data-table tbody td:has(.attendance-row-actions),
+  .employee-table tbody td:has(.attendance-row-actions) {
+    display: block;
+    margin-top: var(--hrms-space-2);
+  }
+
+  .data-table tbody td:has(.attendance-row-actions)::before,
+  .data-table tbody td:has(.attendance-row-actions)::after {
     content: none;
   }
 
@@ -3237,6 +3261,21 @@ button {
 
   .table-empty {
     display: block;
+  }
+
+  /* Truncation exists to keep desktop columns aligned; on a phone there are no
+     columns to align, so let the name wrap instead of becoming "Acme …". */
+  .portfolio-attention-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .portfolio-attention-name {
+    overflow: visible;
+    white-space: normal;
+  }
+
+  .portfolio-attention-note {
+    text-align: left;
   }
 }
 
