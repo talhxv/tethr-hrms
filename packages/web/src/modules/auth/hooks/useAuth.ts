@@ -7,6 +7,7 @@ import {
   SIGN_UP_MUTATION,
   SWITCH_WORKSPACE_MUTATION,
 } from '../graphql/auth.operations';
+import { rememberWorkspace } from '../lastWorkspace';
 import { authState, type AuthSession } from '../states/authState';
 
 export type WorkspaceOption = {
@@ -38,6 +39,13 @@ type SwitchWorkspaceData = { switchWorkspace: AuthSession };
 type SignUpVars = { input: { organizationName: string; email: string; password: string } };
 type SignUpData = { signUp: AuthSession };
 
+// Every path that establishes a session records the workspace it landed in, so
+// the next sign-in for this email can skip the picker.
+const applyRememberedWorkspace = (session: AuthSession): AuthSession => {
+  rememberWorkspace(session.user.email, session.user.organizationId);
+  return session;
+};
+
 export const useAuth = () => {
   const [session, setSession] = useAtom(authState);
   const apollo = useApolloClient();
@@ -68,7 +76,7 @@ export const useAuth = () => {
     }
     if (data.login.token && data.login.user) {
       const authenticatedSession: AuthSession = { token: data.login.token, user: data.login.user };
-      setSession(authenticatedSession);
+      setSession(applyRememberedWorkspace(authenticatedSession));
       return { kind: 'authenticated', session: authenticatedSession };
     }
     throw new Error('Sign in did not return a session');
@@ -82,7 +90,7 @@ export const useAuth = () => {
       variables: { input: { selectionToken, organizationId } },
     });
     if (data) {
-      setSession(data.selectWorkspace);
+      setSession(applyRememberedWorkspace(data.selectWorkspace));
       return data.selectWorkspace;
     }
     throw new Error('Workspace selection did not return a session');
@@ -92,7 +100,7 @@ export const useAuth = () => {
   const switchWorkspace = async (organizationId: string): Promise<AuthSession> => {
     const { data } = await switchWorkspaceMutation({ variables: { organizationId } });
     if (data) {
-      setSession(data.switchWorkspace);
+      setSession(applyRememberedWorkspace(data.switchWorkspace));
       return data.switchWorkspace;
     }
     throw new Error('Workspace switch did not return a session');
