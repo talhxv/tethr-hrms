@@ -1,16 +1,19 @@
-﻿import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import type { ApprovalStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
   IconCalendarEvent,
+  IconArrowLeft,
+  IconFileText,
   IconChevronRight,
   IconClock,
   IconMessageCircle,
   IconPlaneDeparture,
   IconUserCircle,
+  type TablerIcon,
 } from '@tabler/icons-react';
 import { useMemo, useState, type CSSProperties, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 import { useTheme } from '../../../providers/theme/useTheme';
 import { downloadBase64File } from '../../../app/download';
@@ -127,16 +130,61 @@ type WorkspaceData = {
   readonly myCurrentSalaryRevision: SalaryRecord | null;
 };
 
-type SelfServiceTabKey = 'leave' | 'feedback';
+type EmployeeToolKey = 'leave' | 'payslips' | 'holidays' | 'profile' | 'feedback';
 
-// The rail used to stack three full forms end to end. They are one at a time
-// now — the clock-in card stays pinned above, since it is glanceable and small.
-const SELF_SERVICE_TABS: ReadonlyArray<{
-  readonly key: SelfServiceTabKey;
+type ToolCounts = { readonly leaveDays: number; readonly upcomingHolidays: number };
+
+// The home screen is a launcher: one row per thing an employee does, each on its
+// own page. Keeping the list here means the home screen and the sub-page header
+// read from the same source.
+const EMPLOYEE_TOOLS: ReadonlyArray<{
+  readonly key: EmployeeToolKey;
+  readonly to: string;
   readonly label: string;
+  readonly blurb: string;
+  readonly icon: TablerIcon;
+  readonly meta: (counts: ToolCounts) => string;
 }> = [
-  { key: 'leave', label: 'Request leave' },
-  { key: 'feedback', label: 'Feedback' },
+  {
+    key: 'leave',
+    to: '/me/leave',
+    label: 'Leave',
+    blurb: 'Request time off and track what you have left.',
+    icon: IconPlaneDeparture,
+    meta: (counts) => `${counts.leaveDays.toFixed(1)} days available`,
+  },
+  {
+    key: 'payslips',
+    to: '/me/payslips',
+    label: 'Payslips',
+    blurb: 'Every payslip issued to you, with a PDF to download.',
+    icon: IconFileText,
+    meta: () => 'View and download',
+  },
+  {
+    key: 'holidays',
+    to: '/me/holidays',
+    label: 'Holidays',
+    blurb: 'Public holidays on your calendar.',
+    icon: IconCalendarEvent,
+    meta: (counts) => `${counts.upcomingHolidays} upcoming`,
+  },
+  {
+    key: 'profile',
+    to: '/me/profile',
+    label: 'Profile',
+    blurb: 'Contact details, addresses, emergency contact.',
+    icon: IconUserCircle,
+    meta: () => 'Contact and emergency details',
+  },
+  {
+    key: 'feedback',
+    to: '/me/feedback',
+    label: 'Feedback',
+    blurb: 'Tell HR what is working and what is not.',
+    icon: IconMessageCircle,
+    meta: () => 'Share with HR',
+  },
 ];
 
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -203,7 +251,6 @@ export const EmployeeWorkspacePage = () => {
     endDate: '',
     reason: '',
   });
-  const [selfServiceTab, setSelfServiceTab] = useState<SelfServiceTabKey>('leave');
   const [feedbackForm, setFeedbackForm] = useState({
     category: 'general',
     subject: '',
@@ -222,6 +269,21 @@ export const EmployeeWorkspacePage = () => {
     () => (data?.myLeaveBalances ?? []).reduce((sum, balance) => sum + balance.availableDays, 0),
     [data?.myLeaveBalances],
   );
+  const pendingRequestCount = (data?.myLeaveRequests ?? []).filter(
+    (request) => request.status === 'pending',
+  ).length;
+  const toolCounts: ToolCounts = {
+    leaveDays: totalLeave,
+    upcomingHolidays: (data?.upcomingHolidays ?? []).length,
+  };
+
+  // Which tool is open follows the route, so back/forward and a shared link all
+  // behave. Anything that is not a known tool falls back to the launcher.
+  const { pathname } = useLocation();
+  const segment = pathname.replace(/^\/me\/?/, '');
+  const activeTool = EMPLOYEE_TOOLS.find((tool) => tool.key === segment) ?? null;
+  const view: EmployeeToolKey | 'home' = activeTool ? activeTool.key : 'home';
+
   const sortedRequests = useMemo(
     () =>
       [...(data?.myLeaveRequests ?? [])].sort((left, right) =>
@@ -301,68 +363,228 @@ export const EmployeeWorkspacePage = () => {
   }
 
   return (
-    <main className="employee-workspace">
-      <section className="employee-workspace-content" aria-labelledby="employee-workspace-title">
-        <header className="page-header">
-          <div>
-            <h1 className="page-title" id="employee-workspace-title">
-              Good day, {employee.firstName}
-            </h1>
-            <p className="page-subtitle">
-              Clock in, check your pay, and request time off. Your details live under Your
-              profile.
-            </p>
-          </div>
-        </header>
+    <main className="employee-app">
+      {view === 'home' ? (
+        <>
+          <header className="page-header">
+            <div>
+              <h1 className="page-title" id="employee-workspace-title">
+                Good day, {employee.firstName}
+              </h1>
+              <p className="page-subtitle">Clock in, then pick what you need.</p>
+            </div>
+          </header>
 
-        <ClockInOutCard />
+          <ClockInOutCard />
 
-        <div className="metric-strip employee-metrics">
-          <div className="metric-card">
-            <div className="metric-label">Leave available</div>
-            <div className="metric-value">{totalLeave.toFixed(1)} days</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Pending requests</div>
-            <div className="metric-value">
-              {sortedRequests.filter((request) => request.status === 'pending').length}
+          <div className="metric-strip employee-metrics">
+            <div className="metric-card">
+              <div className="metric-label">Leave available</div>
+              <div className="metric-value">{totalLeave.toFixed(1)} days</div>
+            </div>
+            <div className="metric-card">
+              <div className="metric-label">Pending requests</div>
+              <div className="metric-value">{pendingRequestCount}</div>
             </div>
           </div>
-        </div>
 
-        <MyPayslipsSection />
+          {/* The launcher. Each tool is its own page, so the home screen stays a
+              short list of things to do rather than every list at once. */}
+          <nav className="app-tiles" aria-label="Employee tools">
+            {EMPLOYEE_TOOLS.map((tool) => {
+              const ToolIcon = tool.icon;
+              return (
+                <Link className="app-tile" key={tool.key} to={tool.to}>
+                  <span className="app-tile-icon">
+                    <ToolIcon size={theme.icon.size.lg} stroke={theme.icon.stroke.md} />
+                  </span>
+                  <span className="app-tile-copy">
+                    <span className="app-tile-label">{tool.label}</span>
+                    <span className="app-tile-meta">{tool.meta(toolCounts)}</span>
+                  </span>
+                  <IconChevronRight size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                </Link>
+              );
+            })}
+          </nav>
+        </>
+      ) : (
+        <>
+          <Link className="profile-back" to="/me">
+            <IconArrowLeft size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+            My workspace
+          </Link>
+          <header className="page-header">
+            <div>
+              <h1 className="page-title" id="employee-workspace-title">
+                {activeTool?.label ?? 'My workspace'}
+              </h1>
+              <p className="page-subtitle">{activeTool?.blurb ?? ''}</p>
+            </div>
+          </header>
 
-        <div className="self-service-grid">
+          {view === 'leave' ? (
+            <>
+          <section className="table-shell employee-form-card">
+            <div className="panel-title-row">
+              <div>
+                <div className="panel-kicker">Time off</div>
+                <h2 className="panel-title">Request leave</h2>
+              </div>
+              <IconPlaneDeparture size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
+            </div>
+            <form className="config-form" onSubmit={onLeaveSubmit}>
+              {leaveError ? (
+                <p className="auth-error" role="alert">
+                  {leaveError}
+                </p>
+              ) : null}
+              <div className="field">
+                <label htmlFor="leave-type">Leave type</label>
+                <select
+                  id="leave-type"
+                  required
+                  value={leaveForm.leaveTypeId}
+                  onChange={(event) =>
+                    setLeaveForm((current) => ({ ...current, leaveTypeId: event.target.value }))
+                  }
+                >
+                  <option value="">Select type</option>
+                  {data.leaveTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field-group">
+                <div className="field">
+                  <label htmlFor="leave-start">Start date</label>
+                  <input
+                    id="leave-start"
+                    required
+                    type="date"
+                    value={leaveForm.startDate}
+                    onChange={(event) =>
+                      setLeaveForm((current) => ({ ...current, startDate: event.target.value }))
+                    }
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="leave-end">End date</label>
+                  <input
+                    id="leave-end"
+                    required
+                    type="date"
+                    value={leaveForm.endDate}
+                    onChange={(event) =>
+                      setLeaveForm((current) => ({ ...current, endDate: event.target.value }))
+                    }
+                  />
+                </div>
+              </div>
+              <div className="field">
+                <label htmlFor="leave-reason">Reason</label>
+                <textarea
+                  id="leave-reason"
+                  value={leaveForm.reason}
+                  onChange={(event) =>
+                    setLeaveForm((current) => ({ ...current, reason: event.target.value }))
+                  }
+                />
+              </div>
+              <button className="button button-primary" disabled={submittingLeave} type="submit">
+                {submittingLeave ? 'Submitting...' : 'Submit request'}
+              </button>
+            </form>
+          </section>
+            <section className="table-shell">
+              <div className="table-title-row">
+                <div className="table-title">
+                  <IconPlaneDeparture size={theme.icon.size.md} /> Leave balance
+                </div>
+                <div className="table-density">{new Date().getFullYear()}</div>
+              </div>
+              <div className="data-table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Available</th>
+                      <th>Used</th>
+                      <th>Pending</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.myLeaveBalances.map((balance) => (
+                      <tr key={balance.id}>
+                        <td>{leaveTypesById.get(balance.leaveTypeId)?.name ?? 'Leave'}</td>
+                        <td data-label="Available">{balance.availableDays.toFixed(1)} days</td>
+                        <td data-label="Used">{balance.usedDays.toFixed(1)} days</td>
+                        <td data-label="Pending">{balance.pendingDays.toFixed(1)} days</td>
+                      </tr>
+                    ))}
+                    {data.myLeaveBalances.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="table-empty">
+                          Your balances will appear once leave policies are assigned.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           <section className="table-shell">
             <div className="table-title-row">
               <div className="table-title">
-                <IconPlaneDeparture size={theme.icon.size.md} /> Leave balance
+                <IconClock size={theme.icon.size.md} /> Leave requests
               </div>
-              <div className="table-density">{new Date().getFullYear()}</div>
+              <div className="table-density">
+                {sortedRequests.length} record{sortedRequests.length === 1 ? '' : 's'}
+              </div>
             </div>
             <div className="data-table-wrap">
-              <table className="data-table">
+              <table className="data-table leave-request-table">
                 <thead>
                   <tr>
                     <th>Type</th>
-                    <th>Available</th>
-                    <th>Used</th>
-                    <th>Pending</th>
+                    <th>Dates</th>
+                    <th>Days</th>
+                    <th>Status</th>
+                    <th>Latest update</th>
+                    <th>Tethr note</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.myLeaveBalances.map((balance) => (
-                    <tr key={balance.id}>
-                      <td>{leaveTypesById.get(balance.leaveTypeId)?.name ?? 'Leave'}</td>
-                      <td>{balance.availableDays.toFixed(1)} days</td>
-                      <td>{balance.usedDays.toFixed(1)} days</td>
-                      <td>{balance.pendingDays.toFixed(1)} days</td>
+                  {sortedRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td>{leaveTypesById.get(request.leaveTypeId)?.name ?? 'Leave'}</td>
+                      <td data-label="Dates">
+                        {formatDate(request.startDate)} - {formatDate(request.endDate)}
+                      </td>
+                      <td data-label="Days">{request.dayCount.toFixed(1)}</td>
+                      <td data-label="Status">
+                        <span className="chip" style={chipStyle(requestColor[request.status])}>
+                          <span className="chip-dot" />
+                          {requestLabel[request.status]}
+                        </span>
+                      </td>
+                      <td data-label="Latest update">
+                        <div className="employee-primary">
+                          {request.decidedAt ? 'Decision recorded' : 'Submitted'}
+                        </div>
+                        <div className="employee-secondary">
+                          {formatDateTime(request.decidedAt ?? request.submittedAt)}
+                        </div>
+                      </td>
+                      <td className="truncate">{request.decisionNote ?? request.reason ?? '—'}</td>
                     </tr>
                   ))}
-                  {data.myLeaveBalances.length === 0 ? (
+                  {sortedRequests.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="table-empty">
-                        Your balances will appear once leave policies are assigned.
+                      <td colSpan={6} className="table-empty">
+                        No leave requests yet.
                       </td>
                     </tr>
                   ) : null}
@@ -370,266 +592,109 @@ export const EmployeeWorkspacePage = () => {
               </table>
             </div>
           </section>
+            </>
+          ) : null}
 
-          <section className="table-shell">
-            <div className="table-title-row">
-              <div className="table-title">
-                <IconCalendarEvent size={theme.icon.size.md} /> Upcoming holidays
+          {view === 'payslips' ? <MyPayslipsSection /> : null}
+
+          {view === 'holidays' ? (
+            <section className="table-shell">
+              <div className="table-title-row">
+                <div className="table-title">
+                  <IconCalendarEvent size={theme.icon.size.md} /> Upcoming holidays
+                </div>
+                <div className="table-density">Next 120 days</div>
               </div>
-              <div className="table-density">Next 120 days</div>
-            </div>
-            <div className="holiday-calendar">
-              {holidayGroups.map((group) => (
-                <section className="holiday-month" key={group.key}>
-                  <div className="holiday-month-title">{group.label}</div>
-                  <div className="holiday-date-grid">
-                    {group.holidays.map((holiday) => (
-                      <div className="holiday-date-tile" key={holiday.id}>
-                        <div className="holiday-date-box">
-                          <span>{formatWeekday(holiday.date)}</span>
-                          <strong>{formatDay(holiday.date)}</strong>
+              <div className="holiday-calendar">
+                {holidayGroups.map((group) => (
+                  <section className="holiday-month" key={group.key}>
+                    <div className="holiday-month-title">{group.label}</div>
+                    <div className="holiday-date-grid">
+                      {group.holidays.map((holiday) => (
+                        <div className="holiday-date-tile" key={holiday.id}>
+                          <div className="holiday-date-box">
+                            <span>{formatWeekday(holiday.date)}</span>
+                            <strong>{formatDay(holiday.date)}</strong>
+                          </div>
+                          <div className="holiday-date-copy">
+                            <div className="employee-primary">{holiday.name}</div>
+                            <div className="employee-secondary">{formatDate(holiday.date)}</div>
+                          </div>
                         </div>
-                        <div className="holiday-date-copy">
-                          <div className="employee-primary">{holiday.name}</div>
-                          <div className="employee-secondary">{formatDate(holiday.date)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              ))}
-              {holidayGroups.length === 0 ? (
-                <div className="table-empty">No upcoming holidays on your calendar.</div>
-              ) : null}
-            </div>
-          </section>
-        </div>
-
-        <section className="table-shell">
-          <div className="table-title-row">
-            <div className="table-title">
-              <IconClock size={theme.icon.size.md} /> Leave requests
-            </div>
-            <div className="table-density">
-              {sortedRequests.length} record{sortedRequests.length === 1 ? '' : 's'}
-            </div>
-          </div>
-          <div className="data-table-wrap">
-            <table className="data-table leave-request-table">
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Dates</th>
-                  <th>Days</th>
-                  <th>Status</th>
-                  <th>Latest update</th>
-                  <th>Tethr note</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedRequests.map((request) => (
-                  <tr key={request.id}>
-                    <td>{leaveTypesById.get(request.leaveTypeId)?.name ?? 'Leave'}</td>
-                    <td>
-                      {formatDate(request.startDate)} - {formatDate(request.endDate)}
-                    </td>
-                    <td>{request.dayCount.toFixed(1)}</td>
-                    <td>
-                      <span className="chip" style={chipStyle(requestColor[request.status])}>
-                        <span className="chip-dot" />
-                        {requestLabel[request.status]}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="employee-primary">
-                        {request.decidedAt ? 'Decision recorded' : 'Submitted'}
-                      </div>
-                      <div className="employee-secondary">
-                        {formatDateTime(request.decidedAt ?? request.submittedAt)}
-                      </div>
-                    </td>
-                    <td className="truncate">{request.decisionNote ?? request.reason ?? '—'}</td>
-                  </tr>
+                      ))}
+                    </div>
+                  </section>
                 ))}
-                {sortedRequests.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="table-empty">
-                      No leave requests yet.
-                    </td>
-                  </tr>
+                {holidayGroups.length === 0 ? (
+                  <div className="table-empty">No upcoming holidays on your calendar.</div>
                 ) : null}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </section>
+              </div>
+            </section>
+          ) : null}
 
-      <aside className="self-service-panel" aria-label="Employee actions">
-        {/* Profile is a page of its own — addresses and emergency contact need
-            more room than this rail has. */}
-        <Link className="quick-action self-service-profile-link" to="/me/profile">
-          <span className="quick-action-icon">
-            <IconUserCircle size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-          </span>
-          <span className="quick-action-copy">
-            <span className="quick-action-title">Your profile</span>
-            <span className="quick-action-desc">Contact details, addresses, emergency contact</span>
-          </span>
-          <IconChevronRight size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-        </Link>
-
-        <nav className="self-service-tabs profile-tabs" aria-label="Self-service actions">
-          {SELF_SERVICE_TABS.map((entry) => (
-            <button
-              aria-current={selfServiceTab === entry.key}
-              className={`profile-tab${selfServiceTab === entry.key ? ' is-active' : ''}`}
-              key={entry.key}
-              type="button"
-              onClick={() => setSelfServiceTab(entry.key)}
-            >
-              {entry.label}
-            </button>
-          ))}
-        </nav>
-        {selfServiceTab === 'leave' ? (
-        <section className="self-service-section">
-          <div className="panel-title-row">
-            <div>
-              <div className="panel-kicker">Time off</div>
-              <h2 className="panel-title">Request leave</h2>
+          {view === 'feedback' ? (
+          <section className="table-shell employee-form-card">
+            <div className="panel-title-row">
+              <div>
+                <div className="panel-kicker">Feedback</div>
+                <h2 className="panel-title">Share feedback</h2>
+              </div>
+              <IconMessageCircle size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
             </div>
-            <IconPlaneDeparture size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
-          </div>
-          <form className="config-form" onSubmit={onLeaveSubmit}>
-            {leaveError ? (
-              <p className="auth-error" role="alert">
-                {leaveError}
-              </p>
-            ) : null}
-            <div className="field">
-              <label htmlFor="leave-type">Leave type</label>
-              <select
-                id="leave-type"
-                required
-                value={leaveForm.leaveTypeId}
-                onChange={(event) =>
-                  setLeaveForm((current) => ({ ...current, leaveTypeId: event.target.value }))
-                }
-              >
-                <option value="">Select type</option>
-                {data.leaveTypes.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="field-group">
+            <form className="config-form" onSubmit={onFeedbackSubmit}>
+              {feedbackNotice ? <p className="form-success">{feedbackNotice}</p> : null}
+              {feedbackError ? (
+                <p className="auth-error" role="alert">
+                  {feedbackError}
+                </p>
+              ) : null}
               <div className="field">
-                <label htmlFor="leave-start">Start date</label>
-                <input
-                  id="leave-start"
-                  required
-                  type="date"
-                  value={leaveForm.startDate}
+                <label htmlFor="feedback-category">Category</label>
+                <select
+                  id="feedback-category"
+                  value={feedbackForm.category}
                   onChange={(event) =>
-                    setLeaveForm((current) => ({ ...current, startDate: event.target.value }))
+                    setFeedbackForm((current) => ({ ...current, category: event.target.value }))
+                  }
+                >
+                  <option value="general">General</option>
+                  <option value="people">People</option>
+                  <option value="pay">Pay</option>
+                  <option value="leave">Leave</option>
+                  <option value="workplace">Workplace</option>
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="feedback-subject">Subject</label>
+                <input
+                  id="feedback-subject"
+                  required
+                  value={feedbackForm.subject}
+                  onChange={(event) =>
+                    setFeedbackForm((current) => ({ ...current, subject: event.target.value }))
                   }
                 />
               </div>
               <div className="field">
-                <label htmlFor="leave-end">End date</label>
-                <input
-                  id="leave-end"
+                <label htmlFor="feedback-body">Feedback</label>
+                <textarea
+                  id="feedback-body"
                   required
-                  type="date"
-                  value={leaveForm.endDate}
+                  value={feedbackForm.body}
                   onChange={(event) =>
-                    setLeaveForm((current) => ({ ...current, endDate: event.target.value }))
+                    setFeedbackForm((current) => ({ ...current, body: event.target.value }))
                   }
                 />
               </div>
-            </div>
-            <div className="field">
-              <label htmlFor="leave-reason">Reason</label>
-              <textarea
-                id="leave-reason"
-                value={leaveForm.reason}
-                onChange={(event) =>
-                  setLeaveForm((current) => ({ ...current, reason: event.target.value }))
-                }
-              />
-            </div>
-            <button className="button button-primary" disabled={submittingLeave} type="submit">
-              {submittingLeave ? 'Submitting...' : 'Submit request'}
-            </button>
-          </form>
-        </section>
-        ) : null}
-
-
-        {selfServiceTab === 'feedback' ? (
-        <section className="self-service-section">
-          <div className="panel-title-row">
-            <div>
-              <div className="panel-kicker">Feedback</div>
-              <h2 className="panel-title">Share feedback</h2>
-            </div>
-            <IconMessageCircle size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
-          </div>
-          <form className="config-form" onSubmit={onFeedbackSubmit}>
-            {feedbackNotice ? <p className="form-success">{feedbackNotice}</p> : null}
-            {feedbackError ? (
-              <p className="auth-error" role="alert">
-                {feedbackError}
-              </p>
-            ) : null}
-            <div className="field">
-              <label htmlFor="feedback-category">Category</label>
-              <select
-                id="feedback-category"
-                value={feedbackForm.category}
-                onChange={(event) =>
-                  setFeedbackForm((current) => ({ ...current, category: event.target.value }))
-                }
-              >
-                <option value="general">General</option>
-                <option value="people">People</option>
-                <option value="pay">Pay</option>
-                <option value="leave">Leave</option>
-                <option value="workplace">Workplace</option>
-              </select>
-            </div>
-            <div className="field">
-              <label htmlFor="feedback-subject">Subject</label>
-              <input
-                id="feedback-subject"
-                required
-                value={feedbackForm.subject}
-                onChange={(event) =>
-                  setFeedbackForm((current) => ({ ...current, subject: event.target.value }))
-                }
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="feedback-body">Feedback</label>
-              <textarea
-                id="feedback-body"
-                required
-                value={feedbackForm.body}
-                onChange={(event) =>
-                  setFeedbackForm((current) => ({ ...current, body: event.target.value }))
-                }
-              />
-            </div>
-            <button className="button button-secondary" disabled={submittingFeedback} type="submit">
-              <IconMessageCircle size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-              {submittingFeedback ? 'Submitting...' : 'Submit feedback'}
-            </button>
-          </form>
-        </section>
-        ) : null}
-      </aside>
+              <button className="button button-secondary" disabled={submittingFeedback} type="submit">
+                <IconMessageCircle size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                {submittingFeedback ? 'Submitting...' : 'Submit feedback'}
+              </button>
+            </form>
+          </section>
+          ) : null}
+        </>
+      )}
     </main>
   );
 };
@@ -689,8 +754,8 @@ function MyPayslipsSection() {
               rows.map((payslip) => (
                 <tr key={payslip.id}>
                   <td><span className="employee-primary">{payslip.payslipNumber}</span></td>
-                  <td>{monthNames[payslip.periodMonth - 1]} {payslip.periodYear}</td>
-                  <td>{payslip.payDate}</td>
+                  <td data-label="Period">{monthNames[payslip.periodMonth - 1]} {payslip.periodYear}</td>
+                  <td data-label="Pay date">{payslip.payDate}</td>
                   <td>{payslip.paidDays}{payslip.lopDays > 0 ? ` / LOP ${payslip.lopDays}` : ''}</td>
                   <td>{money(payslip.grossAmount, payslip.currency)}</td>
                   <td>{money(payslip.incomeTaxAmount, payslip.currency)}</td>

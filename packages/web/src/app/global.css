@@ -2077,6 +2077,73 @@ button {
   font-size: var(--hrms-font-size-xs);
 }
 
+/* ---------------------------------------------------------------------------
+   Employee app. /me is a launcher — clock card, two live figures, then a list of
+   tools that each open their own page — rather than every list stacked at once.
+   --------------------------------------------------------------------------- */
+.employee-app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--hrms-space-6);
+}
+
+.app-tiles {
+  display: grid;
+  gap: var(--hrms-space-2);
+  margin-top: var(--hrms-space-4);
+}
+
+.app-tile {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-3) var(--hrms-space-4);
+  color: var(--hrms-color-text-tertiary);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+  text-decoration: none;
+  transition: var(--hrms-animation-clickable-background-transition);
+}
+
+.app-tile:hover {
+  border-color: var(--hrms-color-border-strong);
+  background: var(--hrms-color-background-primary);
+}
+
+.app-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--hrms-color-accent-accent9);
+  background: var(--hrms-color-background-tertiary);
+  border-radius: var(--hrms-radius-md);
+}
+
+.app-tile-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-tile-label {
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-semi-bold);
+}
+
+.app-tile-meta {
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.employee-form-card {
+  padding: var(--hrms-space-5);
+  margin-bottom: var(--hrms-space-4);
+}
+
 /* Clock in / out is the first thing on the employee landing page, so it sits in
    the main column as a card rather than a panel section. */
 .clock-card {
@@ -2093,7 +2160,10 @@ button {
 }
 
 .clock-actions .button {
+  flex: 1 1 0;
+  justify-content: center;
   min-height: 40px;
+  white-space: nowrap;
 }
 
 /* Self-service rail: one form at a time behind tabs, so the panel stops being a
@@ -3113,7 +3183,8 @@ button {
     padding: var(--hrms-space-4);
   }
 
-  .profile-page {
+  .profile-page,
+  .employee-app {
     padding: var(--hrms-space-4);
   }
 
@@ -3167,14 +3238,12 @@ button {
     table-layout: auto;
   }
 
+  /* Removed outright rather than visually hidden: every cell states its own
+     column via data-label, so the header row carries nothing extra, and clipping
+     it still left a full-width row in the layout. */
   .data-table thead,
   .employee-table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
+    display: none;
   }
 
   /* Rows are separated by a rule rather than boxed as cards — at two lines each,

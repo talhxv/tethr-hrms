@@ -1,4 +1,4 @@
-﻿import { useApolloClient, useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useApolloClient, useLazyQuery, useMutation, useQuery } from '@apollo/client';
 import { WORKSPACE_BRAND_COLORS, type PortalKind, type WorkspaceBrandColor } from '@hrms/shared';
 import {
   IconArrowsRightLeft,
@@ -137,6 +137,10 @@ const SECTION_LABELS: Record<string, string> = {
   '/client': 'People overview',
   '/me': 'My workspace',
   '/me/profile': 'My profile',
+  '/me/leave': 'Leave',
+  '/me/payslips': 'Payslips',
+  '/me/holidays': 'Holidays',
+  '/me/feedback': 'Feedback',
   '/employees': 'Employees',
   '/employees/org-chart': 'Org chart',
   '/attendance': 'Time & attendance',
