@@ -10,7 +10,7 @@ import {
   IconUsersGroup,
 } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { ActionMenu } from '../../../components/menu/ActionMenu';
 import { useTheme } from '../../../providers/theme/useTheme';
@@ -73,6 +73,7 @@ export const EmployeesListPage = () => {
   // The org chart is its own sub-nav tab, so the view follows the route rather
   // than local state — both views share the preview rail below.
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const viewMode: 'directory' | 'orgChart' = pathname.endsWith('/org-chart')
     ? 'orgChart'
     : 'directory';
@@ -187,7 +188,9 @@ export const EmployeesListPage = () => {
   }
 
   return (
-    <main className="page-frame">
+    // The org chart needs the whole page: with the preview rail taking 500px it
+    // renders a 2700px tree into ~780px. Selection there opens the record instead.
+    <main className={viewMode === 'orgChart' ? 'page-frame-wide' : 'page-frame'}>
       <section className="employees-content" aria-labelledby="employees-title">
         <header className="page-header">
           <div>
@@ -312,7 +315,7 @@ export const EmployeesListPage = () => {
             <EmployeeOrgChart
               employees={visibleEmployees}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={(employeeId) => navigate(`/employees/${employeeId}`)}
             />
           ) : (
             <div className="employee-table-wrap">
@@ -381,6 +384,7 @@ export const EmployeesListPage = () => {
 
       {/* Preview only. Everything beyond these headline facts lives on the
           profile page, which has the width for it. */}
+      {viewMode === 'orgChart' ? null : (
       <aside className="employee-detail-panel" aria-label="Selected employee preview">
         {selected ? (
           <>
@@ -446,6 +450,7 @@ export const EmployeesListPage = () => {
           </div>
         )}
       </aside>
+      )}
     </main>
   );
 };

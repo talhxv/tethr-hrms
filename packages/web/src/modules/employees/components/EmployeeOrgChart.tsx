@@ -1,7 +1,7 @@
 import type { EmploymentStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
 
@@ -114,6 +114,15 @@ const buildForest = (employees: readonly OrgChartEmployee[]): readonly OrgNode[]
 export const EmployeeOrgChart = ({ employees, selectedId, onSelect }: OrgChartProps) => {
   const { theme } = useTheme();
   const forest = useMemo(() => buildForest(employees), [employees]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // A wide tree is centred, so it opens scrolled to one edge with the root off
+  // screen. Start in the middle, where the root is.
+  useEffect(() => {
+    const node = scrollRef.current;
+    if (!node) return;
+    node.scrollLeft = Math.max(0, (node.scrollWidth - node.clientWidth) / 2);
+  }, [forest]);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
   const toggle = (employeeId: string): void =>
@@ -197,7 +206,7 @@ export const EmployeeOrgChart = ({ employees, selectedId, onSelect }: OrgChartPr
   }
 
   return (
-    <div className="org-chart">
+    <div className="org-chart" ref={scrollRef}>
       <ul className="org-tree org-tree-root">{forest.map(renderNode)}</ul>
     </div>
   );

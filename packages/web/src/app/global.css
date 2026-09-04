@@ -1574,7 +1574,10 @@ button {
 .org-tree,
 .org-tree ul {
   display: flex;
-  justify-content: center;
+  /* `safe` matters once a subtree is wider than the viewport: plain `center`
+     overflows equally in both directions and the left edge becomes
+     unreachable by scrolling. */
+  justify-content: safe center;
   padding: 0;
   margin: 0;
   list-style: none;
@@ -1640,11 +1643,16 @@ button {
 
 /* The root row has nothing above it, so it carries no connectors. It shrink-
    wraps its content (inline-flex) but stays at least as wide as the scroll
-   area, so a small tree centres while a large one stays fully scrollable. */
+   area, so a small tree centres while a large one stays fully scrollable.
+
+   It must never wrap: wrapping breaks the geometry the connectors assume, and
+   a root ends up rendered beside or below its own children. A tree wider than
+   the viewport scrolls instead. */
 .org-tree-root {
   display: inline-flex;
   min-width: 100%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: flex-start;
   gap: var(--hrms-space-5);
 }
 
