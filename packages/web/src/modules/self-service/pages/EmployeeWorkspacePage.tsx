@@ -165,16 +165,6 @@ const formatDateTime = (value: string): string =>
     month: 'short',
     year: 'numeric',
   }).format(new Date(value));
-const formatMoney = (value: number, currency: string): string =>
-  new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
-    value,
-  );
-const daysUntil = (value: string): number =>
-  Math.max(0, Math.ceil((new Date(`${value}T00:00:00`).getTime() - Date.now()) / 86_400_000));
-const daysSince = (value: string): number =>
-  Math.max(0, Math.floor((Date.now() - new Date(`${value}T00:00:00`).getTime()) / 86_400_000));
-const initials = (employee: EmployeeRecord): string =>
-  `${employee.firstName.charAt(0)}${employee.lastName.charAt(0)}`.toUpperCase();
 const chipStyle = (color: MainColorName): CSSProperties & { readonly '--chip-color': string } => ({
   '--chip-color': `var(--hrms-color-tag-${color})`,
 });
@@ -192,15 +182,6 @@ const requestLabel: Record<ApprovalStatus, string> = {
   rejected: 'Rejected',
   cancelled: 'Cancelled',
 };
-
-const workerTypeLabels: Record<string, string> = {
-  permanent: 'Permanent',
-  fixedTerm: 'Fixed term',
-  contractor: 'Contractor',
-  intern: 'Intern',
-  temporary: 'Temporary',
-};
-
 
 export const EmployeeWorkspacePage = () => {
   const { theme } = useTheme();
@@ -233,7 +214,6 @@ export const EmployeeWorkspacePage = () => {
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const employee = data?.myEmployee;
-  const currentSalary = data?.myCurrentSalaryRevision ?? null;
   const leaveTypesById = useMemo(
     () => new Map(data?.leaveTypes.map((type) => [type.id, type]) ?? []),
     [data?.leaveTypes],
@@ -242,7 +222,6 @@ export const EmployeeWorkspacePage = () => {
     () => (data?.myLeaveBalances ?? []).reduce((sum, balance) => sum + balance.availableDays, 0),
     [data?.myLeaveBalances],
   );
-  const probationDays = employee?.probationEndDate ? daysUntil(employee.probationEndDate) : null;
   const sortedRequests = useMemo(
     () =>
       [...(data?.myLeaveRequests ?? [])].sort((left, right) =>
@@ -329,31 +308,14 @@ export const EmployeeWorkspacePage = () => {
             <h1 className="page-title" id="employee-workspace-title">
               Good day, {employee.firstName}
             </h1>
-            <p className="page-subtitle">Your employment, time away, and pay at a glance.</p>
-          </div>
-          <div className="employee-identity">
-            {data?.myEmployeeProfile?.photoUrl ? (
-              <img
-                alt="Your profile"
-                className="employee-identity-photo"
-                src={data.myEmployeeProfile.photoUrl}
-              />
-            ) : (
-              <span
-                className="employee-avatar employee-identity-avatar"
-                style={chipStyle('violet')}
-              >
-                {initials(employee)}
-              </span>
-            )}
-            <div>
-              <div className="employee-primary">
-                {employee.firstName} {employee.lastName}
-              </div>
-              <div className="employee-secondary">{employee.employeeNumber}</div>
-            </div>
+            <p className="page-subtitle">
+              Clock in, check your pay, and request time off. Your details live under Your
+              profile.
+            </p>
           </div>
         </header>
+
+        <ClockInOutCard />
 
         <div className="metric-strip employee-metrics">
           <div className="metric-card">
@@ -361,81 +323,12 @@ export const EmployeeWorkspacePage = () => {
             <div className="metric-value">{totalLeave.toFixed(1)} days</div>
           </div>
           <div className="metric-card">
-            <div className="metric-label">Current salary</div>
+            <div className="metric-label">Pending requests</div>
             <div className="metric-value">
-              {currentSalary
-                ? formatMoney(currentSalary.annualAmount / 12, currentSalary.currency)
-                : 'Not available'}
-            </div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Days with company</div>
-            <div className="metric-value">{daysSince(employee.hireDate)}</div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-label">Probation</div>
-            <div className="metric-value">
-              {probationDays === null ? 'Not set' : `${probationDays} days left`}
+              {sortedRequests.filter((request) => request.status === 'pending').length}
             </div>
           </div>
         </div>
-
-        <section className="table-shell employment-facts">
-          <div className="table-title-row">
-            <div className="table-title">
-              <IconUserCircle size={theme.icon.size.md} /> Employment facts
-            </div>
-            <div className="table-density">Self-service</div>
-          </div>
-          <div className="field-list">
-            <div className="field-row">
-              <span className="field-label">Date of joining</span>
-              <span className="field-value">{formatDate(employee.hireDate)}</span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Days since joining</span>
-              <span className="field-value">{daysSince(employee.hireDate)}</span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Probation end</span>
-              <span className="field-value">
-                {employee.probationEndDate ? formatDate(employee.probationEndDate) : 'Not set'}
-              </span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Days left in probation</span>
-              <span className="field-value">
-                {probationDays === null ? 'Not set' : `${probationDays} days`}
-              </span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Annual salary</span>
-              <span className="field-value">
-                {currentSalary
-                  ? formatMoney(currentSalary.annualAmount, currentSalary.currency)
-                  : 'Not available'}
-              </span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Monthly salary</span>
-              <span className="field-value">
-                {currentSalary
-                  ? formatMoney(currentSalary.annualAmount / 12, currentSalary.currency)
-                  : 'Not available'}
-              </span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Work email</span>
-              <span className="field-value">{employee.workEmail ?? 'Not set'}</span>
-            </div>
-            <div className="field-row">
-              <span className="field-label">Worker type</span>
-              <span className="field-value">
-                {workerTypeLabels[employee.workerType] ?? employee.workerType}
-              </span>
-            </div>
-          </div>
-        </section>
 
         <MyPayslipsSection />
 
@@ -572,8 +465,6 @@ export const EmployeeWorkspacePage = () => {
       </section>
 
       <aside className="self-service-panel" aria-label="Employee actions">
-        <ClockInOutCard />
-
         {/* Profile is a page of its own — addresses and emergency contact need
             more room than this rail has. */}
         <Link className="quick-action self-service-profile-link" to="/me/profile">

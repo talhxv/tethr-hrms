@@ -23,6 +23,9 @@ type MyEmployee = {
   readonly lastName: string;
   readonly workEmail: string | null;
   readonly employmentStatus: string;
+  readonly workerType: string;
+  readonly hireDate: string;
+  readonly probationEndDate: string | null;
   readonly currentAssignment: {
     readonly departmentName: string | null;
     readonly positionTitle: string | null;
@@ -54,9 +57,16 @@ type MyProfile = {
   readonly emergencyContactRelation: string | null;
 };
 
+type MySalary = {
+  readonly currency: string;
+  readonly annualAmount: number;
+  readonly validFrom: string;
+};
+
 type MyProfileData = {
   readonly myEmployee: MyEmployee;
   readonly myEmployeeProfile: MyProfile | null;
+  readonly myCurrentSalaryRevision: MySalary | null;
 };
 
 type ProfileForm = Omit<MyProfile, 'employeeId' | 'photoUrl'> extends infer T
@@ -101,6 +111,30 @@ const MAX_PHOTO_BYTES = 300_000;
 
 const titleCase = (value: string): string => value.charAt(0).toUpperCase() + value.slice(1);
 
+const formatDate = (value: string): string =>
+  new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(
+    new Date(`${value}T00:00:00`),
+  );
+
+const formatMoney = (value: number, currency: string): string =>
+  new Intl.NumberFormat('en', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
+    value,
+  );
+
+const daysSince = (value: string): number =>
+  Math.max(0, Math.floor((Date.now() - new Date(`${value}T00:00:00`).getTime()) / 86_400_000));
+
+const daysUntil = (value: string): number =>
+  Math.max(0, Math.ceil((new Date(`${value}T00:00:00`).getTime() - Date.now()) / 86_400_000));
+
+const WORKER_TYPE_LABELS: Record<string, string> = {
+  permanent: 'Permanent',
+  fixedTerm: 'Fixed term',
+  contractor: 'Contractor',
+  intern: 'Intern',
+  temporary: 'Temporary',
+};
+
 export const MyProfilePage = () => {
   const { theme } = useTheme();
   const { data, loading, refetch } = useQuery<MyProfileData>(MY_PROFILE_QUERY);
@@ -113,6 +147,7 @@ export const MyProfilePage = () => {
 
   const profile = data?.myEmployeeProfile ?? null;
   const employee = data?.myEmployee ?? null;
+  const salary = data?.myCurrentSalaryRevision ?? null;
 
   useEffect(() => {
     setForm(profileFrom(profile));
@@ -256,6 +291,58 @@ export const MyProfilePage = () => {
               {error}
             </p>
           ) : null}
+
+          {/* Read-only: these are HR's to change, not yours. They used to sit on
+              the /me landing page, which pushed the day-to-day actions down. */}
+          <OnboardingCard
+            note="Maintained by HR. Raise anything that looks wrong with your Tethr contact."
+            title="Employment"
+          >
+            <div className="field-list">
+              <div className="field-row">
+                <span className="field-label">Date of joining</span>
+                <span className="field-value">
+                  {employee ? formatDate(employee.hireDate) : '—'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="field-label">Days since joining</span>
+                <span className="field-value">
+                  {employee ? daysSince(employee.hireDate) : '—'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="field-label">Probation end</span>
+                <span className="field-value">
+                  {employee?.probationEndDate ? formatDate(employee.probationEndDate) : 'Not set'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="field-label">Days left in probation</span>
+                <span className="field-value">
+                  {employee?.probationEndDate ? daysUntil(employee.probationEndDate) : 'Not set'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="field-label">Worker type</span>
+                <span className="field-value">
+                  {employee ? (WORKER_TYPE_LABELS[employee.workerType] ?? employee.workerType) : '—'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="field-label">Annual salary</span>
+                <span className="field-value">
+                  {salary ? formatMoney(salary.annualAmount, salary.currency) : 'Not available'}
+                </span>
+              </div>
+              <div className="field-row">
+                <span className="field-label">Monthly salary</span>
+                <span className="field-value">
+                  {salary ? formatMoney(salary.annualAmount / 12, salary.currency) : 'Not available'}
+                </span>
+              </div>
+            </div>
+          </OnboardingCard>
 
           <OnboardingCard note="How your team reaches you outside work email." title="Contact">
             <div className="onboarding-field-pair">

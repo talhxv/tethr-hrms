@@ -56,7 +56,7 @@ export const ClockInOutCard = () => {
   };
 
   return (
-    <section className="self-service-section">
+    <section className="table-shell clock-card">
       <div className="panel-title-row">
         <div>
           <div className="panel-kicker">Time</div>

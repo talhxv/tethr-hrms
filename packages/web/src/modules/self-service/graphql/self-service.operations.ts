@@ -241,10 +241,19 @@ export const MY_PROFILE_QUERY = gql`
       lastName
       workEmail
       employmentStatus
+      workerType
+      hireDate
+      probationEndDate
       currentAssignment {
         departmentName
         positionTitle
       }
+    }
+    myCurrentSalaryRevision {
+      id
+      currency
+      annualAmount
+      validFrom
     }
     myEmployeeProfile {
       employeeId
