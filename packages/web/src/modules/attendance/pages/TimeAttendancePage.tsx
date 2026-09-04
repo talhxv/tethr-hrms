@@ -306,9 +306,9 @@ export const TimeAttendancePage = () => {
                     <tbody>
                       {entries.map((entry) => (
                         <tr key={entry.id}>
-                          <td>{formatDate(entry.date)}</td>
-                          <td>{entry.hours.toFixed(2)}</td>
-                          <td className="truncate">{entry.source}</td>
+                          <td data-label="Date">{formatDate(entry.date)}</td>
+                          <td data-label="Hours">{entry.hours.toFixed(2)}</td>
+                          <td className="truncate" data-label="Source">{entry.source}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -407,8 +407,8 @@ export const TimeAttendancePage = () => {
                           <td>
                             {formatDate(timesheet.periodStart)} – {formatDate(timesheet.periodEnd)}
                           </td>
-                          <td>{timesheet.totalHours.toFixed(2)}</td>
-                          <td>
+                          <td data-label="Total hours">{timesheet.totalHours.toFixed(2)}</td>
+                          <td data-label="Status">
                             <span
                               className="chip"
                               style={
@@ -423,7 +423,7 @@ export const TimeAttendancePage = () => {
                               {timesheet.status}
                             </span>
                           </td>
-                          <td>
+                          <td data-label="Actions">
                             {canApprove ? (
                               <div className="attendance-row-actions">
                                 {timesheet.status === 'open' ? (

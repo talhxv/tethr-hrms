@@ -357,10 +357,10 @@ export const EmployeesListPage = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="truncate">{employee.workEmail ?? '—'}</td>
-                      <td className="truncate">{employee.roleTitle ?? '—'}</td>
-                      <td className="truncate">{formatDate(employee.hireDate)}</td>
-                      <td>
+                      <td className="truncate" data-label="Work email">{employee.workEmail ?? '—'}</td>
+                      <td className="truncate" data-label="Role">{employee.roleTitle ?? '—'}</td>
+                      <td className="truncate" data-label="Hire date">{formatDate(employee.hireDate)}</td>
+                      <td data-label="Status">
                         <span
                           className="chip"
                           style={chipStyle(statusColors[employee.employmentStatus])}
@@ -369,7 +369,7 @@ export const EmployeesListPage = () => {
                           {statusLabels[employee.employmentStatus]}
                         </span>
                       </td>
-                      <td>{workerTypeLabels[employee.workerType]}</td>
+                      <td data-label="Worker type">{workerTypeLabels[employee.workerType]}</td>
                     </tr>
                   ))}
                 </tbody>

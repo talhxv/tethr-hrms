@@ -209,17 +209,17 @@ export const ClientPortfolioPage = () => {
                       <td>
                         <div className="employee-primary">{client.name}</div>
                       </td>
-                      <td>
+                      <td data-label="Workspaces">
                         {client.workspaces.length === 0
                           ? '-'
                           : client.workspaces.map((workspace) => workspace.displayName).join(', ')}
                       </td>
-                      <td>
+                      <td data-label="Currencies">
                         {Array.from(
                           new Set(client.workspaces.map((workspace) => workspace.defaultCurrency)),
                         ).join(', ') || '-'}
                       </td>
-                      <td>{formatDate(client.createdAt)}</td>
+                      <td data-label="Created">{formatDate(client.createdAt)}</td>
                     </tr>
                   ))}
                   {!loading && clients.length === 0 ? (

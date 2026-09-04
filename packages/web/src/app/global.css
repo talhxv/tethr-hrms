@@ -3105,6 +3105,139 @@ button {
   .onboarding-flow-title {
     font-size: var(--hrms-font-size-lg);
   }
+
+  /* Desktop type on a 390px screen reads as a zoomed-in page rather than a
+     phone one. Headings and figures step down; body text does not, because it
+     is already at its floor. */
+  .page-title {
+    font-size: var(--hrms-font-size-lg);
+  }
+
+  .page-subtitle {
+    font-size: var(--hrms-font-size-xs);
+  }
+
+  .metric-value {
+    margin-top: var(--hrms-space-1);
+    font-size: var(--hrms-font-size-md);
+  }
+
+  .metric-card {
+    padding: var(--hrms-space-3);
+  }
+
+  .page-actions .button,
+  .page-header .button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Tables become stacked cards. A table that scrolls sideways with its columns
+     cut off is the clearest tell that a desktop layout was shipped as-is; each
+     row is a card and each cell carries its own column name from data-label. */
+  .data-table-wrap,
+  .employee-table-wrap {
+    overflow-x: visible;
+  }
+
+  /* min-width is what forces the horizontal scroll on desktop (.data-table sets
+     640px, .salary-history-table 760px). It has to go, or the card rows inherit
+     the desktop table width and hang off the screen. */
+  .data-table,
+  .employee-table,
+  .salary-history-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .data-table thead,
+  .employee-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .data-table tbody,
+  .employee-table tbody {
+    display: grid;
+    gap: var(--hrms-space-2);
+    padding: var(--hrms-space-3);
+  }
+
+  .data-table tbody tr,
+  .employee-table tbody tr {
+    display: grid;
+    gap: var(--hrms-space-1);
+    padding: var(--hrms-space-3);
+    background: var(--hrms-color-background-primary);
+    border: 1px solid var(--hrms-color-border-light);
+    border-radius: var(--hrms-radius-md);
+  }
+
+  /* Label above value rather than beside it: a two-column cell leaves the value
+     roughly 170px at this width, which clips the moment a workspace or email is
+     longer than a word. */
+  .data-table tbody td,
+  .employee-table tbody td {
+    display: block;
+    min-width: 0;
+    width: auto;
+    max-width: none;
+    padding: 0;
+    border: 0;
+  }
+
+  .data-table tbody td::before,
+  .employee-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    color: var(--hrms-color-text-tertiary);
+    font-size: var(--hrms-font-size-xxs);
+    font-weight: var(--hrms-font-weight-medium);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .data-table tbody td:not(:last-child),
+  .employee-table tbody td:not(:last-child) {
+    margin-bottom: var(--hrms-space-2);
+  }
+
+  /* The first cell is the record's identity: no label, full width, and it reads
+     as the card's title. */
+  .data-table tbody td:first-child,
+  .employee-table tbody td:first-child {
+    margin-bottom: var(--hrms-space-3);
+    padding-bottom: var(--hrms-space-2);
+    border-bottom: 1px solid var(--hrms-color-border-light);
+    font-size: var(--hrms-font-size-sm);
+    font-weight: var(--hrms-font-weight-semi-bold);
+  }
+
+  .data-table tbody td:first-child::before,
+  .employee-table tbody td:first-child::before {
+    content: none;
+  }
+
+  /* Cells truncate on desktop to keep columns aligned; in a card they wrap. */
+  .data-table tbody td.truncate,
+  .employee-table tbody td.truncate,
+  .employee-table tbody .truncate {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .table-empty {
+    display: block;
+  }
 }
 
 /* Auth screens (login / signup) */
