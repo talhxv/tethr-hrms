@@ -477,6 +477,100 @@ button {
    Employees / Hiring requests / ...) without reopening its pill dropdown.
    Same pill language as the top nav (white + strong border when active) but
    a smaller, muted-bar tier so it reads as a sub-level, not a duplicate. */
+/* Hamburger + drawer: hidden entirely above the phone breakpoint, which is the
+   only place they are used. */
+.mobile-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  color: var(--hrms-color-text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+}
+
+.mobile-nav-toggle:hover {
+  background: var(--hrms-color-background-tertiary);
+}
+
+.mobile-nav-scrim {
+  position: fixed;
+  z-index: 40;
+  inset: var(--hrms-layout-top-bar-height) 0 0;
+  width: 100%;
+  padding: 0;
+  background: var(--hrms-color-background-overlay-primary);
+  border: 0;
+  cursor: default;
+}
+
+.mobile-nav {
+  position: fixed;
+  z-index: 41;
+  top: var(--hrms-layout-top-bar-height);
+  left: 0;
+  right: 0;
+  max-height: calc(100vh - var(--hrms-layout-top-bar-height));
+  overflow-y: auto;
+  padding: var(--hrms-space-3) var(--hrms-space-3) var(--hrms-space-6);
+  background: var(--hrms-color-background-primary);
+  border-bottom: 1px solid var(--hrms-color-border-light);
+  box-shadow: var(--hrms-box-shadow-strong);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Not an adjacent-sibling rule: standalone links (Clients, Pay) sit between
+   groups, so `group + group` skipped the divider on exactly the groups that
+   follow one. */
+.mobile-nav-group:not(:first-child) {
+  margin-top: var(--hrms-space-2);
+  padding-top: var(--hrms-space-2);
+  border-top: 1px solid var(--hrms-color-border-light);
+}
+
+.mobile-nav-group-label {
+  padding: var(--hrms-space-2) var(--hrms-space-3) var(--hrms-space-1);
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xxs);
+  font-weight: var(--hrms-font-weight-medium);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Rows are 44px tall so they clear the minimum comfortable tap target. */
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: var(--hrms-space-3);
+  min-height: 44px;
+  padding: 0 var(--hrms-space-3);
+  color: var(--hrms-color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--hrms-radius-sm);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--hrms-font-size-sm);
+  font-weight: var(--hrms-font-weight-medium);
+  text-align: left;
+  text-decoration: none;
+}
+
+.mobile-nav-item:hover {
+  background: var(--hrms-color-background-tertiary);
+}
+
+.mobile-nav-item.is-active {
+  color: var(--hrms-color-accent-accent9);
+  background: var(--hrms-color-background-tertiary);
+}
+
 .app-subnav {
   display: flex;
   justify-content: center;
@@ -2956,34 +3050,23 @@ button {
     border-bottom: 1px solid var(--hrms-color-border-light);
   }
 
-  /* Both nav rows scroll sideways instead of crushing their items: the top
-     pills are a centred 3-column grid and the sub-nav is centred flex, and
-     neither fits five or six entries on a phone. */
-  .app-topnav {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: var(--hrms-space-2);
-    padding: 0 var(--hrms-space-3);
-  }
-
-  .app-subnav {
-    justify-content: flex-start;
-    padding: var(--hrms-space-1) var(--hrms-space-3);
-  }
-
+  /* Phone navigation is a drawer, not a row. The pills are inline dropdown
+     anchors that overlapped the page once the header ran out of width, so they
+     and the sub-nav come out of the layout entirely and the hamburger takes
+     over. */
   .topnav-pills,
   .app-subnav {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .topnav-pills::-webkit-scrollbar,
-  .app-subnav::-webkit-scrollbar {
     display: none;
   }
 
-  .subnav-tab,
-  .topnav-pills > * {
-    flex: 0 0 auto;
+  .mobile-nav-toggle {
+    display: inline-flex;
+  }
+
+  .app-topnav {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--hrms-space-2);
+    padding: 0 var(--hrms-space-3);
   }
 
   /* Paired form fields stack. Without this every two-column group — onboarding,

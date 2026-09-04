@@ -11,6 +11,7 @@ import {
   IconFileInvoice,
   IconLayoutDashboard,
   IconLogout,
+  IconMenu2,
   IconMessageCircle,
   IconMoon,
   IconPlaneDeparture,
@@ -22,6 +23,7 @@ import {
   IconUserCircle,
   IconUserCog,
   IconUsersGroup,
+  IconX,
   type TablerIcon,
 } from '@tabler/icons-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -156,6 +158,9 @@ export const AppShell = () => {
   const { pathname } = useLocation();
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  // Phone navigation is a drawer, not the pill row — see the mobile block in
+  // global.css. Kept as separate state so the two never fight for the same menu.
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
   const accountRef = useRef<HTMLDivElement | null>(null);
   const workspaceRef = useRef<HTMLDivElement | null>(null);
@@ -196,6 +201,7 @@ export const AppShell = () => {
   // actually closes it, by reacting to the resulting route change instead.
   useEffect(() => {
     setOpenMenu(null);
+    setMobileNavOpen(false);
   }, [pathname]);
 
   // The workspace switcher is two steps now — trigger -> pick a workspace —
@@ -371,6 +377,19 @@ export const AppShell = () => {
     <div className="app-shell" style={chipColorVar}>
       <header className="app-topnav">
         <div className="topnav-left">
+          <button
+            aria-expanded={mobileNavOpen}
+            aria-label={mobileNavOpen ? 'Close menu' : 'Open menu'}
+            className="mobile-nav-toggle"
+            type="button"
+            onClick={() => setMobileNavOpen((open) => !open)}
+          >
+            {mobileNavOpen ? (
+              <IconX size={theme.icon.size.lg} stroke={theme.icon.stroke.md} />
+            ) : (
+              <IconMenu2 size={theme.icon.size.lg} stroke={theme.icon.stroke.md} />
+            )}
+          </button>
           <div className="topnav-brand" aria-hidden="true">
             H
           </div>
@@ -534,6 +553,75 @@ export const AppShell = () => {
           </div>
         </div>
       </header>
+
+      {/* Phone navigation. The pill row and sub-nav are display:none below the
+          breakpoint; this drawer carries the same destinations, flattened so a
+          group's pages are reachable in one tap instead of two. */}
+      {mobileNavOpen ? (
+        <>
+          <button
+            aria-label="Close menu"
+            className="mobile-nav-scrim"
+            tabIndex={-1}
+            type="button"
+            onClick={() => setMobileNavOpen(false)}
+          />
+          <nav className="mobile-nav" aria-label="Primary navigation">
+            {visibleNavigation.map((entry) => {
+              if (entry.kind === 'link') {
+                const Icon = entry.icon;
+                return (
+                  <NavLink
+                    key={entry.label}
+                    className={({ isActive }) =>
+                      `mobile-nav-item${isActive ? ' is-active' : ''}`
+                    }
+                    to={entry.to}
+                  >
+                    <Icon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                    <span>{entry.label}</span>
+                  </NavLink>
+                );
+              }
+              return (
+                <section className="mobile-nav-group" key={entry.label}>
+                  <div className="mobile-nav-group-label">{entry.label}</div>
+                  {entry.items.map((item) => {
+                    const ItemIcon = item.icon;
+                    return (
+                      <NavLink
+                        key={item.label}
+                        className={({ isActive }) =>
+                          `mobile-nav-item${isActive ? ' is-active' : ''}`
+                        }
+                        to={item.to}
+                      >
+                        <ItemIcon size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </section>
+              );
+            })}
+
+            <section className="mobile-nav-group">
+              <div className="mobile-nav-group-label">Account</div>
+              <button
+                className="mobile-nav-item"
+                type="button"
+                onClick={() => {
+                  setMobileNavOpen(false);
+                  void onLogout();
+                }}
+              >
+                <IconLogout size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                <span>Sign out</span>
+              </button>
+            </section>
+          </nav>
+        </>
+      ) : null}
 
       {activeGroupEntry ? (
         <nav className="app-subnav" aria-label={`${activeGroupEntry.label} sections`}>
