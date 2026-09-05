@@ -35,7 +35,11 @@ import {
   type EmployeeRecord,
   type EmployeesData,
 } from '../employee.shared';
-import { CREATE_EMPLOYEE_MUTATION, EMPLOYEES_QUERY } from '../graphql/employee.operations';
+import {
+  CREATE_EMPLOYEE_MUTATION,
+  EMPLOYEES_QUERY,
+  SET_EMPLOYEE_MANAGER_MUTATION,
+} from '../graphql/employee.operations';
 
 // Shortcuts in the "Onboard employee" menu — the rest stay reachable from the
 // worker type field inside the flow.
@@ -85,6 +89,32 @@ export const EmployeesListPage = () => {
   // "Onboard employee" menu. Null means start on the default (permanent).
   const [pendingWorkerType, setPendingWorkerType] = useState<WorkerType | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [reassignError, setReassignError] = useState<string | null>(null);
+  const [setEmployeeManager, { loading: reassigning }] = useMutation(SET_EMPLOYEE_MANAGER_MUTATION);
+
+  const canRestructure = Boolean(
+    user?.roleKeys.includes('tethrAdmin') || user?.roleKeys.includes('tethrHr'),
+  );
+
+  const onReassign = async (employeeId: string, managerId: string | null): Promise<void> => {
+    setReassignError(null);
+    try {
+      await setEmployeeManager({
+        variables: {
+          input: {
+            employeeId,
+            reportsToEmployeeId: managerId,
+            effectiveDate: new Date().toISOString().slice(0, 10),
+          },
+        },
+      });
+      await refetch();
+    } catch (caught) {
+      setReassignError(
+        caught instanceof Error ? caught.message : 'Could not change that reporting line',
+      );
+    }
+  };
 
   const startOnboarding = (workerType?: WorkerType): void => {
     setPendingWorkerType(workerType ?? null);
@@ -275,6 +305,19 @@ export const EmployeesListPage = () => {
           </span>
         </div>
 
+        {viewMode === 'orgChart' && canRestructure ? (
+          <p className="field-hint org-chart-hint">
+            Drag someone onto their new manager to move them, or use the person icon on a card to
+            pick from a list. Changes take effect today and keep the previous assignment as history.
+          </p>
+        ) : null}
+
+        {reassignError ? (
+          <p className="auth-error" role="alert">
+            {reassignError}
+          </p>
+        ) : null}
+
         <div className="table-shell">
           {error ? (
             <div className="directory-empty">
@@ -314,7 +357,11 @@ export const EmployeesListPage = () => {
           ) : viewMode === 'orgChart' ? (
             <EmployeeOrgChart
               employees={visibleEmployees}
+              reassigning={reassigning}
               selectedId={selectedId}
+              onReassign={
+                canRestructure ? (id, managerId) => void onReassign(id, managerId) : undefined
+              }
               onSelect={(employeeId) => navigate(`/employees/${employeeId}`)}
             />
           ) : (

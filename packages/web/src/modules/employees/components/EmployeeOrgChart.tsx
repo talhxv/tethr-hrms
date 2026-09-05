@@ -1,6 +1,6 @@
 import type { EmploymentStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconUserPlus } from '@tabler/icons-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
@@ -24,6 +24,9 @@ type OrgChartProps = {
   readonly employees: readonly OrgChartEmployee[];
   readonly selectedId: string | null;
   readonly onSelect: (employeeId: string) => void;
+  /** Omitted for viewers who cannot restructure — the chart then stays read-only. */
+  readonly onReassign?: (employeeId: string, managerId: string | null) => void;
+  readonly reassigning?: boolean;
 };
 
 type OrgNode = {
@@ -111,7 +114,13 @@ const buildForest = (employees: readonly OrgChartEmployee[]): readonly OrgNode[]
   return [...roots].sort(byName).map(toNode);
 };
 
-export const EmployeeOrgChart = ({ employees, selectedId, onSelect }: OrgChartProps) => {
+export const EmployeeOrgChart = ({
+  employees,
+  selectedId,
+  onSelect,
+  onReassign,
+  reassigning = false,
+}: OrgChartProps) => {
   const { theme } = useTheme();
   const forest = useMemo(() => buildForest(employees), [employees]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +133,42 @@ export const EmployeeOrgChart = ({ employees, selectedId, onSelect }: OrgChartPr
     node.scrollLeft = Math.max(0, (node.scrollWidth - node.clientWidth) / 2);
   }, [forest]);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  // Which node has its manager picker open. Drag-and-drop is the fast path;
+  // this is the one that works on touch and by keyboard.
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [pickerQuery, setPickerQuery] = useState('');
+
+  const canEdit = Boolean(onReassign);
+
+  // Everyone below a node, so a manager cannot be dropped onto their own report.
+  // The server refuses cycles too; this is what stops the drop looking legal.
+  const descendantsOf = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    const walk = (node: OrgNode): Set<string> => {
+      const below = new Set<string>();
+      for (const report of node.reports) {
+        below.add(report.employee.id);
+        for (const id of walk(report)) below.add(id);
+      }
+      map.set(node.employee.id, below);
+      return below;
+    };
+    forest.forEach(walk);
+    return map;
+  }, [forest]);
+
+  const canDrop = (draggedId: string, targetId: string): boolean =>
+    draggedId !== targetId && !(descendantsOf.get(draggedId)?.has(targetId) ?? false);
+
+  const applyReassign = (employeeId: string, managerId: string | null): void => {
+    setPickerFor(null);
+    setPickerQuery('');
+    setDragging(null);
+    setDropTarget(null);
+    onReassign?.(employeeId, managerId);
+  };
 
   const toggle = (employeeId: string): void =>
     setCollapsed((current) => {
@@ -144,14 +189,45 @@ export const EmployeeOrgChart = ({ employees, selectedId, onSelect }: OrgChartPr
     const subtitle =
       employee.roleTitle ?? employee.currentAssignment?.positionTitle ?? employee.employeeNumber;
 
+    const isDropTarget = dropTarget === employee.id;
+    const isDragging = dragging === employee.id;
+    const rejectsDrop = dragging !== null && !canDrop(dragging, employee.id);
+
     return (
       <li key={employee.id}>
         <div className="org-node-wrap">
           <button
             aria-pressed={isSelected}
-            className={`org-node${isSelected ? ' is-selected' : ''}`}
+            className={`org-node${isSelected ? ' is-selected' : ''}${
+              isDragging ? ' is-dragging' : ''
+            }${isDropTarget ? ' is-drop-target' : ''}${rejectsDrop ? ' is-drop-blocked' : ''}`}
+            draggable={canEdit && !reassigning}
             type="button"
             onClick={() => onSelect(employee.id)}
+            onDragEnd={() => {
+              setDragging(null);
+              setDropTarget(null);
+            }}
+            onDragLeave={() => setDropTarget((current) => (current === employee.id ? null : current))}
+            onDragOver={(event) => {
+              if (!dragging || !canDrop(dragging, employee.id)) return;
+              // Only preventDefault on a legal target, so an illegal one shows
+              // the browser's "no drop" cursor rather than silently failing.
+              event.preventDefault();
+              setDropTarget(employee.id);
+            }}
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = 'move';
+              event.dataTransfer.setData('text/plain', employee.id);
+              setDragging(employee.id);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const draggedId = event.dataTransfer.getData('text/plain') || dragging;
+              if (draggedId && canDrop(draggedId, employee.id)) {
+                applyReassign(draggedId, employee.id);
+              }
+            }}
           >
             <span className="employee-avatar org-node-avatar" style={chipVar(colorFor(employee.id))}>
               {initials(employee)}
@@ -167,6 +243,67 @@ export const EmployeeOrgChart = ({ employees, selectedId, onSelect }: OrgChartPr
               title={statusLabels[employee.employmentStatus]}
             />
           </button>
+
+          {canEdit ? (
+            <button
+              aria-label={`Change who ${fullName(employee)} reports to`}
+              className="org-node-edit"
+              disabled={reassigning}
+              title="Change manager"
+              type="button"
+              onClick={() => {
+                setPickerQuery('');
+                setPickerFor((current) => (current === employee.id ? null : employee.id));
+              }}
+            >
+              <IconUserPlus size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+            </button>
+          ) : null}
+
+          {pickerFor === employee.id ? (
+            <div className="org-node-picker">
+              <div className="org-node-picker-title">
+                {fullName(employee)} reports to
+              </div>
+              <input
+                autoFocus
+                className="org-node-picker-search"
+                placeholder="Search people"
+                value={pickerQuery}
+                onChange={(event) => setPickerQuery(event.target.value)}
+              />
+              <div className="org-node-picker-list">
+                <button
+                  className="org-node-picker-option"
+                  type="button"
+                  onClick={() => applyReassign(employee.id, null)}
+                >
+                  No manager (top of the chart)
+                </button>
+                {employees
+                  .filter((candidate) => canDrop(employee.id, candidate.id))
+                  .filter((candidate) =>
+                    `${fullName(candidate)} ${candidate.roleTitle ?? ''}`
+                      .toLowerCase()
+                      .includes(pickerQuery.trim().toLowerCase()),
+                  )
+                  .slice(0, 40)
+                  .map((candidate) => (
+                    <button
+                      className="org-node-picker-option"
+                      key={candidate.id}
+                      type="button"
+                      onClick={() => applyReassign(employee.id, candidate.id)}
+                    >
+                      <span className="org-node-picker-name">{fullName(candidate)}</span>
+                      {candidate.roleTitle ? (
+                        <span className="org-node-picker-role">{candidate.roleTitle}</span>
+                      ) : null}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          ) : null}
 
           {hasReports ? (
             <button
