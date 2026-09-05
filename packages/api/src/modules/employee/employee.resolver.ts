@@ -1,6 +1,7 @@
 import {
   toId,
   type EmployeeId,
+  type PositionId,
   type EmployeeSeparationId,
   type HolidayCalendarId,
   type IsoDate,
@@ -36,6 +37,7 @@ import { EmployeeType } from './dto/employee.output';
 import { EmployeeWorkHistoryView } from './dto/employee-work-history.output';
 import { CreateEmployeeWorkHistoryInput, UpdateEmployeeWorkHistoryInput } from './dto/employee-work-history.input';
 import { SeparateEmployeeInput } from './dto/separate-employee.input';
+import { SetEmployeeManagerInput } from './dto/set-employee-manager.input';
 import { TerminateEmployeeInput } from './dto/terminate-employee.input';
 import { UpdateEmployeePhotoInput } from './dto/update-employee-photo.input';
 import { UpdateMyPhotoInput } from './dto/update-my-photo.input';
@@ -291,6 +293,38 @@ export class EmployeeResolver {
       },
       user ? toId<UserId>(user.id) : null,
     );
+    return toEmployeeType(employee);
+  }
+
+  /**
+   * Sets who an employee reports to. This is the only way to build a hierarchy:
+   * reporting lines live on the assignment, and nothing else exposes them.
+   * Passing a null manager makes the employee a root of the chart.
+   */
+  @Mutation(() => EmployeeType)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.assignmentWrite)
+  async setEmployeeManager(@Args('input') input: SetEmployeeManagerInput): Promise<EmployeeType> {
+    const employeeId = toId<EmployeeId>(input.employeeId);
+    const employee = await this.employeeService.getById(employeeId);
+    const effectiveDate = input.effectiveDate as IsoDate;
+
+    // An employee with no assignment yet has no position to carry over, so one
+    // is derived from their role title rather than failing the change.
+    const current = await this.assignmentService.currentPrimary(employeeId, effectiveDate);
+    const position = current
+      ? null
+      : await this.positionService.ensureByTitle(employee.roleTitle ?? 'Unassigned');
+
+    await this.assignmentService.setReportingLine({
+      employeeId,
+      reportsToEmployeeId: input.reportsToEmployeeId
+        ? toId<EmployeeId>(input.reportsToEmployeeId)
+        : null,
+      effectiveDate,
+      positionId: position ? toId<PositionId>(position.id) : null,
+    });
+
     return toEmployeeType(employee);
   }
 

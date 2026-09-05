@@ -2163,6 +2163,12 @@ button {
   margin-bottom: var(--hrms-space-4);
 }
 
+.manager-picker {
+  margin-top: var(--hrms-space-4);
+  padding-top: var(--hrms-space-4);
+  border-top: 1px solid var(--hrms-color-border-light);
+}
+
 .clock-actions {
   margin-top: var(--hrms-space-4);
 }

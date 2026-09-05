@@ -622,3 +622,11 @@ export const EMPLOYEE_ASSIGNMENT_HISTORY_QUERY = gql`
     }
   }
 `;
+
+export const SET_EMPLOYEE_MANAGER_MUTATION = gql`
+  mutation SetEmployeeManager($input: SetEmployeeManagerInput!) {
+    setEmployeeManager(input: $input) {
+      id
+    }
+  }
+`;

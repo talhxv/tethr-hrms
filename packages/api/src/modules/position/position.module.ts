@@ -9,11 +9,15 @@ import { Job } from './entities/job.entity';
 import { PayBand } from './entities/pay-band.entity';
 import { Position } from './entities/position.entity';
 import { PositionService } from './position.service';
-import { POSITION_REPOSITORY } from './position.tokens';
+import { JOB_REPOSITORY, POSITION_REPOSITORY } from './position.tokens';
 
 @Module({
   imports: [TypeOrmModule.forFeature([JobFamily, Job, Grade, PayBand, Position])],
-  providers: [PositionService, provideTenantScopedRepository(POSITION_REPOSITORY, Position)],
+  providers: [
+    PositionService,
+    provideTenantScopedRepository(POSITION_REPOSITORY, Position),
+    provideTenantScopedRepository(JOB_REPOSITORY, Job),
+  ],
   exports: [PositionService],
 })
 export class PositionModule {}

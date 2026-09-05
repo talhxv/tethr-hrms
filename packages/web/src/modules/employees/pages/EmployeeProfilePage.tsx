@@ -35,6 +35,8 @@ import {
   CREATE_WORKSPACE_USER_MUTATION,
   EMPLOYEE_DOCUMENT_DOWNLOAD_ACCESS_QUERY,
   EMPLOYEE_DETAIL_QUERY,
+  EMPLOYEES_QUERY,
+  SET_EMPLOYEE_MANAGER_MUTATION,
   EMPLOYEE_HR_RECORD_QUERY,
   EMPLOYEE_ONBOARDING_TASKS_QUERY,
   EMPLOYEE_SALARY_STRUCTURES_QUERY,
@@ -521,6 +523,33 @@ export const EmployeeProfilePage = () => {
   const [updateOffboardingTask, { loading: savingOffboardingTask }] = useMutation(UPDATE_OFFBOARDING_TASK_MUTATION);
   const [upsertExitInterview, { loading: savingExitInterview }] = useMutation(UPSERT_EXIT_INTERVIEW_MUTATION);
 
+  // Everyone else in the workspace, as manager candidates. The employee is
+  // filtered out here; the server also rejects self-reporting and any change
+  // that would close a loop.
+  const { data: directoryData } = useQuery<{
+    readonly employees: ReadonlyArray<{
+      readonly id: string;
+      readonly firstName: string;
+      readonly lastName: string;
+      readonly roleTitle: string | null;
+    }>;
+  }>(EMPLOYEES_QUERY);
+  const managerOptions = useMemo(
+    () =>
+      (directoryData?.employees ?? [])
+        .filter((candidate) => candidate.id !== employeeId)
+        .slice()
+        .sort((left, right) => left.firstName.localeCompare(right.firstName)),
+    [directoryData?.employees, employeeId],
+  );
+  const [setEmployeeManager, { loading: savingManager }] = useMutation(
+    SET_EMPLOYEE_MANAGER_MUTATION,
+  );
+  const [managerForm, setManagerForm] = useState({
+    reportsToEmployeeId: '',
+    effectiveDate: today(),
+  });
+
   const [assessmentForm, setAssessmentForm] = useState(emptyAssessmentForm);
   const [documentForm, setDocumentForm] = useState(emptyDocumentForm);
   const [documentVersionForm, setDocumentVersionForm] = useState(emptyDocumentVersionForm);
@@ -654,6 +683,13 @@ export const EmployeeProfilePage = () => {
     user?.roleKeys.includes('tethrAdmin') ||
     user?.roleKeys.includes('tethrHr') ||
     user?.roleKeys.includes('clientAdmin');
+  useEffect(() => {
+    setManagerForm((current) => ({
+      ...current,
+      reportsToEmployeeId: detailEmployee?.currentAssignment?.reportsToEmployeeId ?? '',
+    }));
+  }, [detailEmployee?.currentAssignment?.reportsToEmployeeId]);
+
   useEffect(() => {
     setHrRecordForm({
       roleTitle: hrRecord?.roleTitle ?? detailEmployee?.roleTitle ?? '',
@@ -1185,6 +1221,25 @@ export const EmployeeProfilePage = () => {
     reader.readAsDataURL(file);
   };
 
+  const onSetManager = async (event: FormEvent): Promise<void> => {
+    event.preventDefault();
+    setDetailError(null);
+    try {
+      await setEmployeeManager({
+        variables: {
+          input: {
+            employeeId,
+            reportsToEmployeeId: managerForm.reportsToEmployeeId || null,
+            effectiveDate: managerForm.effectiveDate,
+          },
+        },
+      });
+      await refetchDetail();
+    } catch (caught) {
+      setDetailError(caught instanceof Error ? caught.message : 'Could not update the manager');
+    }
+  };
+
   const renderAccessDescriptor = (access: DocumentAccessDescriptor, title: string): JSX.Element => (
     <div className="document-access-note">
       <div className="document-access-title">{title}</div>
@@ -1481,13 +1536,69 @@ export const EmployeeProfilePage = () => {
                 </div>
                 <div className="field-row">
                   <span className="field-label">Manager</span>
-                  <span className="field-value">{detailEmployee.currentAssignment?.reportsToName ?? '-'}</span>
+                  <span className="field-value">
+                    {detailEmployee.currentAssignment?.reportsToName ?? 'Not set'}
+                  </span>
                 </div>
                 <div className="field-row">
                   <span className="field-label">Assignment type</span>
                   <span className="field-value">{detailEmployee.currentAssignment?.assignmentType ?? '-'}</span>
                 </div>
               </div>
+              {canEditHrRecord ? (
+                <form
+                  className="manager-picker"
+                  onSubmit={(event) => void onSetManager(event)}
+                >
+                  <div className="onboarding-field-pair">
+                    <div className="field">
+                      <label htmlFor="manager-select">Reports to</label>
+                      <select
+                        id="manager-select"
+                        value={managerForm.reportsToEmployeeId}
+                        onChange={(event) =>
+                          setManagerForm((current) => ({
+                            ...current,
+                            reportsToEmployeeId: event.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">No manager (top of the chart)</option>
+                        {managerOptions.map((candidate) => (
+                          <option key={candidate.id} value={candidate.id}>
+                            {candidate.firstName} {candidate.lastName}
+                            {candidate.roleTitle ? ` — ${candidate.roleTitle}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label htmlFor="manager-effective">Effective from</label>
+                      <input
+                        id="manager-effective"
+                        required
+                        type="date"
+                        value={managerForm.effectiveDate}
+                        onChange={(event) =>
+                          setManagerForm((current) => ({
+                            ...current,
+                            effectiveDate: event.target.value,
+                          }))
+                        }
+                      />
+                    </div>
+                  </div>
+                  <p className="field-hint">
+                    Reporting lines are effective-dated: this closes the current assignment and
+                    opens a new one, so the history stays intact.
+                  </p>
+                  <button className="button button-secondary" disabled={savingManager} type="submit">
+                    <IconDeviceFloppy size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                    {savingManager ? 'Saving...' : 'Update manager'}
+                  </button>
+                </form>
+              ) : null}
+
               {detailEmployee.assignmentHistory && detailEmployee.assignmentHistory.length > 1 ? (
                 <div style={{ marginTop: theme.spacing(3) }}>
                   <div className="field-label" style={{ marginBottom: theme.spacing(2) }}>Assignment history ({detailEmployee.assignmentHistory.length})</div>

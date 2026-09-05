@@ -32,6 +32,14 @@ export type CreateAssignmentInput = {
   readonly isPrimary?: boolean;
 };
 
+export type SetReportingLineInput = {
+  readonly employeeId: EmployeeId;
+  readonly reportsToEmployeeId: EmployeeId | null;
+  readonly effectiveDate: IsoDate;
+  /** Only needed when the employee holds no assignment yet. */
+  readonly positionId?: PositionId | null;
+};
+
 @Injectable()
 export class AssignmentService {
   constructor(
@@ -95,6 +103,89 @@ export class AssignmentService {
 
   listForEmployee(employeeId: EmployeeId): Promise<Assignment[]> {
     return this.assignments.find({ where: { employeeId } as FindOptionsWhere<Assignment> });
+  }
+
+  /** The primary assignment in force on a date, if any. */
+  async currentPrimary(employeeId: EmployeeId, asOf: IsoDate): Promise<Assignment | null> {
+    const all = await this.assignments.find({
+      where: { employeeId, isPrimary: true } as FindOptionsWhere<Assignment>,
+    });
+    return (
+      all.find(
+        (assignment) =>
+          assignment.validFrom <= asOf && (assignment.validTo === null || assignment.validTo > asOf),
+      ) ?? null
+    );
+  }
+
+  /**
+   * Changes who someone reports to, effective from a date. Reporting lines are
+   * effective-dated like every other backbone fact (plan.md §1), so this closes
+   * the assignment in force and opens a new one rather than editing history.
+   */
+  async setReportingLine(input: SetReportingLineInput): Promise<Assignment> {
+    if (input.reportsToEmployeeId === input.employeeId) {
+      throw new EffectiveDatingError('An employee cannot report to themselves', {
+        employeeId: input.employeeId,
+      });
+    }
+    if (input.reportsToEmployeeId) {
+      await this.assertNoReportingCycle(
+        input.employeeId,
+        input.reportsToEmployeeId,
+        input.effectiveDate,
+      );
+    }
+
+    const current = await this.currentPrimary(input.employeeId, input.effectiveDate);
+    if (current) {
+      // Ranges are half-open, so closing at the effective date leaves no gap and
+      // no overlap with one starting the same day. Same-day changes collapse the
+      // superseded row to an empty range, which is honest history rather than a
+      // deletion.
+      await this.end(current.id, input.effectiveDate);
+    }
+
+    const positionId = input.positionId ?? (current ? toId<PositionId>(current.positionId) : null);
+    if (!positionId) {
+      throw new NotFoundError('No position to assign this employee to', {
+        employeeId: input.employeeId,
+      });
+    }
+
+    return this.create({
+      employeeId: input.employeeId,
+      positionId,
+      validFrom: input.effectiveDate,
+      assignmentType: current?.assignmentType ?? 'primary',
+      isPrimary: true,
+      reportsToEmployeeId: input.reportsToEmployeeId,
+    });
+  }
+
+  // Walks up from the proposed manager. If the employee appears anywhere on that
+  // chain, the change would close a loop and the org chart would never terminate.
+  private async assertNoReportingCycle(
+    employeeId: EmployeeId,
+    managerId: EmployeeId,
+    asOf: IsoDate,
+  ): Promise<void> {
+    const seen = new Set<string>([employeeId]);
+    let cursor: EmployeeId | null = managerId;
+
+    while (cursor) {
+      if (seen.has(cursor)) {
+        throw new EffectiveDatingError('That manager reports to this employee', {
+          employeeId,
+          managerId,
+        });
+      }
+      seen.add(cursor);
+      const assignment: Assignment | null = await this.currentPrimary(cursor, asOf);
+      cursor = assignment?.reportsToEmployeeId
+        ? toId<EmployeeId>(assignment.reportsToEmployeeId)
+        : null;
+    }
   }
 
   // A person holds at most one primary assignment at any moment. Reuses the
