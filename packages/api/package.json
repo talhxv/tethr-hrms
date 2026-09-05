@@ -15,7 +15,8 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/core/database/data-source.ts",
     "seed:demo": "node -r ts-node/register -r tsconfig-paths/register scripts/seed-demo.ts",
     "sync:role-permissions": "node -r ts-node/register -r tsconfig-paths/register scripts/sync-system-role-permissions.ts",
-    "seed:org-chart": "node -r ts-node/register -r tsconfig-paths/register scripts/seed-org-chart.ts"
+    "seed:org-chart": "node -r ts-node/register -r tsconfig-paths/register scripts/seed-org-chart.ts",
+    "prune:empty-assignments": "node -r ts-node/register -r tsconfig-paths/register scripts/prune-empty-assignments.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.11.0",

@@ -138,11 +138,17 @@ export class AssignmentService {
     }
 
     const current = await this.currentPrimary(input.employeeId, input.effectiveDate);
+
+    // A change on the day the assignment starts is a correction, not a new dated
+    // fact: nothing was ever true under the old line. Edit the row in place so
+    // history does not fill with zero-length ranges.
+    if (current && current.validFrom === input.effectiveDate) {
+      return this.correctReportingLine(current, input.reportsToEmployeeId);
+    }
+
     if (current) {
       // Ranges are half-open, so closing at the effective date leaves no gap and
-      // no overlap with one starting the same day. Same-day changes collapse the
-      // superseded row to an empty range, which is honest history rather than a
-      // deletion.
+      // no overlap with one starting the same day.
       await this.end(current.id, input.effectiveDate);
     }
 
@@ -160,6 +166,26 @@ export class AssignmentService {
       assignmentType: current?.assignmentType ?? 'primary',
       isPrimary: true,
       reportsToEmployeeId: input.reportsToEmployeeId,
+    });
+  }
+
+  private async correctReportingLine(
+    assignment: Assignment,
+    reportsToEmployeeId: EmployeeId | null,
+  ): Promise<Assignment> {
+    return this.dataSource.transaction(async (manager) => {
+      assignment.reportsToEmployeeId = reportsToEmployeeId;
+      const saved = await manager.save(assignment);
+      await this.publisher.publishWithin(manager, {
+        name: 'assignment.updated',
+        payload: {
+          assignmentId: toId<AssignmentId>(saved.id),
+          employeeId: toId<EmployeeId>(saved.employeeId),
+          reportsToEmployeeId,
+          effectiveDate: saved.validFrom,
+        },
+      });
+      return saved;
     });
   }
 

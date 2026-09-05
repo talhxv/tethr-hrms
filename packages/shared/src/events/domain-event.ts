@@ -44,6 +44,7 @@ export const DOMAIN_EVENT_NAMES = [
   'employee.exitInterviewRecorded',
   'employee.offboardingTaskUpdated',
   'assignment.created',
+  'assignment.updated',
   'assignment.ended',
   'user.created',
   'user.linkedToEmployee',
@@ -115,6 +116,14 @@ export type DomainEventPayloads = {
     readonly assignmentId: AssignmentId;
     readonly employeeId: EmployeeId;
     readonly positionId: PositionId;
+    readonly effectiveDate: string;
+  };
+  // A correction to an assignment that has not taken effect yet — same-day
+  // reassignment, typically fixing a mistake rather than dating a real change.
+  'assignment.updated': {
+    readonly assignmentId: AssignmentId;
+    readonly employeeId: EmployeeId;
+    readonly reportsToEmployeeId: EmployeeId | null;
     readonly effectiveDate: string;
   };
   'assignment.ended': {
