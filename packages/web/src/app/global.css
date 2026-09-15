@@ -5709,22 +5709,39 @@ button {
   margin-top: var(--hrms-space-1);
 }
 
-/* The role editor can hold two selects plus Save; flex-wrap keeps it inside its
-   cell instead of bleeding over the neighbouring column on narrow screens. */
+/* The role editor holds two selects plus Save. They share one line: the selects
+   shrink from a zero basis instead of each demanding 150px, which is what used
+   to overflow the cell and wrap Save onto a second row — leaving rows that had
+   an employee select visibly taller than rows that did not. Below 1100px they
+   wrap again rather than shrink into unusable stubs, which is what the original
+   flex-wrap was guarding against. */
 .access-role-control {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: var(--hrms-space-2);
 }
 
 .access-role-control select {
-  flex: 1 1 150px;
+  flex: 1 1 0;
   min-width: 0;
 }
 
 .access-role-control .button {
   flex: 0 0 auto;
+}
+
+@media (max-width: 1100px) {
+  .access-role-control {
+    flex-wrap: wrap;
+  }
+}
+
+/* Interactive rows need more than the 32px text row: this keeps every row the
+   same height whether its role cell is editable or plain static text, and stops
+   a 32px control sitting flush against the row borders. */
+.workspace-users-content .data-table td {
+  height: 48px;
 }
 
 .access-role-static {

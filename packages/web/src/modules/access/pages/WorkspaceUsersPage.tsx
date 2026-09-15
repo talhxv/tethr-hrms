@@ -1,7 +1,14 @@
 import { useMutation, useQuery } from '@apollo/client';
 import type { SystemRoleKey } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
-import { IconAlertTriangle, IconFilterOff, IconKey, IconPlus, IconRefresh, IconUsers } from '@tabler/icons-react';
+import {
+  IconAlertTriangle,
+  IconFilterOff,
+  IconKey,
+  IconPlus,
+  IconRefresh,
+  IconUsers,
+} from '@tabler/icons-react';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { StatusChip } from '../../../components/chip/StatusChip';
@@ -135,8 +142,7 @@ export const WorkspaceUsersPage = () => {
     const hasRoleChange =
       currentRole === null ||
       selectedRole !== currentRole ||
-      (selectedRole === 'employee' &&
-        selectedEmployeeId !== (workspaceUser.employeeId ?? ''));
+      (selectedRole === 'employee' && selectedEmployeeId !== (workspaceUser.employeeId ?? ''));
 
     return canEditRole ? (
       <div className="access-role-control">
@@ -178,9 +184,7 @@ export const WorkspaceUsersPage = () => {
         <button
           className="button button-secondary"
           disabled={
-            !hasRoleChange ||
-            updatingRole ||
-            (selectedRole === 'employee' && !selectedEmployeeId)
+            !hasRoleChange || updatingRole || (selectedRole === 'employee' && !selectedEmployeeId)
           }
           onClick={() => void onUpdateRole(workspaceUser)}
           type="button"
@@ -206,16 +210,19 @@ export const WorkspaceUsersPage = () => {
       render: (workspaceUser) => workspaceUser.email,
     },
     {
+      // Widest column: it carries two selects and a Save button on one line.
+      // The Employee record column below repeats what the second select shows,
+      // so it gives up the width.
       key: 'role',
       header: 'Role',
-      width: '28%',
+      width: '34%',
       sortValue: (workspaceUser) => primarySystemRole(workspaceUser.roleKeys) ?? '',
       render: renderRoleCell,
     },
     {
       key: 'employee',
       header: 'Employee record',
-      width: '26%',
+      width: '20%',
       sortValue: employeeLabel,
       render: employeeLabel,
     },
@@ -495,7 +502,11 @@ export const WorkspaceUsersPage = () => {
                   title="No users match these filters"
                   description="Clear a filter to see more."
                   action={
-                    <button className="button button-secondary" onClick={view.clearFilters} type="button">
+                    <button
+                      className="button button-secondary"
+                      onClick={view.clearFilters}
+                      type="button"
+                    >
                       Clear filters
                     </button>
                   }
