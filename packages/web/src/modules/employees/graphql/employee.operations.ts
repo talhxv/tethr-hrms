@@ -434,6 +434,16 @@ export const EMPLOYEE_ONBOARDING_TASKS_QUERY = gql`
   }
 `;
 
+export const EMPLOYEE_ONBOARDING_PROGRESS_QUERY = gql`
+  query EmployeeOnboardingProgress($employeeId: ID!) {
+    employeeOnboardingProgress(employeeId: $employeeId) {
+      completed
+      total
+      allComplete
+    }
+  }
+`;
+
 export const UPDATE_EMPLOYEE_HR_RECORD_MUTATION = gql`
   mutation UpdateEmployeeHrRecord($input: UpdateEmployeeHrRecordInput!) {
     updateEmployeeHrRecord(input: $input) {
@@ -479,16 +489,6 @@ export const SEPARATE_EMPLOYEE_MUTATION = gql`
   mutation SeparateEmployee($input: SeparateEmployeeInput!) {
     separateEmployee(input: $input) {
       ${EMPLOYEE_FIELDS}
-    }
-  }
-`;
-
-export const CREATE_WORKSPACE_USER_MUTATION = gql`
-  mutation CreateWorkspaceUser($input: CreateWorkspaceUserInput!) {
-    createWorkspaceUser(input: $input) {
-      id
-      email
-      employeeId
     }
   }
 `;

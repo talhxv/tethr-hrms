@@ -1,11 +1,14 @@
 import {
   toId,
+  type CandidateId,
   type FormId,
   type FormSubmissionId,
   type HiringRequestId,
   type OrganizationId,
 } from '@hrms/shared';
+import type { EntityManager } from 'typeorm';
 
+import type { AuditService } from '../../core/audit/audit.service';
 import { PERMISSIONS } from '../../core/authz/permissions';
 import type { MessageQueueService } from '../../core/queue/message-queue.service';
 import type { PlatformScopeService } from '../../core/tenancy/platform-scope.service';
@@ -66,6 +69,7 @@ const buildService = (options: { request?: HiringRequest | null } = {}) => {
   } as unknown as TenantScopedRepository<CandidateDocument>;
   const cvParses = {
     findOne: jest.fn().mockResolvedValue(null),
+    find: jest.fn().mockResolvedValue([]),
     create: jest.fn((value: unknown) => value),
     save: jest.fn((value: unknown) => Promise.resolve({ id: 'parse-1', ...(value as object) })),
   } as unknown as TenantScopedRepository<CvParse>;
@@ -106,6 +110,7 @@ const buildService = (options: { request?: HiringRequest | null } = {}) => {
       ],
     }),
     markSubmissionProjected: jest.fn().mockResolvedValue(undefined),
+    markSubmissionRejected: jest.fn().mockResolvedValue(undefined),
   } as unknown as FormsService;
   const queue = { add: jest.fn().mockResolvedValue(undefined) } as unknown as MessageQueueService;
   const tenantContext = {
@@ -119,6 +124,58 @@ const buildService = (options: { request?: HiringRequest | null } = {}) => {
     }),
     switchTo: jest.fn((_input: unknown, work: () => Promise<unknown>) => work()),
   } as unknown as PlatformScopeService;
+  const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
+
+  // The projection runs on the transaction manager now; route its entity-scoped
+  // calls back to the repository mocks so tests keep steering one surface.
+  type RepositoryLike = {
+    findOne: jest.Mock;
+    find: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+  };
+  const pickRepository = (entity: unknown): RepositoryLike => {
+    const name = (entity as { name?: string }).name;
+    if (name === 'Application') return applications as unknown as RepositoryLike;
+    if (name === 'Candidate') return candidates as unknown as RepositoryLike;
+    if (name === 'CandidateDocument') return documents as unknown as RepositoryLike;
+    if (name === 'CvParse') return cvParses as unknown as RepositoryLike;
+    throw new Error(`No repository mock registered for ${String(name)}`);
+  };
+  const withRepositoryMarker = <T extends object>(value: T, repository: RepositoryLike): T => {
+    Object.defineProperty(value, '__repository', { value: repository, enumerable: false });
+    return value;
+  };
+  type ManagerMock = {
+    getRepository: jest.Mock;
+    findOne: jest.Mock;
+    find: jest.Mock;
+    create: jest.Mock;
+    save: jest.Mock;
+    transaction: jest.Mock;
+  };
+  const manager: ManagerMock = {
+    getRepository: jest.fn((entity: unknown) => pickRepository(entity)),
+    findOne: jest.fn(async (entity: unknown, options?: unknown) => {
+      const repository = pickRepository(entity);
+      const value = await repository.findOne(options);
+      return value && typeof value === 'object'
+        ? withRepositoryMarker(value as object, repository)
+        : value;
+    }),
+    find: jest.fn((entity: unknown, options?: unknown) => pickRepository(entity).find(options)),
+    create: jest.fn((entity: unknown, data: unknown) =>
+      withRepositoryMarker(pickRepository(entity).create(data) as object, pickRepository(entity)),
+    ),
+    save: jest.fn((value: Record<string, unknown>) => {
+      const repository = (value as { __repository?: RepositoryLike }).__repository;
+      return repository ? repository.save(value) : Promise.resolve(value);
+    }),
+    transaction: jest.fn((callback: (inner: unknown) => Promise<unknown>) => callback(manager)),
+  };
+  const dataSource = {
+    transaction: jest.fn((callback: (inner: unknown) => Promise<unknown>) => callback(manager)),
+  };
 
   return {
     service: new AtsService(
@@ -130,8 +187,10 @@ const buildService = (options: { request?: HiringRequest | null } = {}) => {
       hiringRequests,
       forms,
       queue,
+      dataSource as never,
       tenantContext,
       platformScope,
+      audit,
     ),
     jobPostings,
     candidates,
@@ -141,9 +200,10 @@ const buildService = (options: { request?: HiringRequest | null } = {}) => {
     forms,
     queue,
     platformScope,
+    audit,
+    manager,
   };
 };
-
 describe('AtsService', () => {
   it('projects an application submission into a candidate, application, CV document and parse job', async () => {
     const { service, candidates, applications, documents, cvParses, forms, queue } = buildService();
@@ -166,12 +226,15 @@ describe('AtsService', () => {
     );
     expect(documents.save).toHaveBeenCalled();
     expect(cvParses.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }));
-    expect(queue.add).toHaveBeenCalledWith(
-      'hrms-default',
-      'parse-cv',
-      expect.objectContaining({ candidateDocumentId: 'document-1' }),
+    // No Redis call inside the transaction: the consumer enqueues after the
+    // ledger transaction commits (see reconcilePendingCvParses below).
+    expect(queue.add).not.toHaveBeenCalled();
+    expect(forms.markSubmissionProjected).toHaveBeenCalledWith(
+      SUBMISSION,
+      'application',
+      'application-1',
+      expect.anything(),
     );
-    expect(forms.markSubmissionProjected).toHaveBeenCalledWith(SUBMISSION, 'application', 'application-1');
   });
 
   it('ignores a submission with no posting context', async () => {
@@ -202,6 +265,41 @@ describe('AtsService', () => {
     expect(candidates.save).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'candidate-1', fullName: 'Ada Lovelace' }),
     );
+  });
+
+  it('re-enqueues pending parses with the document id as the dedupe jobId', async () => {
+    const { service, cvParses, queue } = buildService();
+    (cvParses.find as jest.Mock).mockResolvedValue([
+      { id: 'parse-1', candidateDocumentId: 'document-1', status: 'pending' },
+    ]);
+
+    const enqueued = await service.reconcilePendingCvParses();
+
+    expect(enqueued).toBe(1);
+    expect(queue.add).toHaveBeenCalledWith(
+      'hrms-default',
+      'parse-cv',
+      expect.objectContaining({ candidateDocumentId: 'document-1' }),
+      { jobId: 'parse-cv:document-1' },
+    );
+  });
+
+  it('reads a candidate through the caller transaction when supplied', async () => {
+    const { service, candidates, manager } = buildService();
+    // The default connection cannot see a candidate the same transaction just
+    // created; the manager-bound read can.
+    (candidates.findById as jest.Mock).mockResolvedValue(null);
+    (candidates.findOne as jest.Mock).mockResolvedValue({
+      id: 'candidate-1',
+      email: 'ada@example.com',
+    });
+
+    const candidate = await service.getCandidate(
+      toId<CandidateId>('candidate-1'),
+      manager as unknown as EntityManager,
+    );
+
+    expect(candidate.id).toBe('candidate-1');
   });
 
   it('validates application updates', async () => {
@@ -306,5 +404,138 @@ describe('AtsService', () => {
         salaryCurrency: null,
       }),
     );
+  });
+});
+
+describe('AtsService intake integrity', () => {
+  it('rejects a malformed email instead of orphaning the submission', async () => {
+    const { service, forms } = buildService();
+    (forms.getSubmissionForProjection as jest.Mock).mockResolvedValue({
+      submission: {
+        id: SUBMISSION,
+        formId: toId<FormId>('form-1'),
+        answers: { fullName: 'Ada Lovelace', email: 'not-an-email' },
+        files: [],
+        metadata: { refId: POSTING },
+      },
+      fields: [
+        { fieldKey: 'fullName', mapsTo: 'candidate.fullName' },
+        { fieldKey: 'email', mapsTo: 'candidate.email' },
+      ],
+    });
+
+    await expect(service.applyFormSubmission(SUBMISSION)).resolves.toBeNull();
+    expect(forms.markSubmissionRejected).toHaveBeenCalledWith(
+      SUBMISSION,
+      'A valid candidate email is required',
+      expect.anything(),
+    );
+  });
+
+  it('rejects a submission with no posting context instead of leaving it pending', async () => {
+    const { service, forms } = buildService();
+    (forms.getSubmissionForProjection as jest.Mock).mockResolvedValue({
+      submission: {
+        id: SUBMISSION,
+        formId: toId<FormId>('form-1'),
+        answers: { fullName: 'Ada Lovelace', email: 'ada@example.com' },
+        files: [],
+        metadata: {},
+      },
+      fields: [
+        { fieldKey: 'fullName', mapsTo: 'candidate.fullName' },
+        { fieldKey: 'email', mapsTo: 'candidate.email' },
+      ],
+    });
+
+    await expect(service.applyFormSubmission(SUBMISSION)).resolves.toBeNull();
+    expect(forms.markSubmissionRejected).toHaveBeenCalledWith(
+      SUBMISSION,
+      'The submission is missing its posting context',
+      expect.anything(),
+    );
+  });
+
+  it('refuses a second active application for the same posting', async () => {
+    const { service, forms, applications } = buildService();
+    (applications.findOne as jest.Mock)
+      .mockResolvedValueOnce(null) // no application for this submission yet
+      .mockResolvedValueOnce({ id: 'application-existing' }); // …but an active one exists
+
+    await expect(service.applyFormSubmission(SUBMISSION)).resolves.toBeNull();
+    expect(forms.markSubmissionRejected).toHaveBeenCalledWith(
+      SUBMISSION,
+      'You already have an active application for this role',
+      expect.anything(),
+    );
+    expect(applications.save).not.toHaveBeenCalled();
+  });
+
+  it('recovers a duplicate application that races the unique index', async () => {
+    const { service, forms, applications } = buildService();
+    (applications.save as jest.Mock).mockRejectedValueOnce({
+      driverError: { code: '23505' },
+    });
+
+    await expect(service.applyFormSubmission(SUBMISSION)).resolves.toBeNull();
+    expect(forms.markSubmissionRejected).toHaveBeenCalledWith(
+      SUBMISSION,
+      'You already have an active application for this role',
+      expect.anything(),
+    );
+  });
+
+  it('translates a reactivation that loses the unique-index race into a conflict', async () => {
+    const { service, applications } = buildService();
+    (applications.findById as jest.Mock).mockResolvedValue({
+      id: 'application-1',
+      candidateId: 'candidate-1',
+      jobPostingId: 'posting-1',
+      stage: 'screening',
+      outcome: 'rejected',
+    });
+    (applications.findOne as jest.Mock).mockResolvedValue(null);
+    (applications.save as jest.Mock).mockRejectedValueOnce({
+      driverError: {
+        code: '23505',
+        constraint: 'applications_org_candidate_posting_active_unique',
+      },
+    });
+
+    await expect(
+      service.updateApplication({ applicationId: 'application-1', outcome: 'active' }),
+    ).rejects.toThrow('Another active application already exists');
+  });
+});
+
+describe('AtsService posting lifecycle', () => {
+  it('unpublishes a live posting and audits it', async () => {
+    const { service, jobPostings, audit } = buildService();
+
+    const saved = await service.unpublishPosting(POSTING as never);
+
+    expect(jobPostings.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: POSTING, isPublished: false }),
+    );
+    expect(audit.record).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'unpublish', resourceId: POSTING }),
+    );
+    expect(saved.isPublished).toBe(false);
+  });
+
+  it('leaves an already unpublished posting alone', async () => {
+    const { service, jobPostings } = buildService();
+    (jobPostings.findById as jest.Mock).mockResolvedValue({ ...posting, isPublished: false });
+
+    await service.unpublishPosting(POSTING as never);
+
+    expect(jobPostings.save).not.toHaveBeenCalled();
+  });
+
+  it('finds the posting born from a request', async () => {
+    const { service, jobPostings } = buildService();
+    (jobPostings.findOne as jest.Mock).mockResolvedValue(posting);
+
+    await expect(service.getPostingForRequest(REQUEST)).resolves.toBe(posting);
   });
 });

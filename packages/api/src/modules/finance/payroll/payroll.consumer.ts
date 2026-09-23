@@ -27,17 +27,18 @@ export class SalaryRevisedPayrollConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('compensation.revised', (event) => this.handle(event));
+    this.eventBus.register('compensation.revised', CONSUMER_NAME, (event) => this.handle(event));
   }
 
   private async handle(event: DomainEvent): Promise<void> {
     if (event.name !== 'compensation.revised') {
       return;
     }
-    await this.idempotency.runOnce(CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(CONSUMER_NAME, event, (manager) =>
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
         const marked = await this.payrollRuns.markDraftsStaleForSalaryRevision(
           event.payload.effectiveDate as IsoDate,
+          manager,
         );
         if (marked > 0) {
           this.logger.log(`Marked ${marked} draft payroll run(s) stale after a salary revision`);
@@ -61,17 +62,22 @@ export class TaxProfileChangedPayrollConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('compensation.taxProfileChanged', (event) => this.handle(event));
+    this.eventBus.register(
+      'compensation.taxProfileChanged',
+      TAX_PROFILE_CONSUMER_NAME,
+      (event) => this.handle(event),
+    );
   }
 
   private async handle(event: DomainEvent): Promise<void> {
     if (event.name !== 'compensation.taxProfileChanged') {
       return;
     }
-    await this.idempotency.runOnce(TAX_PROFILE_CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(TAX_PROFILE_CONSUMER_NAME, event, (manager) =>
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
         const marked = await this.payrollRuns.markDraftsStaleForTaxProfile(
           event.payload.effectiveDate as IsoDate,
+          manager,
         );
         if (marked > 0) {
           this.logger.log(`Marked ${marked} draft payroll run(s) stale after a tax profile change`);
@@ -96,17 +102,22 @@ export class BenefitsChangedPayrollConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('benefits.enrollmentChanged', (event) => this.handle(event));
+    this.eventBus.register(
+      'benefits.enrollmentChanged',
+      BENEFITS_CONSUMER_NAME,
+      (event) => this.handle(event),
+    );
   }
 
   private async handle(event: DomainEvent): Promise<void> {
     if (event.name !== 'benefits.enrollmentChanged') {
       return;
     }
-    await this.idempotency.runOnce(BENEFITS_CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(BENEFITS_CONSUMER_NAME, event, (manager) =>
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
         const marked = await this.payrollRuns.markDraftsStaleForBenefitsChange(
           event.payload.effectiveDate as IsoDate,
+          manager,
         );
         if (marked > 0) {
           this.logger.log(`Marked ${marked} draft payroll run(s) stale after a benefits change`);

@@ -209,6 +209,19 @@ H_EMPLOYEE -.-> A_EVT3
 9. **The offer's `baseSalary`, `salaryCurrency`, and `probationDays` are never copied onto the created `Employee` record** at hire time.
 10. **The onboarding checklist has no aggregate completion gate.** Each of the 7 tasks is tracked independently; nothing reads "all tasks complete" to flip any other state, and nothing auto-seeds the checklist when an employee is hired (`employee.created` has no consumer — see #4).
 
+**Resolved on 2026-09-15** (the list above is kept as the audit of what the diagram surfaced):
+
+1. Sending an offer writes `stage = 'offer'` (`OfferService.send`); the stage is never rolled back.
+2. A hiring request on hold freezes its linked position; resuming reopens it.
+3. The provider call is still a stub, but its state is now visible: `ApplicationView.cvParse` reports pending/parsed/failed and the pool shows "Awaiting AI parsing".
+4. Both events have consumers: `employee.created` seeds the onboarding checklist and `hiringRequest.updated` notifies Slack (payload carries the title).
+5. Shortlist rejection, failed/no-show interviews and declined/withdrawn offers end the application outcome (withdrawn for a candidate decline, rejected otherwise); a terminal outcome is never overwritten.
+6. Form intake validates email-typed fields; the projection rejects missing-context, missing-posting and invalid-email submissions with reasons instead of leaving them pending.
+7. `unpublishJobPosting` exists, cancelling or filling a request unpublishes its postings, and the request panel has an Unpublish action.
+8. A partial unique index guarantees one active application per candidate and posting; intake refuses a duplicate with a reason (a rejected/withdrawn candidate may re-apply later).
+9. Acceptance copies the probation end date onto the employee and records the offer salary as the hire revision when the client workspace has a matching structure.
+10. `employee.created` seeds the checklist, and `employeeOnboardingProgress` reports completed/total/allComplete.
+
 ### Files this diagram was derived from
 
 ```
@@ -422,6 +435,14 @@ B_ISSUED -.-> NO_REVERSAL
 6. **No amount or date field exists on `markInvoicePaid`.** It's a boolean-style "paid" flip with a server-generated timestamp — there's no way to record a partial payment or a specific settlement date.
 7. **Confirmed absent, not guessed:** per-employee tax profile/withholding election, benefits enrollment, employee expense-claim/reimbursement workflow, and any general-ledger/chart-of-accounts/journal-entry concept. None of these exist anywhere in the codebase — verified by direct search, not inferred from their absence in the parts of the code I happened to read.
 8. **No billing-specific period close or reconciliation step exists** distinct from payroll's own one-way `finalize`. The nearest thing, a client-facing cost breakdown, summarizes what was billed — it does not reconcile invoiced amounts against actual payroll cost.
+
+### Payment-confirmation contract (recorded 2026-09-15)
+
+`markInvoicePaid`, `markRunPaid` and `FinalSettlementService.markPaid` are value-date-aware, at-most-once transitions:
+
+- `settlementDate` must be a real calendar date (the shared `isIsoDate` round-trips the components, so `2026-02-31` is rejected instead of being normalized). An invoice's settlement date may not precede its `issueDate`; future value dates stay legal for advance-billed documents.
+- Each transition takes an organization-scoped pessimistic lock, re-checks its precondition inside it, and commits the state change together with its audit record. The audit carries the supplied settlement date and the effective `paidAt`.
+- **Retries are not replayed.** A retry after an ambiguous successful commit receives a `ConflictError` that reports the recorded facts (`status`, `paidAt`, `paymentReference`), and the caller reconciles from those. This is deliberate: a replay cannot distinguish "the first call committed but its response was lost" from "someone else already paid it".
 
 ### Files this diagram was derived from
 

@@ -55,6 +55,7 @@ export const SettingsGeneralPage = () => {
     { refetchQueries: [{ query: MY_ORGANIZATION_QUERY }] },
   );
   const [notice, setNotice] = useState<string | null>(null);
+  const [colorError, setColorError] = useState<string | null>(null);
   // Hover (and keyboard focus) drive the preview so a color can be tried before
   // it is committed; pending marks the single swatch currently being saved.
   const [hoveredColor, setHoveredColor] = useState<WorkspaceBrandColor | null>(null);
@@ -78,9 +79,17 @@ export const SettingsGeneralPage = () => {
   const onSelectColor = async (color: WorkspaceBrandColor): Promise<void> => {
     if (!canManageOrganization || savingColor || color === brandColor) return;
     setPendingColor(color);
+    setColorError(null);
+    setNotice(null);
     try {
       await updateBrandColor({ variables: { input: { brandColor: color } } });
       setNotice('Workspace color updated.');
+    } catch (cause) {
+      // Without this the rejected promise is swallowed and the administrator
+      // gets no explanation for why the color did not apply.
+      setColorError(
+        cause instanceof Error ? cause.message : 'Could not update the workspace color.',
+      );
     } finally {
       setPendingColor(null);
     }
@@ -91,12 +100,21 @@ export const SettingsGeneralPage = () => {
       <div className="employees-content">
         <header className="page-header">
           <div>
-            <h1 className="page-title">General</h1>
+            <h2 className="page-title">General</h2>
             <p className="page-subtitle">How this workspace looks and identifies itself.</p>
           </div>
         </header>
 
-        {notice ? <p className="form-success">{notice}</p> : null}
+        {colorError ? (
+          <p className="auth-error" role="alert">
+            {colorError}
+          </p>
+        ) : null}
+        {notice ? (
+          <p className="form-success" role="status">
+            {notice}
+          </p>
+        ) : null}
 
         {!canManageOrganization ? (
           <EmptyState
@@ -125,7 +143,7 @@ export const SettingsGeneralPage = () => {
                 </span>
                 <span className="brand-name">{workspaceName}</span>
                 <span aria-hidden="true" className="brand-preview-search">
-                  <IconSearch size={16} stroke={2} />
+                  <IconSearch aria-hidden="true" size={16} stroke={2} />
                   Search
                 </span>
               </div>

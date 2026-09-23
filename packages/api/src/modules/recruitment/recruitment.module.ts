@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from '../../core/auth/auth.module';
 import { AuthzModule } from '../../core/authz/authz.module';
 import { provideTenantScopedRepository } from '../../core/tenancy/tenant-repository.provider';
+import { AssignmentModule } from '../assignment/assignment.module';
 import { EmployeeModule } from '../employee/employee.module';
 import { FormsModule } from '../forms/forms.module';
 import { OrganizationModule } from '../organization/organization.module';
@@ -28,6 +29,7 @@ import {
 } from './ats.tokens';
 import { ApplicationIntakeConsumer } from './consumers/application-intake.consumer';
 import { HiringRequestSubmittedConsumer } from './consumers/hiring-request-submitted.consumer';
+import { HiringRequestUpdatedConsumer } from './consumers/hiring-request-updated.consumer';
 import { Application } from './entities/application.entity';
 import { CandidateDocument } from './entities/candidate-document.entity';
 import { Candidate } from './entities/candidate.entity';
@@ -78,6 +80,7 @@ import { ShortlistService } from './shortlist.service';
     PositionModule,
     EmployeeModule,
     FormsModule,
+    AssignmentModule,
   ],
   providers: [
     RecruitmentService,
@@ -91,6 +94,7 @@ import { ShortlistService } from './shortlist.service';
     OfferService,
     OfferResolver,
     HiringRequestSubmittedConsumer,
+    HiringRequestUpdatedConsumer,
     ApplicationIntakeConsumer,
     provideTenantScopedRepository(HIRING_REQUEST_REPOSITORY, HiringRequest),
     provideTenantScopedRepository(HIRING_REQUEST_UPDATE_REPOSITORY, HiringRequestUpdate),

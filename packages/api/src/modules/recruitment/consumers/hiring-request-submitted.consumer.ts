@@ -24,7 +24,9 @@ export class HiringRequestSubmittedConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('hiringRequest.submitted', (event) => this.handle(event));
+    this.eventBus.register('hiringRequest.submitted', CONSUMER_NAME, (event) =>
+      this.handle(event),
+    );
   }
 
   private async handle(event: DomainEvent): Promise<void> {
@@ -32,6 +34,9 @@ export class HiringRequestSubmittedConsumer implements OnModuleInit {
       return;
     }
     const { hiringRequestId, positionTitle } = event.payload;
+    // Slack is an external side effect: it cannot join the idempotency
+    // transaction and is therefore at-least-once (a retried event may notify
+    // twice). No other writes happen here, so the manager is unused.
     await this.idempotency.runOnce(CONSUMER_NAME, event, () =>
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
         await this.notifications.sendSlack({

@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from '@apollo/client';
 import {
+  formatDate,
+  formatDateTime,
   HIRING_REQUEST_PRIORITIES,
   HIRING_REQUEST_STATUSES,
   type HiringRequestPriority,
@@ -18,6 +20,7 @@ import {
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 
 import { StatusChip } from '../../../components/chip/StatusChip';
+import { useConfirm } from '../../../components/confirm/ConfirmProvider';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import { FieldGroup } from '../../../components/record-panel/FieldGroup';
 import { FieldRow, type RecordFieldOption } from '../../../components/record-panel/FieldRow';
@@ -29,11 +32,16 @@ import {
   type ColumnDefinition,
   type DraftRow,
 } from '../../../components/table/DataTable';
+import { Tooltip } from '../../../components/tooltip/Tooltip';
 import { useListView } from '../../../components/view-bar/useListView';
 import { ViewBar } from '../../../components/view-bar/ViewBar';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
-import { PUBLISH_HIRING_REQUEST_MUTATION } from '../graphql/ats.operations';
+import {
+  POSTING_FOR_REQUEST_QUERY,
+  PUBLISH_HIRING_REQUEST_MUTATION,
+  UNPUBLISH_JOB_POSTING_MUTATION,
+} from '../graphql/ats.operations';
 import { MY_INTERVIEW_OUTCOMES_QUERY } from '../graphql/interview.operations';
 import {
   CLIENT_HIRING_REQUESTS_QUERY,
@@ -54,6 +62,13 @@ type InterviewOutcomeRecord = {
   readonly scheduledAt: string;
   readonly status: 'scheduled' | 'completed' | 'cancelled';
   readonly outcome: 'passed' | 'failed' | 'noShow' | null;
+};
+
+type PostingRecord = {
+  readonly id: string;
+  readonly title: string;
+  readonly isPublished: boolean;
+  readonly applyPath: string | null;
 };
 
 type HiringRequestRecord = {
@@ -180,19 +195,6 @@ type EmployeeOption = {
   readonly roleTitle: string | null;
 };
 
-const formatDate = (value: string): string =>
-  new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short', year: 'numeric' }).format(
-    new Date(value),
-  );
-const formatDateTime = (value: string): string =>
-  new Intl.DateTimeFormat('en', {
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(new Date(value));
-
 const formatSalary = (request: HiringRequestRecord): string => {
   const currency = request.salaryCurrency ?? '';
   if (request.salaryMin === null && request.salaryMax === null) return '—';
@@ -278,6 +280,7 @@ const draftAsRequest = (draft: HiringDraft): HiringRequestRecord => ({
 
 export const HiringRequestsPage = () => {
   const { theme } = useTheme();
+  const confirm = useConfirm();
   const { user } = useAuth();
   const isTethr = user?.portal === 'tethr';
   // Mirrors the hiringRequestWrite permission: clients raise requests for their
@@ -316,6 +319,18 @@ export const HiringRequestsPage = () => {
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = requests.find((request) => request.id === selectedId) ?? null;
+  const [unpublishPosting, { loading: unpublishing }] = useMutation(
+    UNPUBLISH_JOB_POSTING_MUTATION,
+  );
+  // The posting's live state, so an operator sees the truth after a reload —
+  // the publish response only carries the id in-session.
+  const { data: postingData, refetch: refetchPosting } = useQuery<{
+    readonly postingForRequest: PostingRecord | null;
+  }>(POSTING_FOR_REQUEST_QUERY, {
+    skip: !isTethr || !selectedId,
+    variables: { hiringRequestId: selectedId },
+  });
+  const livePosting = postingData?.postingForRequest ?? null;
   const view = useListView({ routeKey: '/hiring' });
   const visibleRequests = useMemo(() => {
     const selectedStatuses = view.filters.status ?? [];
@@ -454,6 +469,8 @@ export const HiringRequestsPage = () => {
   const create = useInlineCreate<HiringDraft, HiringRequestRecord>({
     createEmptyDraft: emptyHiringDraft,
     isComplete: isHiringDraftComplete,
+    requiredFieldNames: ['position-title'],
+    incompleteMessage: 'Enter a role title before submitting the request.',
     createRecord: async (draft) => {
       const result = await createRequest({
         variables: {
@@ -546,8 +563,28 @@ export const HiringRequestsPage = () => {
         },
       });
       setApplyLink(result.data?.publishHiringRequest?.applyPath ?? null);
+      await refetchPosting();
     } catch (caught) {
       setPanelError(caught instanceof Error ? caught.message : 'Could not publish the request');
+    }
+  };
+
+  const onUnpublish = async (): Promise<void> => {
+    if (!livePosting) return;
+    const confirmed = await confirm({
+      title: 'Unpublish this posting?',
+      body: 'The apply link stops working and no further applications will be accepted.',
+      confirmLabel: 'Unpublish',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    setPanelError(null);
+    try {
+      await unpublishPosting({ variables: { postingId: livePosting.id } });
+      setApplyLink(null);
+      await refetchPosting();
+    } catch (caught) {
+      setPanelError(caught instanceof Error ? caught.message : 'Could not unpublish the posting');
     }
   };
 
@@ -555,6 +592,15 @@ export const HiringRequestsPage = () => {
     entry: ClientShortlistEntryRecord,
     decision: 'interested' | 'rejected',
   ): Promise<void> => {
+    if (decision === 'rejected') {
+      const confirmed = await confirm({
+        title: 'Reject this candidate?',
+        body: 'The decision is recorded on the shortlist and shared with the recruiting team.',
+        confirmLabel: 'Reject',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
+    }
     setDecisionError(null);
     try {
       await recordDecision({
@@ -582,7 +628,7 @@ export const HiringRequestsPage = () => {
       <div className="record-list">
         {request.updates.map((update) => (
           <div className="record-item" key={update.id}>
-            <IconMessageCircle size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+            <IconMessageCircle aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
             <div>
               <div className="record-inline-actions">
                 <StatusChip
@@ -631,7 +677,7 @@ export const HiringRequestsPage = () => {
       : null;
 
   return (
-    <main className="list-with-panel">
+    <section className="list-with-panel">
       <section className="hiring-content" aria-labelledby="hiring-title">
         <header className="page-header">
           <div>
@@ -647,7 +693,7 @@ export const HiringRequestsPage = () => {
           {canCreateRequest ? (
             <div className="page-actions">
               <button className="button button-primary" onClick={startCreate} type="button">
-                <IconPlus size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                <IconPlus aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
                 New request
               </button>
             </div>
@@ -694,6 +740,7 @@ export const HiringRequestsPage = () => {
                               <label htmlFor={`shortlist-note-${entry.id}`}>Note (optional)</label>
                               <input
                                 id={`shortlist-note-${entry.id}`}
+                                name={`shortlist-note-${entry.id}`}
                                 value={decisionNotes[entry.id] ?? ''}
                                 onChange={(event) =>
                                   setDecisionNotes((current) => ({
@@ -779,14 +826,16 @@ export const HiringRequestsPage = () => {
         <section className="table-shell" aria-label="Hiring requests">
           <ViewBar
             actions={
-              <button
-                className="icon-button"
-                onClick={() => void refetch()}
-                title="Refresh requests"
-                type="button"
-              >
-                <IconRefresh size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-              </button>
+              <Tooltip label="Refresh requests">
+                <button
+                  aria-label="Refresh requests"
+                  className="icon-button"
+                  onClick={() => void refetch()}
+                  type="button"
+                >
+                  <IconRefresh aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                </button>
+              </Tooltip>
             }
             columns={toViewColumns(columns)}
             count={visibleRequests.length}
@@ -816,7 +865,7 @@ export const HiringRequestsPage = () => {
                   action={
                     canCreateRequest ? (
                       <button className="button button-primary" onClick={startCreate} type="button">
-                        <IconPlus size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                        <IconPlus aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
                         New request
                       </button>
                     ) : null
@@ -872,6 +921,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Role title"
+                name="position-title"
                 onChange={(value) => create.patchDraft({ positionTitle: value })}
                 required
                 type="text"
@@ -879,8 +929,10 @@ export const HiringRequestsPage = () => {
               />
               <FieldRow
                 alwaysEditing
+                inputMode="numeric"
                 label="Headcount"
                 min={1}
+                name="headcount"
                 onChange={(value) => create.patchDraft({ headcount: value })}
                 type="number"
                 value={create.draft.headcount}
@@ -888,6 +940,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Employment type"
+                name="employment-type"
                 onChange={(value) => create.patchDraft({ employmentType: value })}
                 options={EMPLOYMENT_TYPE_OPTIONS}
                 type="select"
@@ -896,6 +949,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Priority"
+                name="priority"
                 onChange={(value) =>
                   create.patchDraft({ priority: value as HiringRequestPriority })
                 }
@@ -912,6 +966,7 @@ export const HiringRequestsPage = () => {
                 <label htmlFor="hiring-description">Role description</label>
                 <textarea
                   id="hiring-description"
+                  name="hiring-description"
                   value={create.draft.jobDescription}
                   onChange={(event) =>
                     create.patchDraft({ jobDescription: event.target.value })
@@ -921,6 +976,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Location"
+                name="location"
                 onChange={(value) => create.patchDraft({ location: value })}
                 type="text"
                 value={create.draft.location}
@@ -928,6 +984,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Preferred start"
+                name="preferred-start"
                 onChange={(value) => create.patchDraft({ preferredStartDate: value })}
                 type="date"
                 value={create.draft.preferredStartDate}
@@ -935,6 +992,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Target fill by"
+                name="target-fill-by"
                 onChange={(value) => create.patchDraft({ targetFillDate: value })}
                 type="date"
                 value={create.draft.targetFillDate}
@@ -942,6 +1000,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Role brief"
+                name="role-brief"
                 onChange={(value) => create.patchDraft({ clientNote: value })}
                 placeholder="What the client needs"
                 type="text"
@@ -951,25 +1010,32 @@ export const HiringRequestsPage = () => {
             <FieldGroup title="Compensation">
               <FieldRow
                 alwaysEditing
+                inputMode="decimal"
                 label="Salary min"
                 min={0}
+                name="salary-min"
                 onChange={(value) => create.patchDraft({ salaryMin: value })}
                 type="number"
                 value={create.draft.salaryMin}
               />
               <FieldRow
                 alwaysEditing
+                inputMode="decimal"
                 label="Salary max"
                 min={0}
+                name="salary-max"
                 onChange={(value) => create.patchDraft({ salaryMax: value })}
                 type="number"
                 value={create.draft.salaryMax}
               />
               <FieldRow
                 alwaysEditing
+                autoComplete="off"
                 label="Currency"
+                name="salary-currency"
                 onChange={(value) => create.patchDraft({ salaryCurrency: value.toUpperCase() })}
                 placeholder="USD"
+                spellCheck={false}
                 type="text"
                 value={create.draft.salaryCurrency}
               />
@@ -978,6 +1044,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Hiring manager"
+                name="hiring-manager"
                 onChange={(value) => create.patchDraft({ hiringManagerEmployeeId: value })}
                 options={employeeOptions}
                 type="select"
@@ -986,6 +1053,7 @@ export const HiringRequestsPage = () => {
               <FieldRow
                 alwaysEditing
                 label="Reports to"
+                name="reports-to"
                 onChange={(value) => create.patchDraft({ reportsToEmployeeId: value })}
                 options={employeeOptions}
                 type="select"
@@ -1000,7 +1068,7 @@ export const HiringRequestsPage = () => {
             <div className="record-panel-actions">
               <button
                 className="button button-primary"
-                disabled={!create.canCreate || create.isSaving}
+                disabled={create.isSaving}
                 onClick={() => void create.commit()}
                 type="button"
               >
@@ -1022,7 +1090,7 @@ export const HiringRequestsPage = () => {
                   </div>
                   <h2 className="panel-title">{selected.positionTitle}</h2>
                 </div>
-                <IconClipboardCheck size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
+                <IconClipboardCheck aria-hidden="true" size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
               </div>
               <div className="record-inline-actions">
                 <StatusChip color={statusColors[selected.status]} label={statusLabels[selected.status]} />
@@ -1043,22 +1111,42 @@ export const HiringRequestsPage = () => {
                 </p>
               ) : null}
               {renderUpdateTrail(selected)}
-              {selected.status === 'open' ? (
+              {selected.status === 'open' || selected.status === 'onHold' ? (
                 <section className="request-note">
                   <div className="field-label">Public application</div>
-                  {applyLink ? (
+                  {livePosting?.isPublished ? (
                     <>
-                      <p>
-                        Live link:{' '}
-                        <code>{`${window.location.origin}${applyLink}`}</code>
-                      </p>
-                      <button
-                        className="button button-secondary"
-                        onClick={() => void navigator.clipboard.writeText(`${window.location.origin}${applyLink}`)}
-                        type="button"
-                      >
-                        Copy link
-                      </button>
+                      <p>This posting is live and accepting applications.</p>
+                      {/* The link is re-minted on read, so it survives a reload. */}
+                      {livePosting.applyPath ?? applyLink ? (
+                        <p>
+                          Live link:{' '}
+                          <code>{`${window.location.origin}${livePosting.applyPath ?? applyLink}`}</code>
+                        </p>
+                      ) : null}
+                      <div className="record-panel-actions">
+                        {livePosting.applyPath ?? applyLink ? (
+                          <button
+                            className="button button-secondary"
+                            onClick={() =>
+                              void navigator.clipboard.writeText(
+                                `${window.location.origin}${livePosting.applyPath ?? applyLink}`,
+                              )
+                            }
+                            type="button"
+                          >
+                            Copy link
+                          </button>
+                        ) : null}
+                        <button
+                          className="button button-secondary"
+                          disabled={unpublishing}
+                          onClick={() => void onUnpublish()}
+                          type="button"
+                        >
+                          {unpublishing ? 'Unpublishing…' : 'Unpublish'}
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <button
@@ -1077,6 +1165,7 @@ export const HiringRequestsPage = () => {
                   <label htmlFor="request-status">Status</label>
                   <select
                     id="request-status"
+                    name="request-status"
                     value={updateForm.status}
                     onChange={(event) =>
                       setUpdateForm((current) => ({
@@ -1096,6 +1185,7 @@ export const HiringRequestsPage = () => {
                   <label htmlFor="tethr-note">Client update</label>
                   <textarea
                     id="tethr-note"
+                    name="tethr-note"
                     value={updateForm.tethrNote}
                     onChange={(event) =>
                       setUpdateForm((current) => ({ ...current, tethrNote: event.target.value }))
@@ -1104,7 +1194,7 @@ export const HiringRequestsPage = () => {
                 </div>
                 {renderBrief(selected)}
                 <button className="button button-primary" disabled={updating} type="submit">
-                  {updating ? 'Saving...' : 'Save update'}
+                  {updating ? 'Saving…' : 'Save update'}
                 </button>
               </form>
             </section>
@@ -1115,7 +1205,7 @@ export const HiringRequestsPage = () => {
                   <div className="panel-kicker">Recruitment updates</div>
                   <h2 className="panel-title">{selected.positionTitle}</h2>
                 </div>
-                <IconBriefcase size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
+                <IconBriefcase aria-hidden="true" size={theme.icon.size.lg} stroke={theme.icon.stroke.lg} />
               </div>
               <div className="record-inline-actions">
                 <StatusChip color={statusColors[selected.status]} label={statusLabels[selected.status]} />
@@ -1126,6 +1216,6 @@ export const HiringRequestsPage = () => {
           )
         ) : null}
       </SidePanel>
-    </main>
+    </section>
   );
 };

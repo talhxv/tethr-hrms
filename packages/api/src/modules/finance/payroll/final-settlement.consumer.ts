@@ -24,19 +24,20 @@ export class EmployeeTerminatedFinalSettlementConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('employee.terminated', (event) => this.handle(event));
+    this.eventBus.register('employee.terminated', CONSUMER_NAME, (event) => this.handle(event));
   }
 
   private async handle(event: DomainEvent): Promise<void> {
     if (event.name !== 'employee.terminated') {
       return;
     }
-    await this.idempotency.runOnce(CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(CONSUMER_NAME, event, (manager) =>
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
         try {
           const settlement = await this.finalSettlements.compute(
             event.payload.employeeId,
             event.payload.effectiveDate as IsoDate,
+            manager,
           );
           this.logger.log(
             `Computed final settlement for ${event.payload.employeeId}: ${settlement.payableTotal} ${settlement.currency}`,

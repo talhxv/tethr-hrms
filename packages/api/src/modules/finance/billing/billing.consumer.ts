@@ -27,17 +27,20 @@ export class PayrollFinalizedBillingConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('payroll.finalized', (event) => this.handle(event));
+    this.eventBus.register('payroll.finalized', CONSUMER_NAME, (event) => this.handle(event));
   }
 
   private async handle(event: DomainEvent): Promise<void> {
     if (event.name !== 'payroll.finalized') {
       return;
     }
-    await this.idempotency.runOnce(CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(CONSUMER_NAME, event, (manager) =>
       // The relay runs outside any request — re-establish the tenant first.
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
-        const drafted = await this.invoiceService.draftInvoicesFromRun(event.payload.payrollRunId);
+        const drafted = await this.invoiceService.draftInvoicesFromRun(
+          event.payload.payrollRunId,
+          manager,
+        );
         if (drafted.length > 0) {
           this.logger.log(
             `Drafted ${drafted.length} services invoice(s) from payroll run ${event.payload.payrollRunId}`,
@@ -64,18 +67,23 @@ export class EmployeeTerminatedBillingConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('employee.terminated', (event) => this.handle(event));
+    this.eventBus.register(
+      'employee.terminated',
+      TERMINATION_CONSUMER_NAME,
+      (event) => this.handle(event),
+    );
   }
 
   private async handle(event: DomainEvent): Promise<void> {
     if (event.name !== 'employee.terminated') {
       return;
     }
-    await this.idempotency.runOnce(TERMINATION_CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(TERMINATION_CONSUMER_NAME, event, (manager) =>
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
         await this.invoiceService.closeMembershipAt(
           event.payload.employeeId,
           event.payload.effectiveDate as IsoDate,
+          manager,
         );
         this.logger.log(
           `Closed billing membership for terminated employee ${event.payload.employeeId}`,

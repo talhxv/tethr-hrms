@@ -26,7 +26,7 @@ export class EmployeeLifecycleConsumer implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    this.eventBus.register('employee.terminated', (event) => this.handle(event));
+    this.eventBus.register('employee.terminated', CONSUMER_NAME, (event) => this.handle(event));
   }
 
   private async handle(event: DomainEvent): Promise<void> {
@@ -34,11 +34,11 @@ export class EmployeeLifecycleConsumer implements OnModuleInit {
       return;
     }
     const { employeeId } = event.payload;
-    await this.idempotency.runOnce(CONSUMER_NAME, event, () =>
+    await this.idempotency.runOnce(CONSUMER_NAME, event, (manager) =>
       // The relay runs outside any request, so establish the tenant from the
       // event before touching tenant-scoped data.
       this.tenantContext.run({ organizationId: event.tenantId, userId: null }, async () => {
-        const disabled = await this.authService.disableUsersForEmployee(employeeId);
+        const disabled = await this.authService.disableUsersForEmployee(employeeId, manager);
         this.logger.log(`Disabled ${disabled} login(s) for a terminated employee`);
       }),
     );
