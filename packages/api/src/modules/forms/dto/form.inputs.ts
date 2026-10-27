@@ -142,7 +142,7 @@ export class SubmitFormFileInput {
 export class SubmitFormInput {
   @Field()
   @IsString()
-  @MinLength(10)
+  @MinLength(1)
   @MaxLength(4000)
   token!: string;
 
@@ -166,7 +166,7 @@ export class SubmitFormInput {
 export class PrepareFormUploadInput {
   @Field()
   @IsString()
-  @MinLength(10)
+  @MinLength(1)
   @MaxLength(4000)
   token!: string;
 
