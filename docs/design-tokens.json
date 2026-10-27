@@ -1,0 +1,1359 @@
+{
+  "$schema": "https://tethr.internal/design-tokens/v1",
+  "generatedBy": "scripts/emit-design-tokens.js",
+  "source": "@hrms/ui (packages/ui/src/theme)",
+  "warning": "Generated file. Edit packages/ui/src/theme, then re-run the emitter. Do not hand-edit, and do not edit the Figma kit and expect it to survive.",
+  "tokenCount": 147,
+  "modeVaryingCount": 51,
+  "collections": [
+    {
+      "name": "HRMS Theme",
+      "modes": [
+        "Light",
+        "Dark"
+      ],
+      "note": "Every colour token. Both modes always defined — a token present in one mode and absent in the other is a visible gap, not a bug found later on a dark screen.",
+      "variables": [
+        {
+          "name": "box/shadow/light",
+          "cssVariable": "--hrms-box-shadow-light",
+          "type": "STRING",
+          "values": {
+            "Light": "0 2px 4px rgba(0, 0, 0, 0.04), 0 0 4px rgba(0, 0, 0, 0.08)",
+            "Dark": "0 2px 4px rgba(0, 0, 0, 0.2), 0 0 4px rgba(0, 0, 0, 0.3)"
+          },
+          "varies": true
+        },
+        {
+          "name": "box/shadow/strong",
+          "cssVariable": "--hrms-box-shadow-strong",
+          "type": "STRING",
+          "values": {
+            "Light": "2px 4px 16px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)",
+            "Dark": "2px 4px 16px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3)"
+          },
+          "varies": true
+        },
+        {
+          "name": "box/shadow/super/heavy",
+          "cssVariable": "--hrms-box-shadow-super-heavy",
+          "type": "STRING",
+          "values": {
+            "Light": "0 8px 16px rgba(0, 0, 0, 0.16), 0 64px 64px rgba(0, 0, 0, 0.12), 0 56px 56px rgba(0, 0, 0, 0.08)",
+            "Dark": "0 8px 16px rgba(0, 0, 0, 0.5), 0 64px 64px rgba(0, 0, 0, 0.4), 0 56px 56px rgba(0, 0, 0, 0.3)"
+          },
+          "varies": true
+        },
+        {
+          "name": "box/shadow/underline",
+          "cssVariable": "--hrms-box-shadow-underline",
+          "type": "STRING",
+          "values": {
+            "Light": "0 1px 0 rgba(0, 0, 0, 0.2)",
+            "Dark": "0 1px 0 rgba(255, 255, 255, 0.2)"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent1",
+          "cssVariable": "--hrms-color-accent-accent1",
+          "type": "COLOR",
+          "values": {
+            "Light": "#fdfdfe",
+            "Dark": "#11131f"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent10",
+          "cssVariable": "--hrms-color-accent-accent10",
+          "type": "COLOR",
+          "values": {
+            "Light": "#3358d4",
+            "Dark": "#5472e4"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent11",
+          "cssVariable": "--hrms-color-accent-accent11",
+          "type": "COLOR",
+          "values": {
+            "Light": "#3a5bc7",
+            "Dark": "#9eb1ff"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent12",
+          "cssVariable": "--hrms-color-accent-accent12",
+          "type": "COLOR",
+          "values": {
+            "Light": "#1f2d5c",
+            "Dark": "#d6e1ff"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent2",
+          "cssVariable": "--hrms-color-accent-accent2",
+          "type": "COLOR",
+          "values": {
+            "Light": "#f7f9ff",
+            "Dark": "#141726"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent3",
+          "cssVariable": "--hrms-color-accent-accent3",
+          "type": "COLOR",
+          "values": {
+            "Light": "#edf2fe",
+            "Dark": "#182449"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent4",
+          "cssVariable": "--hrms-color-accent-accent4",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e1e9ff",
+            "Dark": "#1d2e62"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent5",
+          "cssVariable": "--hrms-color-accent-accent5",
+          "type": "COLOR",
+          "values": {
+            "Light": "#d2deff",
+            "Dark": "#243974"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent6",
+          "cssVariable": "--hrms-color-accent-accent6",
+          "type": "COLOR",
+          "values": {
+            "Light": "#c1d0ff",
+            "Dark": "#2f4385"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent7",
+          "cssVariable": "--hrms-color-accent-accent7",
+          "type": "COLOR",
+          "values": {
+            "Light": "#abbdf9",
+            "Dark": "#3a4f97"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent8",
+          "cssVariable": "--hrms-color-accent-accent8",
+          "type": "COLOR",
+          "values": {
+            "Light": "#8da4ef",
+            "Dark": "#435db1"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/accent/accent9",
+          "cssVariable": "--hrms-color-accent-accent9",
+          "type": "COLOR",
+          "values": {
+            "Light": "#3e63dd",
+            "Dark": "#3e63dd"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/background/danger",
+          "cssVariable": "--hrms-color-background-danger",
+          "type": "COLOR",
+          "values": {
+            "Light": "#fff0ee",
+            "Dark": "#3b1219"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/inverted/primary",
+          "cssVariable": "--hrms-color-background-inverted-primary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#333333",
+            "Dark": "#ededed"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/inverted/secondary",
+          "cssVariable": "--hrms-color-background-inverted-secondary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#666666",
+            "Dark": "#a0a0a0"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/overlay/primary",
+          "cssVariable": "--hrms-color-background-overlay-primary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#00000080",
+            "Dark": "#000000b3"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/primary",
+          "cssVariable": "--hrms-color-background-primary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ffffff",
+            "Dark": "#161616"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/quaternary",
+          "cssVariable": "--hrms-color-background-quaternary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e8e8e8",
+            "Dark": "#2e2e2e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/secondary",
+          "cssVariable": "--hrms-color-background-secondary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#fcfcfc",
+            "Dark": "#1c1c1c"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/tertiary",
+          "cssVariable": "--hrms-color-background-tertiary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#efefef",
+            "Dark": "#282828"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/transparent/light",
+          "cssVariable": "--hrms-color-background-transparent-light",
+          "type": "COLOR",
+          "values": {
+            "Light": "#0000000a",
+            "Dark": "#ffffff0a"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/transparent/medium",
+          "cssVariable": "--hrms-color-background-transparent-medium",
+          "type": "COLOR",
+          "values": {
+            "Light": "#00000014",
+            "Dark": "#ffffff14"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/background/transparent/strong",
+          "cssVariable": "--hrms-color-background-transparent-strong",
+          "type": "COLOR",
+          "values": {
+            "Light": "#00000029",
+            "Dark": "#ffffff29"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/border/blue",
+          "cssVariable": "--hrms-color-border-blue",
+          "type": "COLOR",
+          "values": {
+            "Light": "#8da4ef",
+            "Dark": "#435db1"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/border/danger",
+          "cssVariable": "--hrms-color-border-danger",
+          "type": "COLOR",
+          "values": {
+            "Light": "#f3b9b0",
+            "Dark": "#5e2a2a"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/border/inverted",
+          "cssVariable": "--hrms-color-border-inverted",
+          "type": "COLOR",
+          "values": {
+            "Light": "#333333",
+            "Dark": "#ededed"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/border/light",
+          "cssVariable": "--hrms-color-border-light",
+          "type": "COLOR",
+          "values": {
+            "Light": "#efefef",
+            "Dark": "#282828"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/border/medium",
+          "cssVariable": "--hrms-color-border-medium",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e8e8e8",
+            "Dark": "#2e2e2e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/border/strong",
+          "cssVariable": "--hrms-color-border-strong",
+          "type": "COLOR",
+          "values": {
+            "Light": "#d6d6d6",
+            "Dark": "#3e3e3e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray1",
+          "cssVariable": "--hrms-color-gray-scale-gray1",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ffffff",
+            "Dark": "#161616"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray10",
+          "cssVariable": "--hrms-color-gray-scale-gray10",
+          "type": "COLOR",
+          "values": {
+            "Light": "#8a8a8a",
+            "Dark": "#7e7e7e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray11",
+          "cssVariable": "--hrms-color-gray-scale-gray11",
+          "type": "COLOR",
+          "values": {
+            "Light": "#666666",
+            "Dark": "#a0a0a0"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray12",
+          "cssVariable": "--hrms-color-gray-scale-gray12",
+          "type": "COLOR",
+          "values": {
+            "Light": "#333333",
+            "Dark": "#ededed"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray2",
+          "cssVariable": "--hrms-color-gray-scale-gray2",
+          "type": "COLOR",
+          "values": {
+            "Light": "#fcfcfc",
+            "Dark": "#1c1c1c"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray3",
+          "cssVariable": "--hrms-color-gray-scale-gray3",
+          "type": "COLOR",
+          "values": {
+            "Light": "#f5f5f5",
+            "Dark": "#232323"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray4",
+          "cssVariable": "--hrms-color-gray-scale-gray4",
+          "type": "COLOR",
+          "values": {
+            "Light": "#efefef",
+            "Dark": "#282828"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray5",
+          "cssVariable": "--hrms-color-gray-scale-gray5",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e8e8e8",
+            "Dark": "#2e2e2e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray6",
+          "cssVariable": "--hrms-color-gray-scale-gray6",
+          "type": "COLOR",
+          "values": {
+            "Light": "#d6d6d6",
+            "Dark": "#343434"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray7",
+          "cssVariable": "--hrms-color-gray-scale-gray7",
+          "type": "COLOR",
+          "values": {
+            "Light": "#c0c0c0",
+            "Dark": "#3e3e3e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray8",
+          "cssVariable": "--hrms-color-gray-scale-gray8",
+          "type": "COLOR",
+          "values": {
+            "Light": "#a3a3a3",
+            "Dark": "#505050"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/gray/scale/gray9",
+          "cssVariable": "--hrms-color-gray-scale-gray9",
+          "type": "COLOR",
+          "values": {
+            "Light": "#999999",
+            "Dark": "#707070"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/tag/amber",
+          "cssVariable": "--hrms-color-tag-amber",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ffc53d",
+            "Dark": "#ffc53d"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/blue",
+          "cssVariable": "--hrms-color-tag-blue",
+          "type": "COLOR",
+          "values": {
+            "Light": "#0090ff",
+            "Dark": "#0090ff"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/bronze",
+          "cssVariable": "--hrms-color-tag-bronze",
+          "type": "COLOR",
+          "values": {
+            "Light": "#a18072",
+            "Dark": "#a18072"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/brown",
+          "cssVariable": "--hrms-color-tag-brown",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ad7f58",
+            "Dark": "#ad7f58"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/crimson",
+          "cssVariable": "--hrms-color-tag-crimson",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e93d82",
+            "Dark": "#e93d82"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/cyan",
+          "cssVariable": "--hrms-color-tag-cyan",
+          "type": "COLOR",
+          "values": {
+            "Light": "#00a2c7",
+            "Dark": "#00a2c7"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/gold",
+          "cssVariable": "--hrms-color-tag-gold",
+          "type": "COLOR",
+          "values": {
+            "Light": "#978365",
+            "Dark": "#978365"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/grass",
+          "cssVariable": "--hrms-color-tag-grass",
+          "type": "COLOR",
+          "values": {
+            "Light": "#46a758",
+            "Dark": "#46a758"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/gray",
+          "cssVariable": "--hrms-color-tag-gray",
+          "type": "COLOR",
+          "values": {
+            "Light": "#8d8d8d",
+            "Dark": "#8d8d8d"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/green",
+          "cssVariable": "--hrms-color-tag-green",
+          "type": "COLOR",
+          "values": {
+            "Light": "#30a46c",
+            "Dark": "#30a46c"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/iris",
+          "cssVariable": "--hrms-color-tag-iris",
+          "type": "COLOR",
+          "values": {
+            "Light": "#5b5bd6",
+            "Dark": "#5b5bd6"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/jade",
+          "cssVariable": "--hrms-color-tag-jade",
+          "type": "COLOR",
+          "values": {
+            "Light": "#29a383",
+            "Dark": "#29a383"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/lime",
+          "cssVariable": "--hrms-color-tag-lime",
+          "type": "COLOR",
+          "values": {
+            "Light": "#bdee63",
+            "Dark": "#bdee63"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/mint",
+          "cssVariable": "--hrms-color-tag-mint",
+          "type": "COLOR",
+          "values": {
+            "Light": "#86ead4",
+            "Dark": "#86ead4"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/orange",
+          "cssVariable": "--hrms-color-tag-orange",
+          "type": "COLOR",
+          "values": {
+            "Light": "#f76b15",
+            "Dark": "#f76b15"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/pink",
+          "cssVariable": "--hrms-color-tag-pink",
+          "type": "COLOR",
+          "values": {
+            "Light": "#d6409f",
+            "Dark": "#d6409f"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/plum",
+          "cssVariable": "--hrms-color-tag-plum",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ab4aba",
+            "Dark": "#ab4aba"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/purple",
+          "cssVariable": "--hrms-color-tag-purple",
+          "type": "COLOR",
+          "values": {
+            "Light": "#8e4ec6",
+            "Dark": "#8e4ec6"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/red",
+          "cssVariable": "--hrms-color-tag-red",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e5484d",
+            "Dark": "#e5484d"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/ruby",
+          "cssVariable": "--hrms-color-tag-ruby",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e54666",
+            "Dark": "#e54666"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/sky",
+          "cssVariable": "--hrms-color-tag-sky",
+          "type": "COLOR",
+          "values": {
+            "Light": "#7ce2fe",
+            "Dark": "#7ce2fe"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/tomato",
+          "cssVariable": "--hrms-color-tag-tomato",
+          "type": "COLOR",
+          "values": {
+            "Light": "#e54d2e",
+            "Dark": "#e54d2e"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/turquoise",
+          "cssVariable": "--hrms-color-tag-turquoise",
+          "type": "COLOR",
+          "values": {
+            "Light": "#00bcc4",
+            "Dark": "#00bcc4"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/violet",
+          "cssVariable": "--hrms-color-tag-violet",
+          "type": "COLOR",
+          "values": {
+            "Light": "#6e56cf",
+            "Dark": "#6e56cf"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/tag/yellow",
+          "cssVariable": "--hrms-color-tag-yellow",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ffe629",
+            "Dark": "#ffe629"
+          },
+          "varies": false
+        },
+        {
+          "name": "color/text/danger",
+          "cssVariable": "--hrms-color-text-danger",
+          "type": "COLOR",
+          "values": {
+            "Light": "#d4351c",
+            "Dark": "#ff6369"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/text/extra/light",
+          "cssVariable": "--hrms-color-text-extra-light",
+          "type": "COLOR",
+          "values": {
+            "Light": "#c0c0c0",
+            "Dark": "#3e3e3e"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/text/inverted",
+          "cssVariable": "--hrms-color-text-inverted",
+          "type": "COLOR",
+          "values": {
+            "Light": "#ffffff",
+            "Dark": "#161616"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/text/light",
+          "cssVariable": "--hrms-color-text-light",
+          "type": "COLOR",
+          "values": {
+            "Light": "#a3a3a3",
+            "Dark": "#505050"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/text/primary",
+          "cssVariable": "--hrms-color-text-primary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#333333",
+            "Dark": "#ededed"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/text/secondary",
+          "cssVariable": "--hrms-color-text-secondary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#666666",
+            "Dark": "#a0a0a0"
+          },
+          "varies": true
+        },
+        {
+          "name": "color/text/tertiary",
+          "cssVariable": "--hrms-color-text-tertiary",
+          "type": "COLOR",
+          "values": {
+            "Light": "#999999",
+            "Dark": "#707070"
+          },
+          "varies": true
+        }
+      ]
+    },
+    {
+      "name": "HRMS Primitives",
+      "modes": [
+        "Value"
+      ],
+      "note": "Mode-agnostic tokens: spacing, radii, typography, layout, motion, z-index. Identical in light and dark by construction.",
+      "variables": [
+        {
+          "name": "animation/clickable/background/transition",
+          "cssVariable": "--hrms-animation-clickable-background-transition",
+          "type": "STRING",
+          "values": {
+            "Value": "background 0.1s ease"
+          }
+        },
+        {
+          "name": "animation/delay/tooltip",
+          "cssVariable": "--hrms-animation-delay-tooltip",
+          "type": "STRING",
+          "values": {
+            "Value": "350ms"
+          }
+        },
+        {
+          "name": "animation/duration/fast",
+          "cssVariable": "--hrms-animation-duration-fast",
+          "type": "STRING",
+          "values": {
+            "Value": "0.15s"
+          }
+        },
+        {
+          "name": "animation/duration/gentle",
+          "cssVariable": "--hrms-animation-duration-gentle",
+          "type": "STRING",
+          "values": {
+            "Value": "0.24s"
+          }
+        },
+        {
+          "name": "animation/duration/instant",
+          "cssVariable": "--hrms-animation-duration-instant",
+          "type": "STRING",
+          "values": {
+            "Value": "0.075s"
+          }
+        },
+        {
+          "name": "animation/duration/normal",
+          "cssVariable": "--hrms-animation-duration-normal",
+          "type": "STRING",
+          "values": {
+            "Value": "0.3s"
+          }
+        },
+        {
+          "name": "animation/duration/slow",
+          "cssVariable": "--hrms-animation-duration-slow",
+          "type": "STRING",
+          "values": {
+            "Value": "1.5s"
+          }
+        },
+        {
+          "name": "animation/easing/drawer",
+          "cssVariable": "--hrms-animation-easing-drawer",
+          "type": "STRING",
+          "values": {
+            "Value": "cubic-bezier(0.32, 0.72, 0, 1)"
+          }
+        },
+        {
+          "name": "animation/easing/in/out",
+          "cssVariable": "--hrms-animation-easing-in-out",
+          "type": "STRING",
+          "values": {
+            "Value": "cubic-bezier(0.77, 0, 0.175, 1)"
+          }
+        },
+        {
+          "name": "animation/easing/out",
+          "cssVariable": "--hrms-animation-easing-out",
+          "type": "STRING",
+          "values": {
+            "Value": "cubic-bezier(0.23, 1, 0.32, 1)"
+          }
+        },
+        {
+          "name": "animation/easing/soft",
+          "cssVariable": "--hrms-animation-easing-soft",
+          "type": "STRING",
+          "values": {
+            "Value": "cubic-bezier(0.4, 0, 0.2, 1)"
+          }
+        },
+        {
+          "name": "animation/stagger",
+          "cssVariable": "--hrms-animation-stagger",
+          "type": "STRING",
+          "values": {
+            "Value": "40ms"
+          }
+        },
+        {
+          "name": "between/siblings/gap",
+          "cssVariable": "--hrms-between-siblings-gap",
+          "type": "FLOAT",
+          "values": {
+            "Value": 2
+          }
+        },
+        {
+          "name": "font/family/code",
+          "cssVariable": "--hrms-font-family-code",
+          "type": "STRING",
+          "values": {
+            "Value": "'DM Mono', 'SFMono-Regular', monospace"
+          }
+        },
+        {
+          "name": "font/family/ui",
+          "cssVariable": "--hrms-font-family-ui",
+          "type": "STRING",
+          "values": {
+            "Value": "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+          }
+        },
+        {
+          "name": "font/size/lg",
+          "cssVariable": "--hrms-font-size-lg",
+          "type": "STRING",
+          "values": {
+            "Value": "1.23rem"
+          }
+        },
+        {
+          "name": "font/size/md",
+          "cssVariable": "--hrms-font-size-md",
+          "type": "STRING",
+          "values": {
+            "Value": "1rem"
+          }
+        },
+        {
+          "name": "font/size/sm",
+          "cssVariable": "--hrms-font-size-sm",
+          "type": "STRING",
+          "values": {
+            "Value": "0.92rem"
+          }
+        },
+        {
+          "name": "font/size/xl",
+          "cssVariable": "--hrms-font-size-xl",
+          "type": "STRING",
+          "values": {
+            "Value": "1.54rem"
+          }
+        },
+        {
+          "name": "font/size/xs",
+          "cssVariable": "--hrms-font-size-xs",
+          "type": "STRING",
+          "values": {
+            "Value": "0.85rem"
+          }
+        },
+        {
+          "name": "font/size/xxl",
+          "cssVariable": "--hrms-font-size-xxl",
+          "type": "STRING",
+          "values": {
+            "Value": "1.85rem"
+          }
+        },
+        {
+          "name": "font/size/xxs",
+          "cssVariable": "--hrms-font-size-xxs",
+          "type": "STRING",
+          "values": {
+            "Value": "0.625rem"
+          }
+        },
+        {
+          "name": "font/weight/medium",
+          "cssVariable": "--hrms-font-weight-medium",
+          "type": "FLOAT",
+          "values": {
+            "Value": 500
+          }
+        },
+        {
+          "name": "font/weight/regular",
+          "cssVariable": "--hrms-font-weight-regular",
+          "type": "FLOAT",
+          "values": {
+            "Value": 400
+          }
+        },
+        {
+          "name": "font/weight/semi/bold",
+          "cssVariable": "--hrms-font-weight-semi-bold",
+          "type": "FLOAT",
+          "values": {
+            "Value": 600
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/border/width",
+          "cssVariable": "--hrms-layout-dashboard-glyph-border-width",
+          "type": "FLOAT",
+          "values": {
+            "Value": 1.5
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/half",
+          "cssVariable": "--hrms-layout-dashboard-glyph-half",
+          "type": "FLOAT",
+          "values": {
+            "Value": 9
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/height",
+          "cssVariable": "--hrms-layout-dashboard-glyph-height",
+          "type": "FLOAT",
+          "values": {
+            "Value": 14
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/radius",
+          "cssVariable": "--hrms-layout-dashboard-glyph-radius",
+          "type": "FLOAT",
+          "values": {
+            "Value": 3
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/tall",
+          "cssVariable": "--hrms-layout-dashboard-glyph-tall",
+          "type": "FLOAT",
+          "values": {
+            "Value": 26
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/wide",
+          "cssVariable": "--hrms-layout-dashboard-glyph-wide",
+          "type": "FLOAT",
+          "values": {
+            "Value": 34
+          }
+        },
+        {
+          "name": "layout/dashboard/glyph/width",
+          "cssVariable": "--hrms-layout-dashboard-glyph-width",
+          "type": "FLOAT",
+          "values": {
+            "Value": 18
+          }
+        },
+        {
+          "name": "layout/dashboard/ordinal/label/width",
+          "cssVariable": "--hrms-layout-dashboard-ordinal-label-width",
+          "type": "FLOAT",
+          "values": {
+            "Value": 84
+          }
+        },
+        {
+          "name": "layout/dashboard/ordinal/track/height",
+          "cssVariable": "--hrms-layout-dashboard-ordinal-track-height",
+          "type": "FLOAT",
+          "values": {
+            "Value": 10
+          }
+        },
+        {
+          "name": "layout/dashboard/row/unit",
+          "cssVariable": "--hrms-layout-dashboard-row-unit",
+          "type": "FLOAT",
+          "values": {
+            "Value": 36
+          }
+        },
+        {
+          "name": "layout/dashboard/trend/plot/compact/height",
+          "cssVariable": "--hrms-layout-dashboard-trend-plot-compact-height",
+          "type": "FLOAT",
+          "values": {
+            "Value": 72
+          }
+        },
+        {
+          "name": "layout/dashboard/trend/plot/height",
+          "cssVariable": "--hrms-layout-dashboard-trend-plot-height",
+          "type": "FLOAT",
+          "values": {
+            "Value": 120
+          }
+        },
+        {
+          "name": "layout/modal/width/lg",
+          "cssVariable": "--hrms-layout-modal-width-lg",
+          "type": "STRING",
+          "values": {
+            "Value": "53%"
+          }
+        },
+        {
+          "name": "layout/modal/width/md",
+          "cssVariable": "--hrms-layout-modal-width-md",
+          "type": "FLOAT",
+          "values": {
+            "Value": 400
+          }
+        },
+        {
+          "name": "layout/modal/width/sm",
+          "cssVariable": "--hrms-layout-modal-width-sm",
+          "type": "FLOAT",
+          "values": {
+            "Value": 300
+          }
+        },
+        {
+          "name": "layout/modal/width/xl",
+          "cssVariable": "--hrms-layout-modal-width-xl",
+          "type": "FLOAT",
+          "values": {
+            "Value": 1200
+          }
+        },
+        {
+          "name": "layout/side/panel/width",
+          "cssVariable": "--hrms-layout-side-panel-width",
+          "type": "FLOAT",
+          "values": {
+            "Value": 500
+          }
+        },
+        {
+          "name": "layout/sidebar/width",
+          "cssVariable": "--hrms-layout-sidebar-width",
+          "type": "FLOAT",
+          "values": {
+            "Value": 248
+          }
+        },
+        {
+          "name": "layout/table/checkbox/column/width",
+          "cssVariable": "--hrms-layout-table-checkbox-column-width",
+          "type": "FLOAT",
+          "values": {
+            "Value": 32
+          }
+        },
+        {
+          "name": "layout/table/font/size",
+          "cssVariable": "--hrms-layout-table-font-size",
+          "type": "FLOAT",
+          "values": {
+            "Value": 13
+          }
+        },
+        {
+          "name": "layout/table/horizontal/cell/margin",
+          "cssVariable": "--hrms-layout-table-horizontal-cell-margin",
+          "type": "FLOAT",
+          "values": {
+            "Value": 8
+          }
+        },
+        {
+          "name": "layout/table/horizontal/cell/padding",
+          "cssVariable": "--hrms-layout-table-horizontal-cell-padding",
+          "type": "FLOAT",
+          "values": {
+            "Value": 8
+          }
+        },
+        {
+          "name": "layout/table/row/height",
+          "cssVariable": "--hrms-layout-table-row-height",
+          "type": "FLOAT",
+          "values": {
+            "Value": 32
+          }
+        },
+        {
+          "name": "layout/top/bar/height",
+          "cssVariable": "--hrms-layout-top-bar-height",
+          "type": "FLOAT",
+          "values": {
+            "Value": 48
+          }
+        },
+        {
+          "name": "line/height/lg",
+          "cssVariable": "--hrms-line-height-lg",
+          "type": "FLOAT",
+          "values": {
+            "Value": 1.5
+          }
+        },
+        {
+          "name": "line/height/md",
+          "cssVariable": "--hrms-line-height-md",
+          "type": "FLOAT",
+          "values": {
+            "Value": 1.1
+          }
+        },
+        {
+          "name": "radius/md",
+          "cssVariable": "--hrms-radius-md",
+          "type": "FLOAT",
+          "values": {
+            "Value": 8
+          }
+        },
+        {
+          "name": "radius/pill",
+          "cssVariable": "--hrms-radius-pill",
+          "type": "FLOAT",
+          "values": {
+            "Value": 999
+          }
+        },
+        {
+          "name": "radius/rounded",
+          "cssVariable": "--hrms-radius-rounded",
+          "type": "STRING",
+          "values": {
+            "Value": "100%"
+          }
+        },
+        {
+          "name": "radius/sm",
+          "cssVariable": "--hrms-radius-sm",
+          "type": "FLOAT",
+          "values": {
+            "Value": 4
+          }
+        },
+        {
+          "name": "radius/xl",
+          "cssVariable": "--hrms-radius-xl",
+          "type": "FLOAT",
+          "values": {
+            "Value": 20
+          }
+        },
+        {
+          "name": "radius/xs",
+          "cssVariable": "--hrms-radius-xs",
+          "type": "FLOAT",
+          "values": {
+            "Value": 2
+          }
+        },
+        {
+          "name": "radius/xxl",
+          "cssVariable": "--hrms-radius-xxl",
+          "type": "FLOAT",
+          "values": {
+            "Value": 40
+          }
+        },
+        {
+          "name": "space/0",
+          "cssVariable": "--hrms-space-0",
+          "type": "FLOAT",
+          "values": {
+            "Value": 0
+          }
+        },
+        {
+          "name": "space/1",
+          "cssVariable": "--hrms-space-1",
+          "type": "FLOAT",
+          "values": {
+            "Value": 4
+          }
+        },
+        {
+          "name": "space/10",
+          "cssVariable": "--hrms-space-10",
+          "type": "FLOAT",
+          "values": {
+            "Value": 40
+          }
+        },
+        {
+          "name": "space/12",
+          "cssVariable": "--hrms-space-12",
+          "type": "FLOAT",
+          "values": {
+            "Value": 48
+          }
+        },
+        {
+          "name": "space/16",
+          "cssVariable": "--hrms-space-16",
+          "type": "FLOAT",
+          "values": {
+            "Value": 64
+          }
+        },
+        {
+          "name": "space/2",
+          "cssVariable": "--hrms-space-2",
+          "type": "FLOAT",
+          "values": {
+            "Value": 8
+          }
+        },
+        {
+          "name": "space/3",
+          "cssVariable": "--hrms-space-3",
+          "type": "FLOAT",
+          "values": {
+            "Value": 12
+          }
+        },
+        {
+          "name": "space/4",
+          "cssVariable": "--hrms-space-4",
+          "type": "FLOAT",
+          "values": {
+            "Value": 16
+          }
+        },
+        {
+          "name": "space/5",
+          "cssVariable": "--hrms-space-5",
+          "type": "FLOAT",
+          "values": {
+            "Value": 20
+          }
+        },
+        {
+          "name": "space/6",
+          "cssVariable": "--hrms-space-6",
+          "type": "FLOAT",
+          "values": {
+            "Value": 24
+          }
+        },
+        {
+          "name": "space/8",
+          "cssVariable": "--hrms-space-8",
+          "type": "FLOAT",
+          "values": {
+            "Value": 32
+          }
+        },
+        {
+          "name": "z/index/last/layer",
+          "cssVariable": "--hrms-z-index-last-layer",
+          "type": "FLOAT",
+          "values": {
+            "Value": 2147483647
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { type FormId } from '@hrms/shared';
+import { type FormId, type OrganizationId } from '@hrms/shared';
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { FormTokenService } from '../../core/auth/form-token.service';
@@ -23,13 +23,17 @@ type GraphqlContext = {
   };
 };
 
+type ResolvedLink = {
+  readonly formId: FormId;
+  readonly organizationId: OrganizationId;
+  readonly refId: string | null;
+};
+
 const clientAddress = (context: GraphqlContext): string =>
   context.req?.ip ?? context.req?.socket?.remoteAddress ?? 'unknown';
 
-// The anonymous surface. Deliberately unguarded (no session exists) but never
-// trusting the caller: every operation verifies the signed form-link token
-// first and then runs inside the link's tenant, like a session would. The
-// signed token is the entire authorization story here.
+const looksLikeJwt = (token: string): boolean => token.includes('.');
+
 @Resolver()
 export class PublicFormsResolver {
   constructor(
@@ -88,8 +92,6 @@ export class PublicFormsResolver {
             contentType: file.contentType,
             sizeBytes: file.sizeBytes,
           })),
-          // `refId` is the link's context (e.g. the posting applied for); the
-          // projection consumer reads it back from here.
           metadata: {
             ip: clientAddress(context),
             ...(link.refId ? { refId: link.refId } : {}),
@@ -101,14 +103,22 @@ export class PublicFormsResolver {
     });
   }
 
-  private runInLink<TResult>(
+  private async resolveToken(token: string): Promise<ResolvedLink> {
+    if (looksLikeJwt(token)) {
+      const claims = this.formTokens.verify(token);
+      return { formId: claims.formId, organizationId: claims.organizationId, refId: claims.refId };
+    }
+    return this.forms.resolveLink(token);
+  }
+
+  private async runInLink<TResult>(
     token: string,
     work: (link: { readonly formId: FormId; readonly refId: string | null }) => Promise<TResult>,
   ): Promise<TResult> {
-    const claims = this.formTokens.verify(token);
+    const resolved = await this.resolveToken(token);
     return this.tenantContext.run(
-      { organizationId: claims.organizationId, userId: null },
-      () => work({ formId: claims.formId, refId: claims.refId }),
+      { organizationId: resolved.organizationId, userId: null },
+      () => work({ formId: resolved.formId, refId: resolved.refId }),
     );
   }
 }

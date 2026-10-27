@@ -4,12 +4,14 @@ import {
   type FormId,
   type FormSubmissionId,
   type FormTarget,
+  type OrganizationId,
 } from '@hrms/shared';
+import { randomBytes } from 'crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource, type EntityManager, type FindOptionsWhere } from 'typeorm';
+import { DataSource, type EntityManager, type FindOptionsWhere, MoreThan } from 'typeorm';
 
-import { NotFoundError, ValidationFailedError } from '../../common/errors';
+import { NotFoundError, UnauthenticatedError, ValidationFailedError } from '../../common/errors';
 import { ConfigService } from '../../core/config/config.service';
 import { StorageService } from '../../core/documents/storage.service';
 import { DomainEventPublisher } from '../../core/events/domain-event-publisher.service';
@@ -18,12 +20,14 @@ import { TenantScopedRepository } from '../../core/tenancy/tenant-scoped.reposit
 
 import { FormDefinition, type FormDefinitionStatus } from './entities/form-definition.entity';
 import { FormField } from './entities/form-field.entity';
+import { FormLink } from './entities/form-link.entity';
 import { FormSubmission, type FormSubmissionFile } from './entities/form-submission.entity';
 import { FormUploadTicket } from './entities/form-upload-ticket.entity';
 import { FormRateLimiter } from './form-rate-limiter';
 import {
   FORM_DEFINITION_REPOSITORY,
   FORM_FIELD_REPOSITORY,
+  FORM_LINK_REPOSITORY,
   FORM_SUBMISSION_REPOSITORY,
   FORM_UPLOAD_TICKET_REPOSITORY,
 } from './forms.tokens';
@@ -36,6 +40,7 @@ export type CreateFormFieldData = {
   readonly options?: readonly string[];
   readonly mapsTo?: string | null;
   readonly helpText?: string | null;
+  readonly step?: number | null;
 };
 
 export type CreateFormData = {
@@ -82,6 +87,14 @@ const MAX_EMAIL_LENGTH = 320;
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_FILES = 3;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+// Neutral options: the answer is a self-description, not a statutory fact, and
+// every option is one a hire can pick without outing themselves.
+const GENDER_OPTIONS: readonly string[] = [
+  'Female',
+  'Male',
+  'Other',
+  'Prefer not to say',
+];
 
 const APPLICATION_FORM_FIELDS: readonly CreateFormFieldData[] = [
   { fieldKey: 'fullName', label: 'Full name', type: 'text', required: true, mapsTo: 'candidate.fullName' },
@@ -100,6 +113,40 @@ const APPLICATION_FORM_FIELDS: readonly CreateFormFieldData[] = [
   { fieldKey: 'coverNote', label: "Tell us why you're a good fit", type: 'textarea', mapsTo: 'application.coverNote' },
 ];
 
+// The employee onboarding intake form's template (four steps, mirroring the
+// Google Form it replaces). `mapsTo` uses the `employee.` convention exactly
+// where EmployeeService.create takes the fact (firstName, lastName,
+// dateOfBirth, workEmail, hireDate); everything the Employee spine does not
+// carry (residence, emergency contact, bank, national ID, notes) stays in the
+// submission's answers only.
+const EMPLOYEE_INTAKE_FORM_FIELDS: readonly CreateFormFieldData[] = [
+  // Step 1 — personal details.
+  { fieldKey: 'firstName', label: 'First name', type: 'text', required: true, mapsTo: 'employee.firstName', step: 1 },
+  { fieldKey: 'lastName', label: 'Last name', type: 'text', required: true, mapsTo: 'employee.lastName', step: 1 },
+  { fieldKey: 'dateOfBirth', label: 'Date of birth', type: 'date', required: true, mapsTo: 'employee.dateOfBirth', step: 1 },
+  { fieldKey: 'gender', label: 'Gender', type: 'select', options: GENDER_OPTIONS, step: 1 },
+  { fieldKey: 'nationalId', label: 'National ID (CNIC)', type: 'text', required: true, step: 1 },
+  { fieldKey: 'personalEmail', label: 'Personal email', type: 'email', required: true, mapsTo: 'employee.workEmail', step: 1 },
+  { fieldKey: 'phoneNumber', label: 'Phone number', type: 'phone', required: true, step: 1 },
+  // Step 2 — residence.
+  { fieldKey: 'addressLine1', label: 'Address line 1', type: 'text', required: true, step: 2 },
+  { fieldKey: 'city', label: 'City', type: 'text', required: true, step: 2 },
+  { fieldKey: 'country', label: 'Country', type: 'text', required: true, step: 2 },
+  { fieldKey: 'postalCode', label: 'Postal code', type: 'text', step: 2 },
+  // Step 3 — emergency contact and bank details (answers only: no Employee
+  // column carries them).
+  { fieldKey: 'emergencyContactName', label: 'Emergency contact name', type: 'text', required: true, step: 3 },
+  { fieldKey: 'emergencyContactRelation', label: 'Emergency contact relation', type: 'text', required: true, step: 3 },
+  { fieldKey: 'emergencyContactPhoneNumber', label: 'Emergency contact phone number', type: 'phone', required: true, step: 3 },
+  { fieldKey: 'bankName', label: 'Bank name', type: 'text', required: true, step: 3 },
+  { fieldKey: 'bankAccountNumber', label: 'Bank account number', type: 'text', required: true, step: 3 },
+  // Step 4 — documents and start.
+  { fieldKey: 'curriculumVitae', label: 'Curriculum vitae (CV)', type: 'file', step: 4 },
+  { fieldKey: 'idDocument', label: 'ID document', type: 'file', step: 4 },
+  { fieldKey: 'expectedStartDate', label: 'Expected start date', type: 'date', mapsTo: 'employee.hireDate', step: 4 },
+  { fieldKey: 'notes', label: 'Notes', type: 'textarea', step: 4 },
+];
+
 // The generic form engine. Definitions, fields and submissions are ordinary
 // tenant-scoped records; the public surface is the resolver's job (it verifies
 // the signed link, then runs everything inside the link's tenant).
@@ -114,6 +161,8 @@ export class FormsService {
     private readonly submissions: TenantScopedRepository<FormSubmission>,
     @Inject(FORM_UPLOAD_TICKET_REPOSITORY)
     private readonly tickets: TenantScopedRepository<FormUploadTicket>,
+    @Inject(FORM_LINK_REPOSITORY)
+    private readonly links: TenantScopedRepository<FormLink>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly tenantContext: TenantContextService,
     private readonly storage: StorageService,
@@ -153,6 +202,7 @@ export class FormsService {
             sortOrder: index,
             mapsTo: field.mapsTo ?? null,
             helpText: field.helpText ?? null,
+            step: field.step ?? null,
           }),
         ),
       );
@@ -177,6 +227,34 @@ export class FormsService {
       throw new NotFoundError('Form not found', { id: formId });
     }
     return { form, fields: await this.getFields(formId) };
+  }
+
+  async mintLink(formId: FormId, refId?: string | null): Promise<{ slug: string; expiresAt: Date }> {
+    const ttlDays = this.config.get('FORM_LINK_TTL_DAYS');
+    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+    const slug = randomBytes(6).toString('base64url');
+    const link = this.links.create({
+      slug,
+      formDefinitionId: formId,
+      refId: refId ?? null,
+      expiresAt,
+    });
+    await this.links.save(link);
+    return { slug, expiresAt };
+  }
+
+  async resolveLink(slug: string): Promise<{ formId: FormId; organizationId: OrganizationId; refId: string | null }> {
+    const link = await this.dataSource.getRepository(FormLink).findOne({
+      where: { slug, expiresAt: MoreThan(new Date()) },
+    });
+    if (!link) {
+      throw new UnauthenticatedError('This form link is invalid or has expired');
+    }
+    return {
+      formId: toId<FormId>(link.formDefinitionId),
+      organizationId: toId<OrganizationId>(link.organizationId),
+      refId: link.refId,
+    };
   }
 
   async prepareFileUpload(input: {
@@ -294,6 +372,38 @@ export class FormsService {
       status: 'published',
       fields: APPLICATION_FORM_FIELDS,
     });
+  }
+
+  // The employee intake form's template, idempotent by slug exactly like the
+  // application form's. Its `form.submitted` events (target 'employeeIntake')
+  // are consumed by the employee module's intake projection.
+  async ensureEmployeeIntakeForm(): Promise<PublicForm> {
+    const existing = await this.forms.findOne({ where: { slug: 'employee-intake' } });
+    if (existing) {
+      return { form: existing, fields: await this.getFields(toId<FormId>(existing.id)) };
+    }
+    return this.createForm({
+      name: 'Employee onboarding intake',
+      slug: 'employee-intake',
+      target: 'employeeIntake',
+      status: 'published',
+      fields: EMPLOYEE_INTAKE_FORM_FIELDS,
+    });
+  }
+
+  // A form manager's view of what a form collected. Generic on purpose: any
+  // definition's submissions, newest first — the target-specific meaning of an
+  // answer stays with the module that projected it.
+  listSubmissions(formId: FormId): Promise<FormSubmission[]> {
+    return this.submissions.find({ where: { formId }, order: { submittedAt: 'DESC' } });
+  }
+
+  async getSubmissionById(submissionId: FormSubmissionId): Promise<FormSubmission> {
+    const submission = await this.submissions.findById(submissionId);
+    if (!submission) {
+      throw new NotFoundError('Form submission not found', { id: submissionId });
+    }
+    return submission;
   }
 
   private async getFields(formId: FormId): Promise<FormField[]> {

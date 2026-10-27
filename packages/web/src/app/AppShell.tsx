@@ -5,6 +5,7 @@ import {
   IconBriefcase,
   IconBuildingCommunity,
   IconChevronDown,
+  IconClipboardText,
   IconClock,
   IconCurrencyDollar,
   IconFileInvoice,
@@ -89,6 +90,7 @@ const tethrNavigation: readonly NavigationEntry[] = [
       { label: 'Org chart', to: '/employees/org-chart', icon: IconSitemap },
       { label: 'Time & attendance', to: '/attendance', icon: IconClock },
       { label: 'Leave triage', to: '/leave', icon: IconPlaneDeparture },
+      { label: 'Onboarding intake', to: '/onboarding-intake', icon: IconClipboardText },
     ],
   },
   {
@@ -320,6 +322,10 @@ export const AppShell = () => {
   const isVisibleItem = (item: NavigationItem): boolean => {
     if (item.to === '/compensation') return canViewCompensation;
     if (item.to === '/payroll' || item.to === '/billing') return canManagePayroll;
+    // The new-hire intake surface (link minting + submissions) is Tethr-admin
+    // only; canManageClients is exactly that role list, and the route's
+    // RequirePortal gate carries the same one.
+    if (item.to === '/onboarding-intake') return canManageClients;
     // Expense claims: Tethr's HR/Finance review and pay; client roles approve
     // their own workspace's claims. The route gate carries the same list.
     if (item.to === '/expenses') {

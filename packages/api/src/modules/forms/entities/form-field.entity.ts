@@ -31,6 +31,11 @@ export class FormField extends TenantScopedEntity {
   @Column({ type: 'int', default: 0 })
   sortOrder!: number;
 
+  // 1-based step index for multi-page forms; null means the field belongs to
+  // the form's single page (every field of a single-step form stays null).
+  @Column({ type: 'int', nullable: true })
+  step!: number | null;
+
   @Column({ type: 'varchar', length: 64, nullable: true })
   mapsTo!: string | null;
 

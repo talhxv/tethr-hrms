@@ -5,12 +5,15 @@ import { AuthModule } from '../../core/auth/auth.module';
 import { AuthzModule } from '../../core/authz/authz.module';
 import { provideTenantScopedRepository } from '../../core/tenancy/tenant-repository.provider';
 import { AssignmentModule } from '../assignment/assignment.module';
+import { FormsModule } from '../forms/forms.module';
 import { OrganizationModule } from '../organization/organization.module';
 import { PositionModule } from '../position/position.module';
 
+import { EmployeeIntakeConsumer } from './consumers/employee-intake.consumer';
 import { EmployeeDirectoryModule } from './employee-directory.module';
 import { EmployeeEducationService } from './employee-education.service';
 import { EmployeeExitInterviewService } from './employee-exit-interview.service';
+import { EmployeeIntakeService } from './employee-intake.service';
 import { EmployeeOffboardingService } from './employee-offboarding.service';
 import { EmployeePersonalDetailsService } from './employee-personal-details.service';
 import { EmployeeProfileService } from './employee-profile.service';
@@ -54,9 +57,13 @@ import { Employee } from './entities/employee.entity';
     PositionModule,
     OrganizationModule,
     EmployeeDirectoryModule,
+    // The intake projection reads submissions through the forms module's
+    // published service (never its tables).
+    FormsModule,
   ],
   providers: [
     EmployeeService,
+    EmployeeIntakeService,
     EmployeeProfileService,
     EmployeePersonalDetailsService,
     EmployeeEducationService,
@@ -65,6 +72,7 @@ import { Employee } from './entities/employee.entity';
     EmployeeExitInterviewService,
     EmployeeOffboardingService,
     EmployeeResolver,
+    EmployeeIntakeConsumer,
     provideTenantScopedRepository(EMPLOYEE_PROFILE_REPOSITORY, EmployeeProfile),
     provideTenantScopedRepository(EMPLOYEE_PERSONAL_DETAILS_REPOSITORY, EmployeePersonalDetails),
     provideTenantScopedRepository(EMPLOYEE_EDUCATION_REPOSITORY, EmployeeEducation),

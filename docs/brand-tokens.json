@@ -1,0 +1,122 @@
+{
+  "$schema": "https://tethr.internal/design-tokens/v1",
+  "source": "../tethr/design.md",
+  "sourceSha256": "9b379b92fefe13da",
+  "sourceBytes": 7755,
+  "handWritten": true,
+  "warning": "Hand-transcribed from prose, NOT generated. The product kit is emitted from packages/ui and can prove it matches its source; this cannot. The sha256 above is the weakest useful substitute: if ../tethr/design.md no longer hashes to it, this inventory is suspect and must be re-read. Do not point a generator at ../tethr/src/style.css — see findings.",
+  "collections": [
+    {
+      "name": "Brand Colour",
+      "modes": ["Value"],
+      "note": "The brand has no light/dark modes. design.md §2 defines one palette; dark surfaces are specific navy tokens rather than a mode.",
+      "variables": [
+        { "name": "brand/blue/primary", "type": "COLOR", "values": { "Value": "#2b44ff" }, "use": "Buttons, CTAs, links, pills, active states" },
+        { "name": "brand/blue/royal", "type": "COLOR", "values": { "Value": "#0755e9" }, "use": "Hero accent, italic emphasis, glows, grid lines, section rules" },
+        { "name": "brand/blue/primary-hover", "type": "COLOR", "values": { "Value": "#1a33ee" }, "use": "Navbar apply hover" },
+        { "name": "brand/blue/deep-hover", "type": "COLOR", "values": { "Value": "#0340c4" }, "use": "CTA primary button hover" },
+
+        { "name": "brand/navy/footer", "type": "COLOR", "values": { "Value": "#001b4d" }, "use": "Footer background, services titles" },
+        { "name": "brand/navy/ink", "type": "COLOR", "values": { "Value": "#001131" }, "use": "Primary headlines, dark text" },
+        { "name": "brand/navy/near-black", "type": "COLOR", "values": { "Value": "#08060d" }, "use": "Hero headline text" },
+        { "name": "brand/navy/toggle", "type": "COLOR", "values": { "Value": "#0d1f4a" }, "use": "Hiring toggle track" },
+
+        { "name": "brand/surface/white", "type": "COLOR", "values": { "Value": "#ffffff" }, "use": "Page background, CTA card" },
+        { "name": "brand/surface/card-light-blue", "type": "COLOR", "values": { "Value": "#f1f5fd" }, "use": "Service cards, manifesto frame" },
+        { "name": "brand/surface/pale-blue", "type": "COLOR", "values": { "Value": "#e7efff" }, "use": "Mobile menu / mobile navbar background" },
+        { "name": "brand/surface/glass-white", "type": "COLOR", "values": { "Value": "#ffffffb8" }, "use": "Navbar blur backdrop (rgba(255,255,255,0.72))" },
+
+        { "name": "brand/status/problem", "type": "COLOR", "values": { "Value": "#e03131" }, "use": "Manifesto narrative only" },
+        { "name": "brand/status/solution", "type": "COLOR", "values": { "Value": "#12b76a" }, "use": "Manifesto narrative only" },
+
+        { "name": "brand/text/on-navy", "type": "COLOR", "values": { "Value": "#ffffffe0" }, "use": "Body text on navy (rgba(255,255,255,0.88))" },
+        { "name": "brand/text/on-navy-muted", "type": "COLOR", "values": { "Value": "#ffffff80" }, "use": "Muted text on navy (0.5)" },
+        { "name": "brand/text/on-light-muted", "type": "COLOR", "values": { "Value": "#00113180" }, "use": "Muted text on light (rgba(0,17,49,0.5))" }
+      ]
+    },
+    {
+      "name": "Brand Type",
+      "modes": ["Value"],
+      "note": "Four families against the product kit's single Inter. This is the clearest evidence that brand and product typography must not be aliased across kits.",
+      "variables": [
+        { "name": "font/family/heading", "type": "STRING", "values": { "Value": "Manrope" }, "weights": [400, 500, 600, 700, 800, 900], "use": "Headings and UI — the workhorse" },
+        { "name": "font/family/body", "type": "STRING", "values": { "Value": "DM Sans" }, "weights": [400, 500, 700], "use": "Body / secondary, incl. italic" },
+        { "name": "font/family/editorial", "type": "STRING", "values": { "Value": "Instrument Serif" }, "weights": [400], "use": "Italic only — the signature 'tethr' flourish" },
+        { "name": "font/family/mono", "type": "STRING", "values": { "Value": "Consolas, monospace" }, "use": "Labels, eyebrows, section numbers, code" }
+      ]
+    },
+    {
+      "name": "Brand Radii",
+      "modes": ["Value"],
+      "variables": [
+        { "name": "radius/pill", "type": "FLOAT", "values": { "Value": 999 }, "use": "Pills and buttons" },
+        { "name": "radius/service-card", "type": "FLOAT", "values": { "Value": 48 }, "use": "Service cards" },
+        { "name": "radius/navbar", "type": "FLOAT", "values": { "Value": 44 }, "use": "Navbar" },
+        { "name": "radius/cta-card", "type": "FLOAT", "values": { "Value": 28 }, "use": "CTA card" }
+      ]
+    },
+    {
+      "name": "Brand Motion",
+      "modes": ["Value"],
+      "variables": [
+        { "name": "motion/ease/standard", "type": "STRING", "values": { "Value": "cubic-bezier(0.4, 0, 0.2, 1)" } },
+        { "name": "motion/ease/simple", "type": "STRING", "values": { "Value": "ease" } }
+      ]
+    }
+  ],
+  "notTokenised": [
+    {
+      "item": "Borders on light",
+      "spec": "rgba(0,17,49,0.08-0.12)",
+      "why": "A range, not a value. A variable needs one number; picking one silently would invent a decision design.md declined to make."
+    },
+    {
+      "item": "Manifesto frame / banner radius",
+      "spec": "16-20px",
+      "why": "Range. Same reason."
+    },
+    {
+      "item": "Small chips / code radius",
+      "spec": "4-8px",
+      "why": "Range. Same reason."
+    },
+    {
+      "item": "UI state durations",
+      "spec": "0.18-0.35s",
+      "why": "Range. The product kit has exact durations; the brand's are a band."
+    },
+    {
+      "item": "Blue glow fill",
+      "spec": "rgba(7,85,233, 0.55 -> 0.08) radial fade",
+      "why": "A gradient, not a colour. Belongs in an effect or fill style, not a colour variable."
+    },
+    {
+      "item": "Display type sizes",
+      "spec": "clamp(40px, 5.5vw, 72px) etc.",
+      "why": "Fluid. A Figma variable holds a number; a clamp is three. Needs a decision about which breakpoint the kit represents."
+    }
+  ],
+  "findings": [
+    {
+      "id": "duplicate-royal",
+      "severity": "minor",
+      "note": "#0755E9 appears twice in design.md — as 'Royal / electric blue' in Core blues and as 'Tethr (blue)' in Status accents. One value, two names. Tokenised once as brand/blue/royal; the status trio is therefore two tokens, not three."
+    },
+    {
+      "id": "stylesheet-rot",
+      "severity": "report-to-owner",
+      "note": "../tethr/src/style.css must NOT be used as a generator source. Its :root block is stale: --accent is #aa3bff (a purple from an earlier design) and --sans is a system stack with no Manrope. The real brand values are inlined instead — #2B44FF appears 41 times and Manrope 54 times as literals. The decisive number is that var(--accent) is referenced exactly TWICE: the block did not drift because someone changed it, it rotted because almost nothing consumes it. A generator pointed at that file would emit a purple, system-font brand kit, and every value would verify against its source."
+    },
+    {
+      "id": "nothing-to-alias",
+      "severity": "decides-TET-272",
+      "note": "TET-272 says the product kit should 'use the brand kit's foundations instead of redefining them'. Measured against both emitted inventories, the shared surface is empty of meaning. Colours in both kits: ONE, #ffffff. Typefaces in both: ZERO (brand Manrope/DM Sans/Instrument Serif/Consolas against product Inter/DM Mono). Radius values in both: ONE, 999 — and that is a pill sentinel, not a measurement. White is not a brand decision and 999 is not a foundation. So the conclusion is stronger than 'do not alias colour and typeface': there is no shared foundation to alias, and the two kits are independent by measurement rather than by policy.",
+      "caveat": "The 4px grid is the one real commonality and it still cannot be aliased, because only one side declares it. packages/ui states SPACING_MULTIPLIER = 4 and every space and radius token obeys it. design.md never mentions a 4px grid at all — its brand radii (48, 44, 28) happen to divide by four, and the only grid it names is a 64px hero overlay, which is a visual motif. Aliasing the product's scale into the brand kit would impose a rule design.md has not made."
+    },
+    {
+      "id": "no-drift-check",
+      "severity": "accepted",
+      "note": "The product kit is emitted from packages/ui and can prove it matches. The brand kit cannot: its source is prose and its consumer hardcodes. The sourceSha256 above detects that design.md changed, not that this inventory still reflects it. That asymmetry is stated rather than papered over."
+    }
+  ]
+}

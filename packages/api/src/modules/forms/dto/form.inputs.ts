@@ -45,6 +45,14 @@ export class CreateFormFieldInput {
   @IsString({ each: true })
   options?: string[];
 
+  // 1-based page index for multi-step forms; omitted/null keeps the field on
+  // the form's single page.
+  @Field(() => Int, { nullable: true })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  step?: number;
+
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()

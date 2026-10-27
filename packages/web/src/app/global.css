@@ -87,6 +87,58 @@ body {
   src: url('/fonts/inter-latin-600-normal.woff2') format('woff2');
 }
 
+/* Self-hosted brand faces for the public onboarding form (latin): Manrope
+   carries the brand typography, Inconsolata the mono help/overline labels.
+   The surface's two most-used weights (400 body, 500 field labels) are
+   preloaded in index.html; every face swaps so text stays visible. */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/manrope-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('/fonts/manrope-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('/fonts/manrope-latin-600-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 700;
+  src: url('/fonts/manrope-latin-700-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 800;
+  src: url('/fonts/manrope-latin-800-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inconsolata';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/inconsolata-latin-400-normal.woff2') format('woff2');
+}
+
 button,
 input,
 select,
@@ -506,7 +558,11 @@ button,
      instead of the fill, so identity survives without darkening the pill.
      border-light is too close to white to read against the tinted bar, so
      the active pill gets the stronger border token to stay legible. */
-  color: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 75%, var(--hrms-color-text-primary));
+  color: color-mix(
+    in srgb,
+    var(--chip-color, var(--hrms-color-tag-gray)) 75%,
+    var(--hrms-color-text-primary)
+  );
   background: var(--hrms-color-background-primary);
   border: 1px solid var(--hrms-color-border-strong);
   box-shadow: var(--hrms-box-shadow-light);
@@ -692,11 +748,7 @@ button,
 }
 
 .bottom-nav-item.is-active .bottom-nav-pill {
-  background: color-mix(
-    in srgb,
-    var(--chip-color, var(--hrms-color-tag-gray)) 22%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 22%, transparent);
 }
 
 @media (max-width: 760px) {
@@ -721,7 +773,12 @@ button,
      a plain gray shelf bolted underneath. */
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 10%, var(--hrms-color-background-primary)) 0%,
+    color-mix(
+        in srgb,
+        var(--chip-color, var(--hrms-color-tag-gray)) 10%,
+        var(--hrms-color-background-primary)
+      )
+      0%,
     var(--hrms-color-background-primary) 100%
   );
   transition: grid-template-rows var(--hrms-animation-duration-gentle) var(--hrms-animation-easing-in-out);
@@ -792,9 +849,17 @@ button,
 }
 
 .subnav-tab.is-active {
-  color: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 65%, var(--hrms-color-text-primary));
+  color: color-mix(
+    in srgb,
+    var(--chip-color, var(--hrms-color-tag-gray)) 65%,
+    var(--hrms-color-text-primary)
+  );
   background: var(--hrms-color-background-primary);
-  border-color: color-mix(in srgb, var(--chip-color, var(--hrms-color-tag-gray)) 35%, var(--hrms-color-border-strong));
+  border-color: color-mix(
+    in srgb,
+    var(--chip-color, var(--hrms-color-tag-gray)) 35%,
+    var(--hrms-color-border-strong)
+  );
   box-shadow: var(--hrms-box-shadow-light);
 }
 
@@ -1211,7 +1276,6 @@ button,
      of a card touching the nav; pages keep only their side/bottom padding. */
   padding: var(--hrms-space-6) var(--hrms-space-10);
 }
-
 
 .page-frame {
   display: grid;
@@ -2231,8 +2295,10 @@ button,
   background:
     linear-gradient(to right, var(--hrms-color-background-primary) 60%, transparent) left center,
     linear-gradient(to left, var(--hrms-color-background-primary) 60%, transparent) right center,
-    radial-gradient(farthest-side at 0 50%, var(--hrms-color-border-medium), transparent) left center,
-    radial-gradient(farthest-side at 100% 50%, var(--hrms-color-border-medium), transparent) right center;
+    radial-gradient(farthest-side at 0 50%, var(--hrms-color-border-medium), transparent) left
+      center,
+    radial-gradient(farthest-side at 100% 50%, var(--hrms-color-border-medium), transparent) right
+      center;
   background-repeat: no-repeat;
   background-size:
     32px 100%,
@@ -5104,7 +5170,7 @@ label.record-field-label {
 
   .data-table tbody td::before,
   .employee-table tbody td::before {
-    content: attr(data-label) " ";
+    content: attr(data-label) ' ';
     color: var(--hrms-color-text-tertiary);
     font-size: var(--hrms-font-size-xxs);
     letter-spacing: 0.04em;
@@ -5114,7 +5180,7 @@ label.record-field-label {
   /* Separator between meta items, never a trailing one. */
   .data-table tbody td:not(:last-child)::after,
   .employee-table tbody td:not(:last-child)::after {
-    content: " · ";
+    content: ' · ';
     color: var(--hrms-color-text-light);
   }
 
@@ -6570,4 +6636,1065 @@ label.record-field-label {
   .workspace-chip-button:active {
     transform: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Employee onboarding intake — the public, brand-styled form surface.
+
+   Everything here is scoped to .intake-page (plus the admin surface's own
+   onboarding-intake-* classes further down). The surface defines its own
+   --intake-brand-* custom properties from the Tethr brand collateral spec and
+   reskins the shared OnboardingFlow chrome (.onboarding-*, .step-rail,
+   .button, .field) underneath it; the app-wide --hrms-* token system, the
+   ThemeProvider, and every other surface are untouched.
+   --------------------------------------------------------------------------- */
+
+.intake-page {
+  --intake-brand-blue: #2b44ff;
+  --intake-brand-blue-hover: #273eea;
+  --intake-brand-page-bg: #f7f9fc;
+  --intake-brand-card-bg: #ffffff;
+  --intake-brand-card-border: #dae1ea;
+  --intake-brand-card-shadow:
+    0 10px 28px -10px rgba(0, 17, 49, 0.09), 0 2px 5px 0 rgba(0, 17, 49, 0.03);
+  --intake-brand-input-bg: #fafbfd;
+  --intake-brand-input-border: #dae1ea;
+  --intake-brand-text-primary: #001131;
+  --intake-brand-text-secondary: #51627b;
+  --intake-brand-success: #1f8f5c;
+  --intake-brand-danger: #d64545;
+  --intake-brand-section-fill: #f3f5fa;
+  --intake-brand-divider: #dde5f2;
+  --intake-brand-rail-upcoming: #d3dbe5;
+  --intake-brand-font-ui: 'Manrope', 'Inter', system-ui, sans-serif;
+  --intake-brand-font-mono: 'Inconsolata', ui-monospace, monospace;
+
+  min-height: 100vh;
+  padding: 0 24px 24px;
+  background: var(--intake-brand-page-bg);
+  color: var(--intake-brand-text-primary);
+  font-family: var(--intake-brand-font-ui);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+/* Dark parity: a navy set consistent with the brand ink (#001131). The brand
+   blue lightens to #5a6fff here — #2b44ff on #101e33 falls short of
+   comfortable contrast for text, links and the rail, and the lighter step
+   keeps them legible without leaving the brand hue. */
+[data-theme='dark'] .intake-page {
+  --intake-brand-blue: #5a6fff;
+  --intake-brand-blue-hover: #6d80ff;
+  --intake-brand-page-bg: #0b1526;
+  --intake-brand-card-bg: #101e33;
+  --intake-brand-card-border: #263a57;
+  --intake-brand-card-shadow:
+    0 10px 28px -10px rgba(0, 0, 0, 0.55), 0 2px 5px 0 rgba(0, 0, 0, 0.35);
+  --intake-brand-input-bg: #0d1b30;
+  --intake-brand-input-border: #263a57;
+  --intake-brand-text-primary: #e8eef7;
+  --intake-brand-text-secondary: #9fb0c7;
+  --intake-brand-danger: #ff8f94;
+  --intake-brand-section-fill: #0e1c31;
+  --intake-brand-divider: #1b2c47;
+  --intake-brand-rail-upcoming: #26395a;
+}
+
+/* Page header: Tethr lockup left, help contact right, aligned to the card
+   column. The lockup reuses the auth pages' brand-* classes with the brand
+   palette applied through the scoped variables. */
+.intake-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrms-space-4);
+  max-width: none;
+  margin: 0 -24px 14px;
+  padding: 14px 40px;
+  border-bottom: 1px solid var(--intake-brand-divider);
+}
+
+.intake-page .brand-lockup-svg {
+  height: 24px;
+  width: auto;
+  color: var(--intake-brand-blue);
+  flex-shrink: 0;
+}
+
+.intake-help {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.intake-help-kicker {
+  color: var(--intake-brand-text-secondary);
+  font-family: var(--intake-brand-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.intake-help-email {
+  color: var(--intake-brand-blue);
+  font-family: var(--intake-brand-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.intake-header .intake-help-email {
+  display: inline-block;
+}
+
+/* The spec's 4-2 dashed underline: border-dash rhythms are browser-defined,
+   so the exact 4px-on/2px-off cadence is a repeating gradient instead.
+   Scoped to the header so it doesn't break inline paragraph flow. */
+.intake-header .intake-help-email::after {
+  content: '';
+  display: block;
+  height: 2px;
+  margin-top: 3px;
+  background-image: repeating-linear-gradient(
+    to right,
+    color-mix(in srgb, var(--intake-brand-blue) 40%, transparent) 0 4px,
+    transparent 4px 6px
+  );
+}
+
+/* The form card: 600px max-width centered on desktop, full-bleed fluid on
+   phones (responsive block below). Both the flow's main column and the static
+   states' .intake-card wear the same skin. */
+.intake-card {
+  max-width: 600px;
+  padding: 40px 44px 32px;
+  background: var(--intake-brand-card-bg);
+  border: 1px solid var(--intake-brand-card-border);
+  border-radius: 16px;
+  box-shadow: var(--intake-brand-card-shadow);
+}
+
+.intake-page .onboarding-flow-main {
+  max-width: 600px;
+  padding: 28px 40px 16px;
+  background: var(--intake-brand-card-bg);
+  border: 1px solid var(--intake-brand-card-border);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--intake-brand-card-shadow);
+}
+
+.intake-page .onboarding-flow {
+  max-width: 600px;
+}
+
+/* The flow's own header is hidden: the surface carries the brand header above
+   and the card title inside the card, so the app-styled back/title block
+   would only duplicate them. */
+.intake-page .onboarding-flow-header {
+  display: none;
+}
+
+/* One column: the step rail sits above the card, the sticky action footer
+   below it. */
+.intake-page .onboarding-flow-body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.intake-page .onboarding-flow-rail {
+  position: static;
+  order: -1;
+  gap: 16px;
+}
+
+.intake-card-head {
+  display: none;
+}
+
+.intake-card-rule {
+  display: block;
+  width: 64px;
+  height: 3px;
+  margin-bottom: 16px;
+  background: var(--intake-brand-blue);
+  border-radius: 2px;
+}
+
+.intake-card-title {
+  margin: 0;
+  color: var(--intake-brand-text-primary);
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.0192em;
+  line-height: 32px;
+}
+
+.intake-card-subtitle {
+  margin: 8px 0 0;
+  color: var(--intake-brand-text-secondary);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.intake-page-copy {
+  margin: 0;
+  color: var(--intake-brand-text-secondary);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+/* The step rail, restyled from the app's vertical list into the brand's
+   horizontal progress: 30px circles with a 2px stroke, a filled active step,
+   a 14px check on completed ones, and solid 2px connectors between them. */
+.intake-page .step-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  list-style: none;
+}
+
+.intake-page .step-rail-item {
+  position: relative;
+}
+
+.intake-page .step-rail-button {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.intake-page .step-rail-button:focus-visible {
+  outline: 2px solid var(--intake-brand-blue);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.intake-page .step-rail-index {
+  width: 30px;
+  height: 30px;
+  color: var(--intake-brand-text-secondary);
+  background: var(--intake-brand-card-bg);
+  border: 2px solid var(--intake-brand-rail-upcoming);
+  border-radius: 15px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.intake-page .step-rail-index svg {
+  width: 14px;
+  height: 14px;
+}
+
+.intake-page .step-rail-item.is-active .step-rail-index,
+.intake-page .step-rail-item.is-complete .step-rail-index {
+  border-color: var(--intake-brand-blue);
+}
+
+.intake-page .step-rail-item.is-active .step-rail-index {
+  color: #ffffff;
+  background: var(--intake-brand-blue);
+}
+
+.intake-page .step-rail-item.is-complete .step-rail-index {
+  color: var(--intake-brand-blue);
+  background: var(--intake-brand-card-bg);
+  border-color: var(--intake-brand-blue);
+}
+
+.intake-page .step-rail-label {
+  color: var(--intake-brand-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.intake-page .step-rail-item.is-active .step-rail-label,
+.intake-page .step-rail-item.is-complete .step-rail-label {
+  color: var(--intake-brand-text-primary);
+}
+
+.intake-page .step-rail-copy {
+  display: none;
+}
+
+.intake-page .step-rail-item.is-active .step-rail-button {
+  background: transparent;
+}
+
+.intake-page .step-rail-item:not(.is-active) .step-rail-button:not(:disabled):hover {
+  background: transparent;
+}
+
+.intake-page
+  .step-rail-item:not(.is-active)
+  .step-rail-button:not(:disabled):hover
+  .step-rail-index {
+  border-color: var(--intake-brand-blue);
+}
+
+.intake-page .step-rail-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  right: calc(-50% + 26px);
+  left: calc(50% + 26px);
+  height: 2px;
+  background: var(--intake-brand-rail-upcoming);
+}
+
+.intake-page .step-rail-item.is-active:not(:last-child)::after,
+.intake-page .step-rail-item.is-complete:not(:last-child)::after {
+  background: var(--intake-brand-blue);
+}
+
+.intake-page .onboarding-help {
+  display: none;
+}
+
+.step-rail-progress {
+  display: none;
+}
+
+.intake-page .step-rail-progress {
+  display: block;
+  color: var(--intake-brand-blue);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* Each step renders flat inside the card; the review step restores the section
+   card look via :has(.onboarding-review). */
+.intake-page .auth-error {
+  margin: 0 0 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.intake-page .onboarding-card {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.intake-page .onboarding-card-head {
+  margin-bottom: 16px;
+}
+
+.intake-page .onboarding-card-title {
+  color: var(--intake-brand-text-primary);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 34px;
+  letter-spacing: -0.0192em;
+}
+
+.intake-page .onboarding-card-note {
+  margin-top: 8px;
+  color: var(--intake-brand-text-secondary);
+  font-size: 15px;
+  line-height: 24px;
+}
+
+.intake-page .onboarding-card-edit {
+  color: var(--intake-brand-blue);
+  background: transparent;
+  border: 0;
+  padding: 2px 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.intake-page .onboarding-card-edit:hover {
+  color: var(--intake-brand-blue-hover);
+  background: transparent;
+  border-color: transparent;
+}
+
+.intake-page .onboarding-card-edit:focus-visible {
+  outline: 2px solid var(--intake-brand-blue);
+  outline-offset: 2px;
+}
+
+.intake-page .onboarding-card-edit svg {
+  display: none;
+}
+
+.intake-page .onboarding-card:has(.onboarding-review) {
+  padding: 18px;
+  background: var(--intake-brand-input-bg);
+  border: 1px solid var(--intake-brand-rail-upcoming);
+  border-radius: 10px;
+}
+
+.intake-page .onboarding-card:has(.onboarding-review) .onboarding-card-title {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 23px;
+  letter-spacing: 0;
+}
+
+.intake-page .onboarding-card:has(.onboarding-review) .onboarding-card-note {
+  font-size: 12.5px;
+  line-height: 18px;
+}
+
+.intake-page .onboarding-card:has(.onboarding-review) .onboarding-card-head {
+  margin-bottom: 12px;
+}
+
+.intake-page .field {
+  gap: 5px;
+  margin-bottom: 14px;
+}
+
+.intake-page .field label {
+  color: var(--intake-brand-text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 21.75px;
+}
+
+.intake-page .required-mark {
+  color: var(--intake-brand-blue);
+}
+
+.intake-page .field input,
+.intake-page .field select {
+  height: 44px;
+  color: var(--intake-brand-text-primary);
+  background: var(--intake-brand-input-bg);
+  border: 1px solid var(--intake-brand-input-border);
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.intake-page .field select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2351627b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.intake-date-wrapper {
+  position: relative;
+}
+
+.intake-date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.intake-page .intake-date-input {
+  height: 44px;
+  padding: 0 42px 0 14px;
+  color: var(--intake-brand-text-primary);
+  background: var(--intake-brand-input-bg);
+  border: 1px solid var(--intake-brand-input-border);
+  border-radius: 8px;
+  font-family: var(--intake-brand-font-ui);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  width: 100%;
+}
+
+.intake-page .intake-date-input::placeholder {
+  color: var(--intake-brand-rail-upcoming);
+  letter-spacing: 0.06em;
+}
+
+.intake-page .intake-date-input:focus-visible {
+  outline: 2px solid var(--intake-brand-blue);
+  outline-offset: 1px;
+}
+
+.intake-page .intake-date-input[aria-invalid='true'] {
+  border-color: var(--intake-brand-danger);
+}
+
+.intake-date-toggle {
+  position: absolute;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--intake-brand-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.intake-date-toggle:hover {
+  color: var(--intake-brand-blue);
+  background: var(--intake-brand-section-fill);
+}
+
+.cal-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 280px;
+  padding: 16px;
+  background: var(--intake-brand-card-bg);
+  border: 1px solid var(--intake-brand-card-border);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px -8px rgba(0, 17, 49, 0.14), 0 4px 8px rgba(0, 17, 49, 0.06);
+  font-family: var(--intake-brand-font-ui);
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cal-arrow {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--intake-brand-text-secondary);
+  background: var(--intake-brand-section-fill);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.cal-arrow:hover {
+  color: var(--intake-brand-text-primary);
+  background: var(--intake-brand-divider);
+}
+
+.cal-header-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  color: var(--intake-brand-text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-family: var(--intake-brand-font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.cal-header-label:hover {
+  background: var(--intake-brand-section-fill);
+}
+
+.cal-header-chevron {
+  color: var(--intake-brand-text-secondary);
+}
+
+.cal-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.cal-weekday {
+  padding-bottom: 8px;
+  color: var(--intake-brand-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cal-grid td {
+  padding: 0;
+  text-align: center;
+}
+
+.cal-day {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: 0 auto;
+  padding: 0;
+  color: var(--intake-brand-text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  font-family: var(--intake-brand-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.cal-day:hover {
+  background: var(--intake-brand-section-fill);
+}
+
+.cal-day.is-today {
+  color: var(--intake-brand-blue);
+  font-weight: 700;
+}
+
+.cal-day.is-selected {
+  color: #ffffff;
+  background: var(--intake-brand-blue);
+  font-weight: 600;
+}
+
+.cal-day.is-selected:hover {
+  background: var(--intake-brand-blue-hover);
+}
+
+.cal-month-grid,
+.cal-year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.cal-year-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.cal-cell {
+  display: grid;
+  place-items: center;
+  height: 40px;
+  padding: 0;
+  color: var(--intake-brand-text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  font-family: var(--intake-brand-font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.cal-cell:hover {
+  background: var(--intake-brand-section-fill);
+}
+
+.cal-cell.is-today {
+  color: var(--intake-brand-blue);
+  font-weight: 700;
+}
+
+.cal-cell.is-selected {
+  color: #ffffff;
+  background: var(--intake-brand-blue);
+  font-weight: 600;
+}
+
+.cal-cell.is-selected:hover {
+  background: var(--intake-brand-blue-hover);
+}
+
+.intake-page .field textarea {
+  min-height: 110px;
+  padding: 10px 14px;
+  color: var(--intake-brand-text-primary);
+  background: var(--intake-brand-input-bg);
+  border: 1px solid var(--intake-brand-input-border);
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 22px;
+}
+
+.intake-page .field input:focus-visible,
+.intake-page .field select:focus-visible,
+.intake-page .field textarea:focus-visible {
+  outline: 2px solid var(--intake-brand-blue);
+  outline-offset: 1px;
+}
+
+.intake-page .field input[aria-invalid='true'],
+.intake-page .field select[aria-invalid='true'],
+.intake-page .field textarea[aria-invalid='true'] {
+  border-color: var(--intake-brand-danger);
+}
+
+.intake-field-help {
+  color: var(--intake-brand-text-secondary);
+  font-size: 11.5px;
+  line-height: 14px;
+}
+
+.intake-field-error {
+  margin: 0;
+  color: var(--intake-brand-danger);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.intake-page .file-input {
+  height: 44px;
+  background: var(--intake-brand-input-bg);
+  border: 1px solid var(--intake-brand-input-border);
+  border-radius: 8px;
+}
+
+.intake-page .file-input-trigger {
+  color: var(--intake-brand-text-primary);
+  background: var(--intake-brand-section-fill);
+  border: 0;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.intake-page .file-input-trigger:hover {
+  background: var(--intake-brand-divider);
+}
+
+.intake-page .file-input-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.intake-page .file-input-name svg {
+  flex: 0 0 auto;
+}
+
+/* The native file control is visually hidden; the wrapper carries its focus
+   ring and invalid state so keyboard users still see where they are. */
+.intake-page .file-input:has(.file-input-native:focus-visible) {
+  outline: 2px solid var(--intake-brand-blue);
+  outline-offset: 1px;
+}
+
+.intake-page .file-input:has(.file-input-native[aria-invalid='true']) {
+  border-color: var(--intake-brand-danger);
+}
+
+.intake-page .button {
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.intake-page .button:focus-visible {
+  outline: 2px solid var(--intake-brand-blue);
+  outline-offset: 2px;
+}
+
+.intake-page .button-primary {
+  color: #ffffff;
+  background: var(--intake-brand-blue);
+  box-shadow: 0 2px 2px rgba(0, 17, 49, 0.12);
+}
+
+.intake-page .button-primary:hover {
+  background: var(--intake-brand-blue-hover);
+}
+
+.intake-page .button-secondary {
+  height: auto;
+  padding: 4px 0;
+  color: var(--intake-brand-text-secondary);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--intake-brand-rail-upcoming);
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.intake-page .button-secondary:hover {
+  color: var(--intake-brand-text-primary);
+  background: transparent;
+  border-bottom-color: var(--intake-brand-text-secondary);
+}
+
+.intake-page .button-secondary svg {
+  display: none;
+}
+
+.intake-page .onboarding-flow-footer {
+  position: static;
+  max-width: 600px;
+  margin-top: 0;
+  padding: 16px 40px 24px;
+  background: var(--intake-brand-card-bg);
+  border: 1px solid var(--intake-brand-card-border);
+  border-top-color: var(--intake-brand-divider);
+  border-radius: 0 0 16px 16px;
+}
+
+.intake-page .onboarding-flow-footer .page-actions {
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.intake-page .onboarding-flow-progress {
+  display: none;
+}
+
+.intake-page .onboarding-review .field-row {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--intake-brand-rail-upcoming);
+}
+
+.intake-page .onboarding-review .field-row:last-child {
+  border-bottom: 0;
+}
+
+.intake-page .field-label {
+  min-width: 140px;
+  color: var(--intake-brand-text-secondary);
+  font-size: 11px;
+}
+
+.intake-page .field-value {
+  color: var(--intake-brand-text-primary);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.intake-success {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+  text-align: center;
+}
+
+.intake-success-badge {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  color: #ffffff;
+  background: var(--intake-brand-success);
+  border-radius: 999px;
+}
+
+.intake-success-reference {
+  margin: 0;
+  color: var(--intake-brand-text-secondary);
+  font-family: var(--intake-brand-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.intake-unavailable {
+  display: grid;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+/* Phones (down to 360px): the card goes full-bleed with reduced padding, the
+   rail collapses to a compact circles-only progress bar, and the sticky
+   action footer (already sticky from the shared chrome) spans the viewport. */
+@media (max-width: 760px) {
+  .intake-page {
+    padding: 0 0 40px;
+  }
+
+  .intake-header {
+    margin: 0 0 16px;
+    padding: 16px 20px;
+  }
+
+  .intake-card {
+    max-width: none;
+    padding: 24px 20px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .intake-page .onboarding-flow-main {
+    max-width: none;
+    padding: 24px 20px 16px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .intake-page .step-rail-button {
+    padding: 0;
+  }
+
+  .intake-page .step-rail-index {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  .intake-page .step-rail-item:not(:last-child)::after {
+    top: 9px;
+    right: calc(-50% + 17px);
+    left: calc(50% + 17px);
+  }
+
+  .intake-page .step-rail-progress {
+    display: none;
+  }
+
+  .intake-page .intake-help {
+    display: none;
+  }
+
+  .intake-page .onboarding-card:has(.onboarding-review) {
+    padding: 14px;
+  }
+
+  .intake-page .onboarding-flow-footer {
+    max-width: none;
+    margin-top: 0;
+    padding: 16px 20px 24px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .intake-page .onboarding-flow-footer .page-actions {
+    flex-direction: column-reverse;
+    width: 100%;
+  }
+
+  .intake-page .onboarding-flow-footer .button-primary {
+    width: 100%;
+    height: 48px;
+  }
+
+  .intake-page .onboarding-card-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+}
+
+/* The rail button's hover transition is this surface's own addition to the
+   shared chrome's motion, so it gets its own reduced-motion kill. */
+@media (prefers-reduced-motion: reduce) {
+  .intake-page .step-rail-button {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Onboarding intake — the Tethr-admin surface (app chrome, not the brand
+   skin): the minted-link row and the reason cell's truncation.
+   --------------------------------------------------------------------------- */
+
+.onboarding-intake-content {
+  min-width: 0;
+  padding: 0 var(--hrms-space-6) var(--hrms-space-6);
+}
+
+.onboarding-intake-content > .table-shell {
+  margin-bottom: 0;
+}
+
+.intake-link-row {
+  margin-bottom: var(--hrms-space-4);
+  padding: var(--hrms-space-4);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+}
+
+.intake-link-label {
+  display: block;
+  margin-bottom: var(--hrms-space-2);
+  color: var(--hrms-color-text-secondary);
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.intake-link-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-2);
+}
+
+.intake-link-input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--hrms-space-3);
+  color: var(--hrms-color-text-primary);
+  background: var(--hrms-color-background-primary);
+  border: 1px solid var(--hrms-color-border-medium);
+  border-radius: var(--hrms-radius-sm);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.intake-link-input:focus-visible {
+  outline: 3px solid var(--hrms-color-border-blue);
+  outline-offset: 1px;
+}
+
+.intake-link-hint {
+  margin: var(--hrms-space-2) 0 0;
+  color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+}
+
+.intake-link-confirmation {
+  display: grid;
+  gap: var(--hrms-space-4);
+}
+
+.intake-link-confirmation > p {
+  margin: 0;
+  color: var(--hrms-color-text-secondary);
+}
+
+.intake-link-confirmation-controls {
+  display: grid;
+  gap: var(--hrms-space-2);
+}
+
+.intake-link-confirmation-controls label {
+  color: var(--hrms-color-text-secondary);
+  font-size: var(--hrms-font-size-xs);
+  font-weight: var(--hrms-font-weight-medium);
+}
+
+.intake-link-confirmation-controls .intake-link-input {
+  width: 100%;
+  height: 40px;
+}
+
+.intake-reason {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

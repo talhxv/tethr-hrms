@@ -238,6 +238,10 @@ export const OnboardingFlow = ({
             ))}
           </ol>
 
+          <span className="step-rail-progress">
+            Step {stepIndex + 1} of {steps.length} · {steps[stepIndex]?.label}
+          </span>
+
           <details className="onboarding-help">
             <summary className="onboarding-help-summary">
               Help and support

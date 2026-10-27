@@ -89,7 +89,10 @@ export const FORM_FIELD_TYPES = [
 ] as const;
 export type FormFieldType = (typeof FORM_FIELD_TYPES)[number];
 
-export const FORM_TARGETS = ['generic', 'application'] as const;
+// What a published form feeds. 'application' projects into the ATS
+// (candidate + application); 'employeeIntake' projects a new hire's details
+// into an Employee record (the onboarding intake form).
+export const FORM_TARGETS = ['generic', 'application', 'employeeIntake'] as const;
 export type FormTarget = (typeof FORM_TARGETS)[number];
 
 // Where an application sits in the pipeline, how it ended, and whether it is on

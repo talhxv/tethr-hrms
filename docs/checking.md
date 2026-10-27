@@ -98,6 +98,22 @@ So: **check the artefact, never the notification about the artefact.** This is t
 that renders a board but not its section names — an instrument reporting faithfully on the thing it
 measures, which is not the thing you wanted to know.
 
+**Most of these share one cause: a proxy standing in for the property actually cared about.** Four in a
+single session — grouping tokens by name prefix when the property was *does this vary by mode*; guarding
+staleness by timestamp when it was *does the content match*; trusting a build output when it was *does this
+match its source*; counting grep hits when it was *how many tokens exist*. **Every one of those proxies was
+exact when it was chosen, and every one had quietly stopped being so.**
+
+**And a proxy nobody consumes cannot be noticed when it rots.** The website's `--accent` had been a purple
+from a dead design for who knows how long; it survived because `var(--accent)` is referenced **twice** in
+the whole stylesheet while the real brand blue is written inline forty-one times. **Low-usage declarations
+are where staleness hides, because nothing exercises them** — so when auditing, count the references, not
+just the values.
+
+A proxy is not a mistake — the real property is often expensive and the proxy is usually fine. **So write
+down what it stands for.** A proxy with its referent recorded is a shortcut someone can re-check; one
+without is a claim nobody can audit, including you.
+
 **And record which instrument you used.** Two entries in this doc set contradicted each other about whether
 a screenshot technique worked on a filled panel. Both reasoned about the fill; **neither recorded which API
 it had called** — so both looked complete, neither was reproducible, and the second read as a correction of

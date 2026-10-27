@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: tethr-api
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npm run build --workspace=packages/shared && npm run build --workspace=packages/api
+    startCommand: node packages/api/dist/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_SSL
+        value: "true"
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: GRAPHQL_PLAYGROUND
+        value: "false"
+      - key: DATABASE_HOST
+        sync: false
+      - key: DATABASE_PORT
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: DATABASE_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: SLACK_WEBHOOK_URL
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false

@@ -21,6 +21,8 @@ import { CompensationPage } from '../modules/finance/compensation/pages/Compensa
 import { PayrollPage } from '../modules/finance/payroll/pages/PayrollPage';
 import { PayrollRunDetailPage } from '../modules/finance/payroll/pages/PayrollRunDetailPage';
 import { ApplyPage } from '../modules/forms/pages/ApplyPage';
+import { EmployeeIntakePage } from '../modules/forms/pages/EmployeeIntakePage';
+import { OnboardingIntakePage } from '../modules/forms/pages/OnboardingIntakePage';
 import { LeaveTriagePage } from '../modules/leave/pages/LeaveTriagePage';
 import { CandidatesPage } from '../modules/recruitment/pages/CandidatesPage';
 import { HiringRequestsPage } from '../modules/recruitment/pages/HiringRequestsPage';
@@ -69,6 +71,9 @@ export const AppRouter = () => (
       <Route path="/access" element={<AccessPendingPage />} />
       {/* Anonymous application form; the token in the path is the credential. */}
       <Route path="/apply/:token" element={<ApplyPage />} />
+      {/* Anonymous new-hire intake; same signed-link credential, brand-styled
+          multi-step surface. */}
+      <Route path="/onboarding/:token" element={<EmployeeIntakePage />} />
       <Route element={<RequireAuth />}>
         {/* Settings replace the shell: their own full-screen sidebar surface. */}
         <Route
@@ -105,6 +110,7 @@ export const AppRouter = () => (
           </Route>
           <Route element={<RequirePortal portals={['tethr']} roleKeys={['tethrAdmin']} />}>
             <Route path="/clients" element={<ClientPortfolioPage />} />
+            <Route path="/onboarding-intake" element={<OnboardingIntakePage />} />
           </Route>
           <Route element={<RequirePortal portals={['tethr', 'client', 'employee']} />}>
             <Route path="/announcements" element={<AnnouncementsPage />} />
