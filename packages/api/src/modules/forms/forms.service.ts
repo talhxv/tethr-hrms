@@ -226,7 +226,11 @@ export class FormsService {
     if (!form || form.status !== 'published') {
       throw new NotFoundError('Form not found', { id: formId });
     }
-    return { form, fields: await this.getFields(formId) };
+    const fields = await this.getFields(formId);
+    if (form.target === 'employeeIntake') {
+      await this.backfillFieldSteps(fields);
+    }
+    return { form, fields };
   }
 
   async mintLink(formId: FormId, refId?: string | null): Promise<{ slug: string; expiresAt: Date }> {
