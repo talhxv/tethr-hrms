@@ -380,7 +380,9 @@ export class FormsService {
   async ensureEmployeeIntakeForm(): Promise<PublicForm> {
     const existing = await this.forms.findOne({ where: { slug: 'employee-intake' } });
     if (existing) {
-      return { form: existing, fields: await this.getFields(toId<FormId>(existing.id)) };
+      const fields = await this.getFields(toId<FormId>(existing.id));
+      await this.backfillFieldSteps(fields);
+      return { form: existing, fields };
     }
     return this.createForm({
       name: 'Employee onboarding intake',
@@ -389,6 +391,21 @@ export class FormsService {
       status: 'published',
       fields: EMPLOYEE_INTAKE_FORM_FIELDS,
     });
+  }
+
+  private async backfillFieldSteps(fields: FormField[]): Promise<void> {
+    const templateByKey = new Map(
+      EMPLOYEE_INTAKE_FORM_FIELDS.map((t) => [t.fieldKey, t]),
+    );
+    const toUpdate = fields.filter(
+      (f) => f.step === null && templateByKey.get(f.fieldKey)?.step != null,
+    );
+    if (toUpdate.length === 0) return;
+    for (const field of toUpdate) {
+      const template = templateByKey.get(field.fieldKey)!;
+      field.step = template.step ?? null;
+      await this.fields.save(field);
+    }
   }
 
   // A form manager's view of what a form collected. Generic on purpose: any
