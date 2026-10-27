@@ -6767,6 +6767,7 @@ label.record-field-label {
    states' .intake-card wear the same skin. */
 .intake-card {
   max-width: 600px;
+  margin: 0 auto;
   padding: 40px 44px 32px;
   background: var(--intake-brand-card-bg);
   border: 1px solid var(--intake-brand-card-border);
