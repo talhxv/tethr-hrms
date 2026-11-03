@@ -60,6 +60,24 @@ import {
   UPSERT_EXIT_INTERVIEW_MUTATION,
 } from '../graphql/employee.operations';
 
+type IssuedCredentials = { readonly email: string; readonly password: string };
+
+// Unambiguous characters only (no 0/O, 1/l/I), so the password survives being read aloud or retyped.
+const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*';
+
+const generateTemporaryPassword = (length = 16): string => {
+  const limit = 256 - (256 % PASSWORD_ALPHABET.length);
+  let password = '';
+  while (password.length < length) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(length * 2))) {
+      if (byte < limit && password.length < length) {
+        password += PASSWORD_ALPHABET[byte % PASSWORD_ALPHABET.length];
+      }
+    }
+  }
+  return password;
+};
+
 type AssignmentView = {
   readonly id: string;
   readonly positionTitle: string | null;
@@ -607,6 +625,8 @@ export const EmployeeProfilePage = () => {
     roleTitle: '',
   });
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [issuedCredentials, setIssuedCredentials] = useState<IssuedCredentials | null>(null);
+  const [credentialsCopied, setCredentialsCopied] = useState(false);
   const [photoNotice, setPhotoNotice] = useState<string | null>(null);
 
   const canManageHrRecord = Boolean(
@@ -1215,18 +1235,21 @@ export const EmployeeProfilePage = () => {
   const onCreateLogin = async (): Promise<void> => {
     if (!detailEmployee) return;
     setDetailError(null);
+    setIssuedCredentials(null);
+    setCredentialsCopied(false);
+    const email = detailEmployee.workEmail?.trim();
+    if (!email) {
+      setDetailError('Add an email to this employee’s profile before creating a login.');
+      return;
+    }
+    const password = generateTemporaryPassword();
     try {
       await createWorkspaceUser({
         variables: {
-          input: {
-            email: detailEmployee?.workEmail ?? `${detailEmployee.employeeNumber}@example.com`,
-            password: 'Temp1234!',
-            employeeId: detailEmployee.id,
-            roleId: undefined,
-          },
+          input: { email, password, employeeId: detailEmployee.id, roleKey: 'employee' },
         },
       });
-      setDetailError('Login created for ' + detailEmployee.employeeNumber);
+      setIssuedCredentials({ email, password });
       await refetchDetail();
     } catch (caught) {
       setDetailError(caught instanceof Error ? caught.message : 'Could not create login');
@@ -2846,9 +2869,41 @@ export const EmployeeProfilePage = () => {
             <>
             <DetailSection title="Access">
               <p className="page-subtitle">Create a login for this employee or manage their account.</p>
-              <button className="button button-secondary" type="button" onClick={() => void onCreateLogin()} disabled={creatingWorkspaceUser}>
-                {creatingWorkspaceUser ? 'Creating…' : 'Create login'}
-              </button>
+              {issuedCredentials ? (
+                <div className="record-list" aria-live="polite">
+                  <div className="record-item">
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <strong>Login created</strong>
+                      <p className="page-subtitle">
+                        Copy these now and share them privately. The password won’t be shown again.
+                      </p>
+                      <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: theme.spacing(1, 3), margin: theme.spacing(2, 0) }}>
+                        <dt>Email</dt>
+                        <dd style={{ margin: 0, color: 'var(--hrms-color-text-primary)' }}>{issuedCredentials.email}</dd>
+                        <dt>Password</dt>
+                        <dd style={{ margin: 0, color: 'var(--hrms-color-text-primary)', fontFamily: 'monospace' }}>
+                          {issuedCredentials.password}
+                        </dd>
+                      </dl>
+                      <button
+                        className="button button-secondary"
+                        type="button"
+                        onClick={() => {
+                          void navigator.clipboard
+                            .writeText(`Email: ${issuedCredentials.email}\nPassword: ${issuedCredentials.password}`)
+                            .then(() => setCredentialsCopied(true));
+                        }}
+                      >
+                        {credentialsCopied ? 'Copied' : 'Copy credentials'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button className="button button-secondary" type="button" onClick={() => void onCreateLogin()} disabled={creatingWorkspaceUser}>
+                  {creatingWorkspaceUser ? 'Creating…' : 'Create login'}
+                </button>
+              )}
             </DetailSection>
             <DetailSection title="Separation">
               <div

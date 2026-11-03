@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, type EntityManager, type FindOptionsWhere } from 'typeorm';
 
-import { NotFoundError, UnauthenticatedError } from '../../common/errors';
+import { ConflictError, NotFoundError, UnauthenticatedError } from '../../common/errors';
 import { TenantContextService } from '../tenancy/tenant-context.service';
 import { TenantScopedRepository } from '../tenancy/tenant-scoped.repository';
 
@@ -40,9 +40,16 @@ export class AuthService {
 
   // Create a user in the CURRENT tenant context (the caller establishes it).
   async createUser(input: CreateUserData): Promise<User> {
+    const email = input.email.toLowerCase();
+    if (await this.users.findOne({ where: { email } })) {
+      throw new ConflictError('A login with this email already exists in this workspace', { email });
+    }
+    if (input.employeeId && (await this.users.findOne({ where: { employeeId: input.employeeId } }))) {
+      throw new ConflictError('This employee already has a login', { employeeId: input.employeeId });
+    }
     const passwordHash = await this.passwords.hash(input.password);
     const user = this.users.create({
-      email: input.email.toLowerCase(),
+      email,
       passwordHash,
       status: 'active',
       mfaEnabled: false,
