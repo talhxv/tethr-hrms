@@ -145,4 +145,26 @@ describe('AuthorizationService', () => {
       'Your role cannot assign that workspace role',
     );
   });
+
+  it('limits Tethr HR to issuing Employee logins', async () => {
+    const roles = {
+      find: jest.fn().mockResolvedValue([role(TETHR_ROLE, 'tethrHr', [])]),
+    } as unknown as Repository<Role>;
+    const assignments = {
+      find: jest.fn().mockResolvedValue([{ userId: USER, roleId: TETHR_ROLE }]),
+    } as unknown as Repository<UserRoleAssignment>;
+    const tenantContext = {
+      getUserId: jest.fn().mockReturnValue(USER),
+      getOrganizationId: jest.fn().mockReturnValue(ORGANIZATION),
+    } as unknown as TenantContextService;
+    const service = new AuthorizationService(roles, assignments, tenantContext);
+
+    await expect(service.listAssignableSystemRoleKeys()).resolves.toEqual(['employee']);
+    await expect(service.assertCurrentUserCanAssign('employee')).resolves.toBeUndefined();
+    for (const roleKey of ['tethrAdmin', 'tethrHr', 'tethrFinance'] as const) {
+      await expect(service.assertCurrentUserCanAssign(roleKey)).rejects.toThrow(
+        'Your role cannot assign that workspace role',
+      );
+    }
+  });
 });

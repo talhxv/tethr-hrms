@@ -14,6 +14,7 @@ import { EmployeePersonalDetails } from './entities/employee-personal-details.en
 import { NotFoundError } from '../../common/errors';
 
 type UpdateEmployeePersonalDetailsData = {
+  readonly nationalIdNumber?: string | null;
   readonly passportNumber?: string | null;
   readonly passportIssueDate?: string | null;
   readonly passportIssuePlace?: string | null;
@@ -53,6 +54,7 @@ export class EmployeePersonalDetailsService {
       existing ??
       this.details.create({
         employeeId,
+        nationalIdNumber: null,
         passportNumber: null,
         passportIssueDate: null,
         passportIssuePlace: null,

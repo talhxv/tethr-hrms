@@ -7,6 +7,15 @@ export class UpdatePersonalDetailsInput {
   @IsString()
   employeeId!: string;
 
+  // HR-maintained only: identity numbers are verified against the card, so the
+  // self-service input below deliberately does not accept it.
+  @Field(() => String, { nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(/^[0-9A-Za-z-]+$/, { message: 'nationalIdNumber may contain only letters, digits and dashes' })
+  nationalIdNumber?: string;
+
   @Field(() => String, { nullable: true })
   @IsOptional()
   @IsString()

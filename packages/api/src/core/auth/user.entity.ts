@@ -34,6 +34,12 @@ export class User extends TenantScopedEntity {
   @Column({ type: 'boolean', default: false })
   isWorkspaceCreator!: boolean;
 
+  // Set whenever an administrator chose the password (a login created for
+  // someone, or a reset). The person must pick their own before using the
+  // app; cleared by AuthService.changeOwnPassword.
+  @Column({ type: 'boolean', default: false })
+  mustChangePassword!: boolean;
+
   @Index()
   @Column({ type: 'uuid', nullable: true })
   employeeId!: EmployeeId | null;

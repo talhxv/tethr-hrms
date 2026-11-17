@@ -12,6 +12,8 @@ import {
   IconFileText,
   IconHome,
   IconLayoutDashboard,
+  IconId,
+  IconLock,
   IconLogout,
   IconMenu2,
   IconMessageCircle,
@@ -80,7 +82,6 @@ type MyOrganizationData = { readonly myOrganization: MyOrganization };
 
 const tethrNavigation: readonly NavigationEntry[] = [
   { kind: 'link', label: 'Dashboard', to: '/dashboard', icon: IconLayoutDashboard },
-  { kind: 'link', label: 'Clients', to: '/clients', icon: IconBuildingCommunity },
   {
     kind: 'group',
     label: 'People',
@@ -318,6 +319,7 @@ export const AppShell = () => {
   const canOpenSettings = visibleSettingsTabs(user).length > 0;
   const canInviteUsers =
     user?.roleKeys?.includes('tethrAdmin') === true ||
+    user?.roleKeys?.includes('tethrHr') === true ||
     user?.roleKeys?.includes('clientAdmin') === true;
   const isVisibleItem = (item: NavigationItem): boolean => {
     if (item.to === '/compensation') return canViewCompensation;
@@ -358,7 +360,6 @@ export const AppShell = () => {
     return true;
   };
   const visibleNavigation: readonly NavigationEntry[] = navigation
-    .filter((entry) => entry.kind !== 'link' || entry.to !== '/clients' || canManageClients)
     .filter((entry) => entry.kind !== 'link' || entry.to !== '/compensation' || canViewCompensation)
     .map((entry): NavigationEntry => {
       if (entry.kind === 'link') return entry;
@@ -711,6 +712,16 @@ export const AppShell = () => {
                         <span>Settings</span>
                       </Link>
                     ) : null}
+                    {canManageClients ? (
+                      <Link
+                        className="dropdown-nav-item"
+                        onClick={() => setOpenMenu(null)}
+                        to="/settings/clients"
+                      >
+                        <IconBuildingCommunity aria-hidden="true" size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                        <span>Manage clients</span>
+                      </Link>
+                    ) : null}
                     {hasOtherWorkspaces ? (
                       <button className="dropdown-nav-item" onClick={openWorkspacePicker} type="button">
                         <IconArrowsRightLeft aria-hidden="true"
@@ -720,6 +731,20 @@ export const AppShell = () => {
                         <span>Switch workspace</span>
                       </button>
                     ) : null}
+                    {portal === 'tethr' && user?.employeeId ? (
+                      <Link className="dropdown-nav-item" onClick={() => setOpenMenu(null)} to="/me">
+                        <IconId aria-hidden="true" size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                        <span>My records</span>
+                      </Link>
+                    ) : null}
+                    <Link
+                      className="dropdown-nav-item"
+                      onClick={() => setOpenMenu(null)}
+                      to="/change-password"
+                    >
+                      <IconLock aria-hidden="true" size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                      <span>Change password</span>
+                    </Link>
                     <button
                       className="dropdown-nav-item dropdown-nav-item-danger"
                       onClick={() => {
@@ -883,6 +908,20 @@ export const AppShell = () => {
 
             <section className="mobile-nav-group">
               <div className="mobile-nav-group-label">Account</div>
+              {portal === 'tethr' && user?.employeeId ? (
+                <Link className="mobile-nav-item" onClick={() => setMobileNavOpen(false)} to="/me">
+                  <IconId aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                  <span>My records</span>
+                </Link>
+              ) : null}
+              <Link
+                className="mobile-nav-item"
+                onClick={() => setMobileNavOpen(false)}
+                to="/change-password"
+              >
+                <IconLock aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                <span>Change password</span>
+              </Link>
               <button
                 className="mobile-nav-item"
                 type="button"

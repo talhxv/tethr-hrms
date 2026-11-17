@@ -10,6 +10,7 @@ const AUTH_PAYLOAD = `
     employeeId
     roleKeys
     portal
+    mustChangePassword
   }
 `;
 
@@ -87,6 +88,7 @@ export const WORKSPACE_USERS_QUERY = gql`
       employeeId
       roleKeys
       portal
+      mustChangePassword
     }
   }
 `;
@@ -107,6 +109,7 @@ export const CREATE_WORKSPACE_USER_MUTATION = gql`
       employeeId
       roleKeys
       portal
+      mustChangePassword
     }
   }
 `;
@@ -121,6 +124,29 @@ export const UPDATE_WORKSPACE_USER_ROLE_MUTATION = gql`
       employeeId
       roleKeys
       portal
+      mustChangePassword
+    }
+  }
+`;
+
+export const CHANGE_MY_PASSWORD_MUTATION = gql`
+  mutation ChangeMyPassword($input: ChangeMyPasswordInput!) {
+    changeMyPassword(input: $input) {
+      id
+      mustChangePassword
+    }
+  }
+`;
+
+export const RESET_WORKSPACE_USER_PASSWORD_MUTATION = gql`
+  mutation ResetWorkspaceUserPassword($input: ResetWorkspaceUserPasswordInput!) {
+    resetWorkspaceUserPassword(input: $input) {
+      temporaryPassword
+      user {
+        id
+        email
+        mustChangePassword
+      }
     }
   }
 `;

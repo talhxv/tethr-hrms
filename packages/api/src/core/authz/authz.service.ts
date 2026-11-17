@@ -113,6 +113,11 @@ export class AuthorizationService {
     if (access.roleKeys.includes('clientAdmin')) {
       return ['clientMember', 'employee'];
     }
+    // Tethr HR issues and resets staff logins, but only at Employee level;
+    // admin, HR and Finance logins stay with Tethr administrators.
+    if (access.roleKeys.includes('tethrHr')) {
+      return ['employee'];
+    }
     return [];
   }
 

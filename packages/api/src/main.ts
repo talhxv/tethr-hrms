@@ -22,8 +22,20 @@ async function bootstrap(): Promise<void> {
   // gracefully instead of being orphaned on redeploy.
   app.enableShutdownHooks();
 
-  // Dev-permissive CORS so the Vite SPA (:5173) can call the API (:3000).
-  app.enableCors({ origin: true, credentials: true });
+  const config = app.get(ConfigService);
+
+  // CORS: an explicit allowlist when CORS_ORIGINS is set (required in
+  // production, enforced by the config schema); development without it stays
+  // permissive so the Vite SPA (:5173) can call the API (:3000).
+  const allowedOrigins = config.get('CORS_ORIGINS');
+  app.enableCors({ origin: allowedOrigins ?? true, credentials: true });
+
+  // Behind the hosting proxy (Render) the socket address is the proxy's, which
+  // would put every user in one rate-limit bucket. Trust exactly one hop so
+  // req.ip is the caller's address.
+  if (config.get('NODE_ENV') === 'production') {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
 
   // Validate every boundary input; strip unknown fields; reject extras.
   app.useGlobalPipes(
@@ -33,7 +45,6 @@ async function bootstrap(): Promise<void> {
   // Map domain errors to the right transport response.
   app.useGlobalFilters(new DomainExceptionFilter());
 
-  const config = app.get(ConfigService);
   const port = config.get('PORT');
   await app.listen(port);
   Logger.log(

@@ -1,7 +1,6 @@
 import type { AuthUser } from '../../auth/states/authState';
 
 import { ANNOUNCEMENTS_FIELDS, useAnnouncementsData } from './AnnouncementsWidget';
-import { CLIENT_PORTFOLIO_FIELDS, useClientPortfolioData } from './ClientPortfolioWidget';
 import { EMPLOYEE_COUNTS_FIELDS, useEmployeeCountsData } from './EmployeeCountsWidget';
 import { FEEDBACK_INBOX_FIELDS, useFeedbackInboxData } from './FeedbackInboxWidget';
 import { HIRING_PIPELINE_FIELDS, useHiringPipelineData } from './HiringPipelineWidget';
@@ -25,7 +24,6 @@ const canManagePayroll = (user: AuthUser | null): boolean =>
   hasAnyRole(user, 'tethrAdmin', 'tethrFinance');
 const canManageTethrHr = (user: AuthUser | null): boolean =>
   hasAnyRole(user, 'tethrAdmin', 'tethrHr');
-const canManageClients = (user: AuthUser | null): boolean => hasAnyRole(user, 'tethrAdmin');
 
 // Size sets per content class (design.md §6.6): share/stat tiles offer the
 // compact set, stat pairs skip the quarter, charts need at least a half.
@@ -144,19 +142,6 @@ export const WIDGET_REGISTRY: readonly WidgetDefinition[] = [
     defaultFieldIds: ['total', 'open'],
     chartKind: 'share',
     useData: useFeedbackInboxData,
-  },
-  {
-    id: 'clientPortfolio',
-    title: 'Client portfolio',
-    portals: ['tethr'],
-    sizeOptions: SHARE_SIZES,
-    defaultSize: '1x2',
-    accentColor: 'iris',
-    defaultEnabled: false,
-    isVisible: canManageClients,
-    fields: CLIENT_PORTFOLIO_FIELDS,
-    defaultFieldIds: ['total'],
-    useData: useClientPortfolioData,
   },
   {
     id: 'myLeaveBalance',

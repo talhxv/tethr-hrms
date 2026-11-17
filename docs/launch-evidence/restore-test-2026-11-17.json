@@ -1,0 +1,425 @@
+{
+  "date": "2026-11-17",
+  "backup": {
+    "format": "pg_dump -Fc -n public --no-owner --no-privileges",
+    "client": "postgres:17",
+    "bytes": 322882
+  },
+  "restore": {
+    "target": "throwaway local postgres:17 container (deleted after)",
+    "prerequisite": "CREATE SCHEMA extensions; CREATE EXTENSION uuid-ossp SCHEMA extensions",
+    "errors": 0,
+    "indexes": 321,
+    "constraints": 100,
+    "latestMigration": "RoleAccessAdjustments1793720000000"
+  },
+  "comparison": {
+    "tables": 99,
+    "tablesMatching": 99,
+    "totalRowsBackup": 1136,
+    "totalRowsLive": 1136,
+    "perTable": {
+      "announcements": {
+        "backup": 0,
+        "live": 0
+      },
+      "applications": {
+        "backup": 0,
+        "live": 0
+      },
+      "applications_duplicate_cleanup_backup": {
+        "backup": 0,
+        "live": 0
+      },
+      "approval_requests": {
+        "backup": 1,
+        "live": 1
+      },
+      "asset_allocations": {
+        "backup": 0,
+        "live": 0
+      },
+      "asset_categories": {
+        "backup": 0,
+        "live": 0
+      },
+      "assets": {
+        "backup": 0,
+        "live": 0
+      },
+      "assignments": {
+        "backup": 20,
+        "live": 20
+      },
+      "audit_events": {
+        "backup": 226,
+        "live": 226
+      },
+      "bank_detail_change_requests": {
+        "backup": 0,
+        "live": 0
+      },
+      "benefit_enrollments": {
+        "backup": 0,
+        "live": 0
+      },
+      "benefit_plans": {
+        "backup": 0,
+        "live": 0
+      },
+      "billing_group_members": {
+        "backup": 0,
+        "live": 0
+      },
+      "billing_groups": {
+        "backup": 0,
+        "live": 0
+      },
+      "billing_period_closes": {
+        "backup": 0,
+        "live": 0
+      },
+      "bonus_awards": {
+        "backup": 0,
+        "live": 0
+      },
+      "candidate_documents": {
+        "backup": 0,
+        "live": 0
+      },
+      "candidates": {
+        "backup": 0,
+        "live": 0
+      },
+      "client_billing_configs": {
+        "backup": 3,
+        "live": 3
+      },
+      "clients": {
+        "backup": 6,
+        "live": 6
+      },
+      "clock_events": {
+        "backup": 15,
+        "live": 15
+      },
+      "cost_centers": {
+        "backup": 0,
+        "live": 0
+      },
+      "cv_parses": {
+        "backup": 0,
+        "live": 0
+      },
+      "departments": {
+        "backup": 1,
+        "live": 1
+      },
+      "document_versions": {
+        "backup": 0,
+        "live": 0
+      },
+      "documents": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_assessments": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_document_links": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_educations": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_exit_interviews": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_feedback": {
+        "backup": 1,
+        "live": 1
+      },
+      "employee_hr_records": {
+        "backup": 19,
+        "live": 19
+      },
+      "employee_leave_entitlements": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_offboarding_tasks": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_onboarding_tasks": {
+        "backup": 154,
+        "live": 154
+      },
+      "employee_personal_details": {
+        "backup": 19,
+        "live": 19
+      },
+      "employee_profiles": {
+        "backup": 20,
+        "live": 20
+      },
+      "employee_separations": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_tax_profiles": {
+        "backup": 0,
+        "live": 0
+      },
+      "employee_work_histories": {
+        "backup": 0,
+        "live": 0
+      },
+      "employees": {
+        "backup": 44,
+        "live": 44
+      },
+      "exchange_rates": {
+        "backup": 0,
+        "live": 0
+      },
+      "expense_categories": {
+        "backup": 0,
+        "live": 0
+      },
+      "expense_claim_lines": {
+        "backup": 0,
+        "live": 0
+      },
+      "expense_claims": {
+        "backup": 0,
+        "live": 0
+      },
+      "final_settlements": {
+        "backup": 0,
+        "live": 0
+      },
+      "form_definitions": {
+        "backup": 1,
+        "live": 1
+      },
+      "form_fields": {
+        "backup": 20,
+        "live": 20
+      },
+      "form_links": {
+        "backup": 10,
+        "live": 10
+      },
+      "form_submissions": {
+        "backup": 2,
+        "live": 2
+      },
+      "form_upload_tickets": {
+        "backup": 0,
+        "live": 0
+      },
+      "grades": {
+        "backup": 0,
+        "live": 0
+      },
+      "hiring_request_updates": {
+        "backup": 1,
+        "live": 1
+      },
+      "hiring_requests": {
+        "backup": 1,
+        "live": 1
+      },
+      "holiday_calendars": {
+        "backup": 0,
+        "live": 0
+      },
+      "holidays": {
+        "backup": 0,
+        "live": 0
+      },
+      "interview_feedback": {
+        "backup": 0,
+        "live": 0
+      },
+      "interview_feedback_skills": {
+        "backup": 0,
+        "live": 0
+      },
+      "interview_panel_members": {
+        "backup": 0,
+        "live": 0
+      },
+      "interview_rounds": {
+        "backup": 6,
+        "live": 6
+      },
+      "interviews": {
+        "backup": 0,
+        "live": 0
+      },
+      "invoice_lines": {
+        "backup": 0,
+        "live": 0
+      },
+      "invoices": {
+        "backup": 0,
+        "live": 0
+      },
+      "job_families": {
+        "backup": 0,
+        "live": 0
+      },
+      "job_postings": {
+        "backup": 0,
+        "live": 0
+      },
+      "jobs": {
+        "backup": 1,
+        "live": 1
+      },
+      "leave_balances": {
+        "backup": 20,
+        "live": 20
+      },
+      "leave_requests": {
+        "backup": 2,
+        "live": 2
+      },
+      "leave_types": {
+        "backup": 4,
+        "live": 4
+      },
+      "legal_entities": {
+        "backup": 0,
+        "live": 0
+      },
+      "locations": {
+        "backup": 0,
+        "live": 0
+      },
+      "migrations": {
+        "backup": 16,
+        "live": 16
+      },
+      "offers": {
+        "backup": 0,
+        "live": 0
+      },
+      "organizations": {
+        "backup": 43,
+        "live": 43
+      },
+      "outbox_messages": {
+        "backup": 187,
+        "live": 187
+      },
+      "pay_adjustments": {
+        "backup": 0,
+        "live": 0
+      },
+      "pay_bands": {
+        "backup": 0,
+        "live": 0
+      },
+      "pay_components": {
+        "backup": 3,
+        "live": 3
+      },
+      "payroll_cost_snapshots": {
+        "backup": 0,
+        "live": 0
+      },
+      "payroll_run_line_components": {
+        "backup": 1,
+        "live": 1
+      },
+      "payroll_run_lines": {
+        "backup": 1,
+        "live": 1
+      },
+      "payroll_runs": {
+        "backup": 1,
+        "live": 1
+      },
+      "payslip_lines": {
+        "backup": 1,
+        "live": 1
+      },
+      "payslips": {
+        "backup": 1,
+        "live": 1
+      },
+      "positions": {
+        "backup": 18,
+        "live": 18
+      },
+      "processed_events": {
+        "backup": 46,
+        "live": 46
+      },
+      "regularizations": {
+        "backup": 0,
+        "live": 0
+      },
+      "roles": {
+        "backup": 68,
+        "live": 68
+      },
+      "salary_revisions": {
+        "backup": 20,
+        "live": 20
+      },
+      "salary_structure_components": {
+        "backup": 1,
+        "live": 1
+      },
+      "salary_structures": {
+        "backup": 4,
+        "live": 4
+      },
+      "shortlist_entries": {
+        "backup": 0,
+        "live": 0
+      },
+      "shortlists": {
+        "backup": 0,
+        "live": 0
+      },
+      "tax_slab_groups": {
+        "backup": 0,
+        "live": 0
+      },
+      "tax_slabs": {
+        "backup": 0,
+        "live": 0
+      },
+      "time_entries": {
+        "backup": 6,
+        "live": 6
+      },
+      "timesheets": {
+        "backup": 0,
+        "live": 0
+      },
+      "user_role_assignments": {
+        "backup": 62,
+        "live": 62
+      },
+      "users": {
+        "backup": 60,
+        "live": 60
+      }
+    }
+  },
+  "notCovered": [
+    "Supabase Storage files",
+    "secrets"
+  ],
+  "deployRollback": "documented, not rehearsed (needs Render dashboard access)"
+}

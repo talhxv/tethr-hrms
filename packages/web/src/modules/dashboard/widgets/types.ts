@@ -13,7 +13,6 @@ export type WidgetId =
   | 'hiringPipeline'
   | 'announcements'
   | 'feedbackInbox'
-  | 'clientPortfolio'
   | 'myLeaveBalance'
   | 'myPayHistory'
   | 'myEmploymentSummary'

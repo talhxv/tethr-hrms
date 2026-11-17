@@ -48,6 +48,7 @@ const adminUser = {
   mfaEnabled: false,
   employeeId: null,
   isWorkspaceCreator: true,
+  mustChangePassword: false,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 } as User;

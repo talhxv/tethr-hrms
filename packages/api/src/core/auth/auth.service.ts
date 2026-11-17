@@ -1,10 +1,17 @@
 import type { EmployeeId, UserId } from '@hrms/shared';
+import { randomBytes } from 'node:crypto';
+
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, type EntityManager, type FindOptionsWhere } from 'typeorm';
 
-import { ConflictError, NotFoundError, UnauthenticatedError } from '../../common/errors';
+import {
+  ConflictError,
+  NotFoundError,
+  UnauthenticatedError,
+  ValidationFailedError,
+} from '../../common/errors';
 import { TenantContextService } from '../tenancy/tenant-context.service';
 import { TenantScopedRepository } from '../tenancy/tenant-scoped.repository';
 
@@ -22,7 +29,17 @@ type CreateUserData = {
   readonly password: string;
   readonly employeeId?: EmployeeId | null;
   readonly isWorkspaceCreator?: boolean;
+  // True when an administrator chose this password for someone else.
+  readonly mustChangePassword?: boolean;
 };
+
+// Own passwords must be at least this long; administrator-issued ones are
+// generated well past it.
+export const MIN_OWN_PASSWORD_LENGTH = 10;
+
+// 18 random bytes → 24 URL-safe characters: unguessable, and still easy to
+// read out or paste once.
+const generateTemporaryPassword = (): string => randomBytes(18).toString('base64url');
 
 export type AuthResult = { readonly user: User; readonly token: string };
 
@@ -55,7 +72,41 @@ export class AuthService {
       mfaEnabled: false,
       employeeId: input.employeeId ?? null,
       isWorkspaceCreator: input.isWorkspaceCreator ?? false,
+      mustChangePassword: input.mustChangePassword ?? false,
     });
+    return this.users.save(user);
+  }
+
+  // Controlled account recovery (no email delivery yet): an administrator
+  // issues a fresh one-time password, shown to them once. The person must
+  // replace it at their next sign-in. The caller checks permission to manage
+  // this user; this only refuses accounts that cannot sign in anyway.
+  async issueTemporaryPassword(userId: string): Promise<{ readonly user: User; readonly temporaryPassword: string }> {
+    const user = await this.getUserById(userId);
+    if (user.status === 'disabled') {
+      throw new ValidationFailedError('This login is disabled; re-enable it before resetting the password');
+    }
+    const temporaryPassword = generateTemporaryPassword();
+    user.passwordHash = await this.passwords.hash(temporaryPassword);
+    user.mustChangePassword = true;
+    return { user: await this.users.save(user), temporaryPassword };
+  }
+
+  // The signed-in person replaces their own password (first sign-in after an
+  // administrator-issued one, or any time). Requires the current password.
+  async changeOwnPassword(currentPassword: string, newPassword: string): Promise<User> {
+    const user = await this.getCurrentUser();
+    if (!(await this.passwords.verify(currentPassword, user.passwordHash))) {
+      throw new ValidationFailedError('Your current password is not correct');
+    }
+    if (newPassword.length < MIN_OWN_PASSWORD_LENGTH) {
+      throw new ValidationFailedError(`Choose a password of at least ${MIN_OWN_PASSWORD_LENGTH} characters`);
+    }
+    if (newPassword === currentPassword) {
+      throw new ValidationFailedError('Choose a password different from the current one');
+    }
+    user.passwordHash = await this.passwords.hash(newPassword);
+    user.mustChangePassword = false;
     return this.users.save(user);
   }
 

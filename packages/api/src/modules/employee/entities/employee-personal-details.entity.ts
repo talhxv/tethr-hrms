@@ -14,6 +14,11 @@ export class EmployeePersonalDetails extends TenantScopedEntity {
   @Column({ type: 'uuid' })
   employeeId!: EmployeeId;
 
+  // National identity number — the CNIC for Pakistani staff (13 digits,
+  // stored as written on the card: 12345-1234567-1).
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  nationalIdNumber!: string | null;
+
   @Column({ type: 'varchar', length: 64, nullable: true })
   passportNumber!: string | null;
 

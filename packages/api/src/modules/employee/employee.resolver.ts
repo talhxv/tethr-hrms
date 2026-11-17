@@ -117,6 +117,7 @@ const toEmployeeProfileView = (profile: EmployeeProfile): EmployeeProfileView =>
 const toPersonalDetailsView = (details: EmployeePersonalDetails): EmployeePersonalDetailsView => ({
   id: details.id,
   employeeId: details.employeeId,
+  nationalIdNumber: details.nationalIdNumber ?? null,
   passportNumber: details.passportNumber,
   passportIssueDate: details.passportIssueDate,
   passportIssuePlace: details.passportIssuePlace,
@@ -577,6 +578,13 @@ export class EmployeeResolver {
   @UseGuards(PermissionsGuard)
   @RequirePermissions(PERMISSIONS.employeeRead)
   async employeePersonalDetails(@Args('employeeId', { type: () => ID }) employeeId: string): Promise<EmployeePersonalDetailsView | null> {
+    // Identity numbers (CNIC, passport), health and family details are
+    // sensitive: only roles with employee:sensitive:read (Tethr admin, Tethr
+    // HR) see them. Everyone else with plain employee:read (Finance, client
+    // roles) gets null rather than an error, because the profile page loads
+    // this alongside non-sensitive fields in one request.
+    const access = await this.authorization.getCurrentAccess();
+    if (!access.permissions.includes(PERMISSIONS.employeeSensitiveRead)) return null;
     const details = await this.personalDetailsService.getForEmployee(toId<EmployeeId>(employeeId));
     return details ? toPersonalDetailsView(details) : null;
   }

@@ -16,6 +16,8 @@ const PUBLIC_OPERATIONS: ReadonlySet<string> = new Set([
   'core/auth/auth.resolver.ts:me',
   'core/auth/auth.resolver.ts:selectWorkspace',
   'core/auth/auth.resolver.ts:hasOtherWorkspaces',
+  // Acts only on the caller's own login and requires their current password.
+  'core/auth/auth.resolver.ts:changeMyPassword',
   'core/auth/auth.resolver.ts:emailIsAlreadyRegistered',
   'modules/account/account.resolver.ts:signUp',
   'modules/account/account.resolver.ts:login',

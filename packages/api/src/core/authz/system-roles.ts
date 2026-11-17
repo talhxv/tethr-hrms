@@ -13,6 +13,32 @@ type SystemRoleDefinition = {
 // These definitions only seed tenant data. Every authorization decision uses the
 // permissions persisted on the effective role, so an administrator can later
 // adapt a role without shipping code.
+// An employee's own-record permissions. Tethr HR and Finance staff are
+// employees too, and a login holds one role, so those roles carry this set as
+// well (owner decision, 16 Nov 2026); "own" permissions only ever reach the
+// login's linked employee record.
+const EMPLOYEE_SELF_SERVICE: readonly Permission[] = [
+  PERMISSIONS.employeeSelfRead,
+  PERMISSIONS.employeeSelfWrite,
+  PERMISSIONS.compensationOwnRead,
+  PERMISSIONS.payslipOwnRead,
+  PERMISSIONS.leaveOwnRead,
+  PERMISSIONS.leaveOwnWrite,
+  PERMISSIONS.attendanceOwnRead,
+  PERMISSIONS.attendanceOwnWrite,
+  PERMISSIONS.holidayRead,
+  PERMISSIONS.announcementRead,
+  PERMISSIONS.feedbackWrite,
+  PERMISSIONS.expenseOwnRead,
+  PERMISSIONS.expenseOwnWrite,
+  PERMISSIONS.hardwareRequestOwnRead,
+  PERMISSIONS.hardwareRequestOwnWrite,
+];
+
+const withSelfService = (permissions: readonly Permission[]): readonly Permission[] => [
+  ...new Set([...permissions, ...EMPLOYEE_SELF_SERVICE]),
+];
+
 export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>> = {
   tethrAdmin: {
     key: 'tethrAdmin',
@@ -26,7 +52,10 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
     name: 'Tethr HR',
     portal: 'tethr',
     dataScope: 'organization',
-    permissions: [
+    // user:manage is limited to Employee logins by
+    // AuthorizationService.listAssignableSystemRoleKeys.
+    permissions: withSelfService([
+      PERMISSIONS.userManage,
       PERMISSIONS.employeeRead,
       PERMISSIONS.employeeWrite,
       PERMISSIONS.employeeSensitiveRead,
@@ -58,14 +87,18 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.expenseRead,
       PERMISSIONS.expenseWrite,
       PERMISSIONS.expenseApprove,
-    ],
+      PERMISSIONS.assetRead,
+      PERMISSIONS.assetWrite,
+      PERMISSIONS.hardwareRequestRead,
+      PERMISSIONS.hardwareRequestWrite,
+    ]),
   },
   tethrFinance: {
     key: 'tethrFinance',
     name: 'Tethr Finance',
     portal: 'tethr',
     dataScope: 'organization',
-    permissions: [
+    permissions: withSelfService([
       PERMISSIONS.employeeRead,
       PERMISSIONS.compensationRead,
       PERMISSIONS.payrollRead,
@@ -80,7 +113,7 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.expenseRead,
       PERMISSIONS.expensePay,
       PERMISSIONS.platformReadAll,
-    ],
+    ]),
   },
   clientAdmin: {
     key: 'clientAdmin',
@@ -109,6 +142,10 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.billingOwnRead,
       PERMISSIONS.expenseRead,
       PERMISSIONS.expenseApprove,
+      PERMISSIONS.assetRead,
+      PERMISSIONS.hardwareRequestRead,
+      PERMISSIONS.hardwareRequestWrite,
+      PERMISSIONS.hardwareRequestApprove,
     ],
   },
   clientMember: {
@@ -116,6 +153,8 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
     name: 'Client member',
     portal: 'client',
     dataScope: 'organization',
+    // No compensation:read: salaries are visible to the client admin only
+    // (owner decision, 16 Nov 2026).
     permissions: [
       PERMISSIONS.employeeRead,
       PERMISSIONS.hiringRequestRead,
@@ -124,13 +163,14 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
       PERMISSIONS.shortlistDecide,
       PERMISSIONS.assessmentRead,
       PERMISSIONS.documentRead,
-      PERMISSIONS.compensationRead,
       PERMISSIONS.leaveTeamRead,
       PERMISSIONS.attendanceTeamRead,
       PERMISSIONS.holidayRead,
       PERMISSIONS.announcementRead,
       PERMISSIONS.billingOwnRead,
       PERMISSIONS.expenseRead,
+      PERMISSIONS.assetRead,
+      PERMISSIONS.hardwareRequestRead,
     ],
   },
   employee: {
@@ -138,21 +178,7 @@ export const SYSTEM_ROLES: Readonly<Record<SystemRoleKey, SystemRoleDefinition>>
     name: 'Employee',
     portal: 'employee',
     dataScope: 'own',
-    permissions: [
-      PERMISSIONS.employeeSelfRead,
-      PERMISSIONS.employeeSelfWrite,
-      PERMISSIONS.compensationOwnRead,
-      PERMISSIONS.payslipOwnRead,
-      PERMISSIONS.leaveOwnRead,
-      PERMISSIONS.leaveOwnWrite,
-      PERMISSIONS.attendanceOwnRead,
-      PERMISSIONS.attendanceOwnWrite,
-      PERMISSIONS.holidayRead,
-      PERMISSIONS.announcementRead,
-      PERMISSIONS.feedbackWrite,
-      PERMISSIONS.expenseOwnRead,
-      PERMISSIONS.expenseOwnWrite,
-    ],
+    permissions: EMPLOYEE_SELF_SERVICE,
   },
 };
 

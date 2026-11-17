@@ -52,6 +52,29 @@ const configObjectSchema = z.object({
   FORM_SUBMIT_LIMIT_PER_10_MIN: z.coerce.number().int().positive().default(10),
   FORM_UPLOAD_LIMIT_PER_10_MIN: z.coerce.number().int().positive().default(30),
 
+  // Sliding-window limits for the public sign-in/sign-up mutations. Login is
+  // limited per email (password guessing) and per client address (spraying
+  // many emails); the address limit is generous because staff can share an
+  // office connection.
+  LOGIN_LIMIT_PER_EMAIL_PER_15_MIN: z.coerce.number().int().positive().default(10),
+  LOGIN_LIMIT_PER_ADDRESS_PER_15_MIN: z.coerce.number().int().positive().default(50),
+  SIGNUP_LIMIT_PER_ADDRESS_PER_HOUR: z.coerce.number().int().positive().default(5),
+
+  // Comma-separated browser origins allowed to call the API with credentials,
+  // e.g. "https://hrms.tethrhq.com". Required in production; when unset in
+  // development any origin is allowed so the Vite dev server just works.
+  CORS_ORIGINS: z
+    .string()
+    .optional()
+    .transform((value) =>
+      value
+        ? value
+            .split(',')
+            .map((origin) => origin.trim().replace(/\/+$/, ''))
+            .filter((origin) => origin.length > 0)
+        : undefined,
+    ),
+
   GRAPHQL_PLAYGROUND: envBoolean(false),
 
   // Object storage. 'supabase' is the real driver; 'local' writes to disk under
@@ -95,7 +118,23 @@ const requireSupabaseStorage = (
   }
 };
 
-const configSchema = configObjectSchema.superRefine(requireSupabaseStorage);
+const requireProductionCors = (
+  config: z.infer<typeof configObjectSchema>,
+  context: z.RefinementCtx,
+) => {
+  if (config.NODE_ENV === 'production' && (!config.CORS_ORIGINS || config.CORS_ORIGINS.length === 0)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['CORS_ORIGINS'],
+      message: 'CORS_ORIGINS is required in production (comma-separated web app origins)',
+    });
+  }
+};
+
+const configSchema = configObjectSchema.superRefine((config, context) => {
+  requireSupabaseStorage(config, context);
+  requireProductionCors(config, context);
+});
 
 export type AppConfig = z.infer<typeof configObjectSchema>;
 

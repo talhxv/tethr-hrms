@@ -43,3 +43,7 @@ services:
         sync: false
       - key: PUBLIC_API_URL
         sync: false
+      # The web app's origin(s), comma-separated; the API refuses to start in
+      # production without it.
+      - key: CORS_ORIGINS
+        sync: false

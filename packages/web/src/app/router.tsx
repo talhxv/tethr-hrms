@@ -5,9 +5,10 @@ import { WorkspaceUsersPage } from '../modules/access/pages/WorkspaceUsersPage';
 import { TimeAttendancePage } from '../modules/attendance/pages/TimeAttendancePage';
 import { useAuth } from '../modules/auth/hooks/useAuth';
 import { AccessPendingPage } from '../modules/auth/pages/AccessPendingPage';
+import { ChangePasswordPage } from '../modules/auth/pages/ChangePasswordPage';
 import { LoginPage } from '../modules/auth/pages/LoginPage';
 import { SignUpPage } from '../modules/auth/pages/SignUpPage';
-import { ClientPortfolioPage } from '../modules/clients/pages/ClientPortfolioPage';
+import { ClientsSettingsPage } from '../modules/clients/pages/ClientsSettingsPage';
 import { ClientWorkspacePage } from '../modules/clients/pages/ClientWorkspacePage';
 import { DashboardPage } from '../modules/dashboard/pages/DashboardPage';
 import { EmployeeProfilePage } from '../modules/employees/pages/EmployeeProfilePage';
@@ -59,6 +60,7 @@ const SETTINGS_PAGES: Record<SettingsTabKey, ReactElement> = {
   billing: <SettingsBillingPage />,
   payroll: <SettingsPayrollPage />,
   pay: <SettingsPayPage />,
+  clients: <ClientsSettingsPage />,
 };
 
 // Thin routing: public auth routes, then the authenticated app behind RequireAuth
@@ -69,6 +71,9 @@ export const AppRouter = () => (
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/access" element={<AccessPendingPage />} />
+      {/* Signed-in but outside RequireAuth: it is where RequireAuth sends a
+          session that must replace an administrator-issued password. */}
+      <Route path="/change-password" element={<ChangePasswordPage />} />
       {/* Anonymous application form; the token in the path is the credential. */}
       <Route path="/apply/:token" element={<ApplyPage />} />
       {/* Anonymous new-hire intake; same signed-link credential, brand-styled
@@ -109,7 +114,8 @@ export const AppRouter = () => (
             <Route path="/billing/:invoiceId" element={<InvoiceDetailPage />} />
           </Route>
           <Route element={<RequirePortal portals={['tethr']} roleKeys={['tethrAdmin']} />}>
-            <Route path="/clients" element={<ClientPortfolioPage />} />
+            {/* Clients moved to the settings surface; keep old links working. */}
+            <Route path="/clients" element={<Navigate to="/settings/clients" replace />} />
             <Route path="/onboarding-intake" element={<OnboardingIntakePage />} />
           </Route>
           <Route element={<RequirePortal portals={['tethr', 'client', 'employee']} />}>
@@ -157,7 +163,9 @@ export const AppRouter = () => (
           <Route element={<RequirePortal portals={['client']} />}>
             <Route path="/client" element={<ClientWorkspacePage />} />
           </Route>
-          <Route element={<RequirePortal portals={['employee']} />}>
+          {/* Employees, plus Tethr staff whose login is linked to their own
+              employee record (HR, Finance and admins have records too). */}
+          <Route element={<RequirePortal portals={['employee', 'tethr']} requireEmployeeLink />}>
             <Route path="/me" element={<EmployeeWorkspacePage />} />
             <Route path="/me/profile" element={<MyProfilePage />} />
             {/* Each employee tool is its own page; the shared component reads the

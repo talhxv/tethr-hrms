@@ -3,6 +3,7 @@ import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 
 import { ValidationFailedError } from '../../common/errors';
+import { AuditService } from '../audit/audit.service';
 import { AuthorizationService } from '../authz/authz.service';
 import { PERMISSIONS } from '../authz/permissions';
 import { PermissionsGuard } from '../authz/permissions.guard';
@@ -12,7 +13,9 @@ import { AuthService } from './auth.service';
 import { AuthPayload } from './dto/auth-payload.output';
 import { CreateWorkspaceUserInput } from './dto/create-workspace-user.input';
 import { CurrentUserView, toCurrentUserView } from './dto/current-user.output';
+import { ChangeMyPasswordInput, ResetWorkspaceUserPasswordInput } from './dto/password.inputs';
 import { SelectWorkspaceInput } from './dto/select-workspace.input';
+import { TemporaryPasswordIssuedView } from './dto/temporary-password.output';
 import { UpdateWorkspaceUserRoleInput } from './dto/update-workspace-user-role.input';
 
 @Resolver()
@@ -20,6 +23,7 @@ export class AuthResolver {
   constructor(
     private readonly authService: AuthService,
     private readonly authorization: AuthorizationService,
+    private readonly audit: AuditService,
   ) {}
 
   // Redeems the short-lived token from a multi-workspace login (AccountService)
@@ -93,6 +97,8 @@ export class AuthResolver {
       email: input.email,
       password: input.password,
       employeeId: input.employeeId ? toId<EmployeeId>(input.employeeId) : null,
+      // The administrator chose this password, so the person replaces it.
+      mustChangePassword: true,
     });
     await this.authorization.assignSystemRole(toId<UserId>(user.id), roleKey);
     return toCurrentUserView(
@@ -124,5 +130,49 @@ export class AuthResolver {
       user,
       await this.authorization.getAccessForUserInOrganization(user.id, user.organizationId),
     );
+  }
+
+  // Controlled account recovery: issue a one-time password for someone in
+  // this workspace. The caller must be allowed to assign every role the
+  // target holds (a client admin cannot reset a Tethr admin), and cannot use
+  // this on their own login — that is what changeMyPassword is for.
+  @Mutation(() => TemporaryPasswordIssuedView)
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.userManage)
+  async resetWorkspaceUserPassword(
+    @Args('input') input: ResetWorkspaceUserPasswordInput,
+  ): Promise<TemporaryPasswordIssuedView> {
+    const caller = await this.authService.getCurrentUser();
+    if (caller.id === input.userId) {
+      throw new ValidationFailedError('Use "Change password" to change your own password');
+    }
+    const target = await this.authService.getUserById(input.userId);
+    const targetAccess = await this.authorization.getAccessForUserInOrganization(
+      target.id,
+      target.organizationId,
+    );
+    for (const roleKey of targetAccess.roleKeys) {
+      await this.authorization.assertCurrentUserCanAssign(roleKey as SystemRoleKey);
+    }
+    const { user, temporaryPassword } = await this.authService.issueTemporaryPassword(target.id);
+    await this.audit.record({
+      action: 'password.reset',
+      resourceType: 'user',
+      resourceId: user.id,
+      metadata: { mustChangePassword: true },
+    });
+    return { user: toCurrentUserView(user, targetAccess), temporaryPassword };
+  }
+
+  @Mutation(() => CurrentUserView)
+  async changeMyPassword(@Args('input') input: ChangeMyPasswordInput): Promise<CurrentUserView> {
+    const user = await this.authService.changeOwnPassword(input.currentPassword, input.newPassword);
+    await this.audit.record({
+      action: 'password.changed',
+      resourceType: 'user',
+      resourceId: user.id,
+      metadata: {},
+    });
+    return toCurrentUserView(user, await this.authorization.getCurrentAccess());
   }
 }

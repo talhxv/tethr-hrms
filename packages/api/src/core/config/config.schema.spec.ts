@@ -23,6 +23,26 @@ describe('loadConfig', () => {
     );
   });
 
+  it('requires CORS_ORIGINS in production and parses it into a trimmed list', () => {
+    const production = {
+      ...validEnv,
+      NODE_ENV: 'production',
+      STORAGE_DRIVER: 'supabase',
+      SUPABASE_URL: 'https://example.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'key',
+    };
+    expect(() => loadConfig(production as NodeJS.ProcessEnv)).toThrow(/CORS_ORIGINS/);
+    const config = loadConfig({
+      ...production,
+      CORS_ORIGINS: ' https://hrms.example.com/ ,https://admin.example.com',
+    } as NodeJS.ProcessEnv);
+    expect(config.CORS_ORIGINS).toEqual(['https://hrms.example.com', 'https://admin.example.com']);
+  });
+
+  it('leaves CORS_ORIGINS unset in development', () => {
+    expect(loadConfig(validEnv as NodeJS.ProcessEnv).CORS_ORIGINS).toBeUndefined();
+  });
+
   it('rejects a too-short JWT secret', () => {
     expect(() => loadConfig({ ...validEnv, JWT_SECRET: 'short' } as NodeJS.ProcessEnv)).toThrow(
       /JWT_SECRET/,

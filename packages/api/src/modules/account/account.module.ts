@@ -7,13 +7,14 @@ import { OrganizationModule } from '../organization/organization.module';
 
 import { AccountResolver } from './account.resolver';
 import { AccountService } from './account.service';
+import { AuthAttemptLimiter } from './auth-attempt-limiter';
 
 // Composes Auth (core) + Organization + Clients (modules) for tenant signup
 // and client onboarding. modules -> core and modules -> modules (via
 // published services) are both allowed.
 @Module({
   imports: [AuthModule, AuthzModule, OrganizationModule, ClientsModule],
-  providers: [AccountService, AccountResolver],
+  providers: [AccountService, AccountResolver, AuthAttemptLimiter],
   exports: [AccountService],
 })
 export class AccountModule {}

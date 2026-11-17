@@ -68,6 +68,18 @@ export const PERMISSIONS = {
   expensePay: 'expense:pay',
   expenseOwnRead: 'expense:own:read',
   expenseOwnWrite: 'expense:own:write',
+  // IT assets: Tethr ops register stock and allocate it; clients can see the
+  // kit their people hold.
+  assetRead: 'asset:read',
+  assetWrite: 'asset:write',
+  // Hardware requests: employees raise their own and confirm receipt; clients
+  // raise for their team and approve their people's requests; fulfilment is
+  // assetWrite (Tethr ops).
+  hardwareRequestRead: 'hardware-request:read',
+  hardwareRequestWrite: 'hardware-request:write',
+  hardwareRequestApprove: 'hardware-request:approve',
+  hardwareRequestOwnRead: 'hardware-request:own:read',
+  hardwareRequestOwnWrite: 'hardware-request:own:write',
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];

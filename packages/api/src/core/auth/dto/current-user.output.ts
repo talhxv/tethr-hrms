@@ -25,6 +25,10 @@ export class CurrentUserView {
 
   @Field()
   portal!: string;
+
+  // True until the person replaces an administrator-issued password.
+  @Field()
+  mustChangePassword!: boolean;
 }
 
 export const toCurrentUserView = (user: User, access: EffectiveAccess): CurrentUserView => ({
@@ -35,4 +39,5 @@ export const toCurrentUserView = (user: User, access: EffectiveAccess): CurrentU
   employeeId: user.employeeId,
   roleKeys: [...access.roleKeys],
   portal: access.portal,
+  mustChangePassword: user.mustChangePassword,
 });

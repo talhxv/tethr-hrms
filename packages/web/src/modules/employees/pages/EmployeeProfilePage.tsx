@@ -228,6 +228,7 @@ type BonusAwardRecord = {
 type PersonalDetailsRecord = {
   readonly id: string;
   readonly employeeId: string;
+  readonly nationalIdNumber: string | null;
   readonly passportNumber: string | null;
   readonly passportIssueDate: string | null;
   readonly passportIssuePlace: string | null;
@@ -1728,6 +1729,7 @@ export const EmployeeProfilePage = () => {
             {personalDetails ? (
               <DetailSection title="Personal details">
                 <div className="field-list">
+                  <div className="field-row"><span className="field-label">CNIC</span><span className="field-value tabular-nums">{personalDetails.nationalIdNumber ?? '-'}</span></div>
                   <div className="field-row"><span className="field-label">Passport</span><span className="field-value">{personalDetails.passportNumber ?? '-'}</span></div>
                   <div className="field-row"><span className="field-label">Marital status</span><span className="field-value">{personalDetails.maritalStatus ?? '-'}</span></div>
                   <div className="field-row"><span className="field-label">Blood group</span><span className="field-value">{personalDetails.bloodGroup ?? '-'}</span></div>
@@ -2875,7 +2877,8 @@ export const EmployeeProfilePage = () => {
                     <div style={{ gridColumn: '1 / -1' }}>
                       <strong>Login created</strong>
                       <p className="page-subtitle">
-                        Copy these now and share them privately. The password won’t be shown again.
+                        Copy these now and share them privately. The password won’t be shown again,
+                        and they’ll choose their own the first time they sign in.
                       </p>
                       <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: theme.spacing(1, 3), margin: theme.spacing(2, 0) }}>
                         <dt>Email</dt>

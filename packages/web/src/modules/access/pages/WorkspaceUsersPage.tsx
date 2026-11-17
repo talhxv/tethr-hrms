@@ -5,6 +5,7 @@ import {
   IconAlertTriangle,
   IconFilterOff,
   IconKey,
+  IconLockOpen,
   IconPlus,
   IconRefresh,
   IconUsers,
@@ -27,9 +28,11 @@ import { useTheme } from '../../../providers/theme/useTheme';
 import {
   ASSIGNABLE_WORKSPACE_ROLES_QUERY,
   CREATE_WORKSPACE_USER_MUTATION,
+  RESET_WORKSPACE_USER_PASSWORD_MUTATION,
   UPDATE_WORKSPACE_USER_ROLE_MUTATION,
   WORKSPACE_USERS_QUERY,
 } from '../../auth/graphql/auth.operations';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { EMPLOYEES_QUERY } from '../../employees/graphql/employee.operations';
 
 type WorkspaceUser = {
@@ -39,6 +42,15 @@ type WorkspaceUser = {
   readonly employeeId: string | null;
   readonly roleKeys: readonly string[];
   readonly portal: string;
+  readonly mustChangePassword: boolean;
+};
+
+type IssuedPassword = { readonly email: string; readonly temporaryPassword: string };
+type ResetPasswordData = {
+  readonly resetWorkspaceUserPassword: {
+    readonly temporaryPassword: string;
+    readonly user: { readonly id: string; readonly email: string };
+  };
 };
 
 type WorkspaceUsersData = { readonly workspaceUsers: readonly WorkspaceUser[] };
@@ -85,7 +97,13 @@ export const WorkspaceUsersPage = () => {
   const { data: assignableRoleData, loading: loadingAssignableRoles } =
     useQuery<AssignableWorkspaceRolesData>(ASSIGNABLE_WORKSPACE_ROLES_QUERY);
   const { data: employeeData } = useQuery<EmployeesData>(EMPLOYEES_QUERY);
+  const { user: currentUser } = useAuth();
   const [createUser, { loading: creating }] = useMutation(CREATE_WORKSPACE_USER_MUTATION);
+  const [resetPassword, { loading: resetting }] = useMutation<ResetPasswordData>(
+    RESET_WORKSPACE_USER_PASSWORD_MUTATION,
+  );
+  const [issuedPassword, setIssuedPassword] = useState<IssuedPassword | null>(null);
+  const [passwordCopied, setPasswordCopied] = useState(false);
   const [updateUserRole, { loading: updatingRole }] = useMutation(
     UPDATE_WORKSPACE_USER_ROLE_MUTATION,
   );
@@ -205,11 +223,48 @@ export const WorkspaceUsersPage = () => {
     );
   };
 
+  // Controlled account recovery: a one-time password the administrator passes
+  // on privately; the person must replace it at their next sign-in.
+  const onResetPassword = async (workspaceUser: WorkspaceUser): Promise<void> => {
+    const confirmed = await confirm({
+      title: 'Reset this password?',
+      body: `${workspaceUser.email} will get a new one-time password and must choose their own at their next sign-in. Their current password stops working now.`,
+      confirmLabel: 'Reset password',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+    setRoleError(null);
+    setPasswordCopied(false);
+    try {
+      const result = await resetPassword({ variables: { input: { userId: workspaceUser.id } } });
+      const issued = result.data?.resetWorkspaceUserPassword;
+      if (issued) setIssuedPassword({ email: issued.user.email, temporaryPassword: issued.temporaryPassword });
+      await refetch();
+    } catch (caught) {
+      setRoleError(caught instanceof Error ? caught.message : 'Could not reset this password');
+    }
+  };
+
+  const renderActionsCell = (workspaceUser: WorkspaceUser) =>
+    workspaceUser.id === currentUser?.id || workspaceUser.status === 'disabled' ? null : (
+      <Tooltip label="Reset password">
+        <button
+          aria-label={`Reset password for ${workspaceUser.email}`}
+          className="icon-button"
+          disabled={resetting}
+          onClick={() => void onResetPassword(workspaceUser)}
+          type="button"
+        >
+          <IconLockOpen aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+        </button>
+      </Tooltip>
+    );
+
   const columns: readonly ColumnDefinition<WorkspaceUser>[] = [
     {
       key: 'user',
       header: 'User',
-      width: '30%',
+      width: '28%',
       hideable: false,
       sortValue: (workspaceUser) => workspaceUser.email,
       render: (workspaceUser) => <span className="truncate">{workspaceUser.email}</span>,
@@ -227,7 +282,7 @@ export const WorkspaceUsersPage = () => {
     {
       key: 'employee',
       header: 'Employee record',
-      width: '20%',
+      width: '18%',
       sortValue: employeeLabel,
       render: employeeLabel,
     },
@@ -238,11 +293,23 @@ export const WorkspaceUsersPage = () => {
       hideable: false,
       sortValue: (workspaceUser) => workspaceUser.status,
       render: (workspaceUser) => (
-        <StatusChip
-          color={userStatusColors[workspaceUser.status] ?? 'gray'}
-          label={userStatusLabels[workspaceUser.status] ?? workspaceUser.status}
-        />
+        <div>
+          <StatusChip
+            color={userStatusColors[workspaceUser.status] ?? 'gray'}
+            label={userStatusLabels[workspaceUser.status] ?? workspaceUser.status}
+          />
+          {workspaceUser.mustChangePassword ? (
+            <div className="page-subtitle">Password change pending</div>
+          ) : null}
+        </div>
       ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      width: '56px',
+      hideable: false,
+      render: renderActionsCell,
     },
   ];
   const filters = [
@@ -474,6 +541,52 @@ export const WorkspaceUsersPage = () => {
               </button>
             </div>
           </form>
+        </Modal>
+
+        <Modal
+          isOpen={issuedPassword !== null}
+          onClose={() => setIssuedPassword(null)}
+          title="One-time password issued"
+          width="md"
+        >
+          {issuedPassword ? (
+            <div aria-live="polite">
+              <p className="page-subtitle">
+                Share this privately with {issuedPassword.email}. It won’t be shown again, and they’ll
+                choose their own password when they sign in.
+              </p>
+              <dl className="field-list">
+                <div className="field-row">
+                  <dt className="field-label">Email</dt>
+                  <dd className="field-value">{issuedPassword.email}</dd>
+                </div>
+                <div className="field-row">
+                  <dt className="field-label">Password</dt>
+                  <dd className="field-value" style={{ fontFamily: 'monospace' }}>
+                    {issuedPassword.temporaryPassword}
+                  </dd>
+                </div>
+              </dl>
+              <div className="page-actions">
+                <button
+                  className="button button-secondary"
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(
+                        `Email: ${issuedPassword.email}\nPassword: ${issuedPassword.temporaryPassword}`,
+                      )
+                      .then(() => setPasswordCopied(true));
+                  }}
+                  type="button"
+                >
+                  {passwordCopied ? 'Copied' : 'Copy credentials'}
+                </button>
+                <button className="button button-primary" onClick={() => setIssuedPassword(null)} type="button">
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : null}
         </Modal>
 
         {roleError ? (

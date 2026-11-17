@@ -148,6 +148,7 @@ export const EMPLOYEE_DETAIL_QUERY = gql`
     employeePersonalDetails(employeeId: $employeeId) {
       id
       employeeId
+      nationalIdNumber
       passportNumber
       passportIssueDate
       passportIssuePlace

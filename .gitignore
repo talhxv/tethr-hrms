@@ -37,6 +37,7 @@ Thumbs.db
 
 # Local scratch files — never commit (logins.md holds plaintext test credentials)
 logins.md
+.local-ops/
 OpenCodeGUISession.json
 .diff_resolver.txt
 

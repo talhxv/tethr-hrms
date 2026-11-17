@@ -10,6 +10,8 @@ export type AuthUser = {
   readonly employeeId: string | null;
   readonly roleKeys: readonly string[];
   readonly portal: PortalKind;
+  // Optional so sessions stored before the field existed still parse.
+  readonly mustChangePassword?: boolean;
 };
 
 export type AuthSession = {

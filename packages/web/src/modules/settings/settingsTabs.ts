@@ -1,5 +1,6 @@
 import type { PortalKind, SystemRoleKey } from '@hrms/shared';
 import {
+  IconBuildingCommunity,
   IconCurrencyDollar,
   IconFileInvoice,
   IconReportMoney,
@@ -8,7 +9,13 @@ import {
   type TablerIcon,
 } from '@tabler/icons-react';
 
-export type SettingsTabKey = 'general' | 'members' | 'billing' | 'payroll' | 'pay';
+export type SettingsTabKey =
+  | 'general'
+  | 'members'
+  | 'billing'
+  | 'payroll'
+  | 'pay'
+  | 'clients';
 
 type SettingsPortal = Exclude<PortalKind, 'none' | 'employee'>;
 
@@ -23,10 +30,13 @@ export type SettingsTab = {
 // Which roles reach each tab mirrors the API permission the page's queries and
 // mutations require — keep in lockstep with the resolvers:
 //   general  organization:manage  (tethrAdmin, clientAdmin)
-//   members  user:manage          (tethrAdmin, clientAdmin)
+//   members  user:manage          (tethrAdmin, tethrHr, clientAdmin) — tethrHr
+//            may only create/reset Employee logins (authz.service.ts)
 //   billing  billing:write        (tethrAdmin, tethrFinance)
 //   payroll  payroll:write        (tethrAdmin, tethrFinance)
 //   pay      compensation:write   (tethrAdmin, tethrHr, clientAdmin)
+//   clients  client:manage        (tethrAdmin) — rarely used, so it lives here
+//            rather than in the daily navigation
 export const SETTINGS_TABS: readonly SettingsTab[] = [
   {
     key: 'general',
@@ -40,7 +50,7 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     label: 'Members',
     icon: IconUsers,
     portals: ['tethr', 'client'],
-    roleKeys: ['tethrAdmin', 'clientAdmin'],
+    roleKeys: ['tethrAdmin', 'tethrHr', 'clientAdmin'],
   },
   {
     key: 'billing',
@@ -62,6 +72,13 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     icon: IconCurrencyDollar,
     portals: ['tethr', 'client'],
     roleKeys: ['tethrAdmin', 'tethrHr', 'clientAdmin'],
+  },
+  {
+    key: 'clients',
+    label: 'Clients & workspaces',
+    icon: IconBuildingCommunity,
+    portals: ['tethr'],
+    roleKeys: ['tethrAdmin'],
   },
 ];
 

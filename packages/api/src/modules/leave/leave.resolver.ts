@@ -136,9 +136,12 @@ export class LeaveResolver {
     return (await this.leaveRequestService.listAll()).map(toLeaveRequestView);
   }
 
+  // Filing leave on someone else's behalf is an HR action. It was guarded by
+  // leave:team:read (a read permission held by Finance and client roles), which
+  // let a client member create requests for staff (access test, 17 Nov 2026).
   @Mutation(() => LeaveRequestView)
   @UseGuards(PermissionsGuard)
-  @RequirePermissions(PERMISSIONS.leaveTeamRead)
+  @RequirePermissions(PERMISSIONS.leaveApprove)
   async submitLeaveRequest(
     @Args('input') input: SubmitLeaveRequestInput,
   ): Promise<LeaveRequestView> {

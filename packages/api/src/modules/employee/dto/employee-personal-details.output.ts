@@ -9,6 +9,9 @@ export class EmployeePersonalDetailsView {
   employeeId!: string;
 
   @Field(() => String, { nullable: true })
+  nationalIdNumber!: string | null;
+
+  @Field(() => String, { nullable: true })
   passportNumber!: string | null;
 
   @Field(() => String, { nullable: true })
