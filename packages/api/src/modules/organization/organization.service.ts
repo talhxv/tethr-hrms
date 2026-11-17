@@ -10,6 +10,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 
 import { ConflictError, NotFoundError, ValidationFailedError } from '../../common/errors';
+import { DEFAULT_TIME_ZONE, isValidTimeZone } from '../../common/time/time-zone';
 import { DomainEventPublisher } from '../../core/events/domain-event-publisher.service';
 import { TenantContextService } from '../../core/tenancy/tenant-context.service';
 
@@ -86,6 +87,20 @@ export class OrganizationService {
 
   getById(id: OrganizationId): Promise<Organization | null> {
     return this.organizations.findOne({ where: { id } });
+  }
+
+  /**
+   * The workspace's wall-clock zone (IANA name, e.g. "Asia/Karachi"), read from
+   * `settings.timezone`. Tenant configuration as data; UTC when unset or invalid.
+   * Published so other modules can date events without reading this table.
+   */
+  async getTimeZone(id: OrganizationId): Promise<string> {
+    const organization = await this.organizations.findOne({
+      where: { id },
+      select: { id: true, settings: true },
+    });
+    const configured = organization?.settings?.timezone;
+    return isValidTimeZone(configured) ? configured : DEFAULT_TIME_ZONE;
   }
 
   findByClientId(clientId: string): Promise<Organization[]> {

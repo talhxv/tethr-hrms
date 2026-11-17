@@ -4,8 +4,10 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { Between, DataSource, LessThanOrEqual, MoreThanOrEqual, type FindOptionsWhere } from 'typeorm';
 
 import { ConflictError } from '../../common/errors';
+import { dateKeyInTimeZone } from '../../common/time/time-zone';
 import { TenantContextService } from '../../core/tenancy/tenant-context.service';
 import { TenantScopedRepository } from '../../core/tenancy/tenant-scoped.repository';
+import { OrganizationService } from '../organization/organization.service';
 
 import { attendanceLockKey } from './attendance-lock';
 import { TIME_ENTRY_REPOSITORY } from './attendance.tokens';
@@ -32,6 +34,7 @@ export class AttendanceService {
     @Inject(TIME_ENTRY_REPOSITORY) private readonly timeEntries: TenantScopedRepository<TimeEntry>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly tenantContext: TenantContextService,
+    private readonly organizations: OrganizationService,
   ) {}
 
   async clockIn(
@@ -81,6 +84,7 @@ export class AttendanceService {
   ): Promise<TimeEntry> {
     const organizationId = this.tenantContext.getOrganizationId();
     const at = occurredAt ? new Date(occurredAt) : new Date();
+    const timeZone = await this.organizations.getTimeZone(organizationId);
     return this.dataSource.transaction(async (manager) => {
       await manager.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
         attendanceLockKey(organizationId, employeeId),
@@ -110,7 +114,10 @@ export class AttendanceService {
       await manager.save(outEvent);
 
       const hours = (at.getTime() - last.occurredAt.getTime()) / MILLISECONDS_PER_HOUR;
-      const entryDate = at.toISOString().slice(0, 10) as IsoDate;
+      // A session belongs to the day it started, on the workspace's wall clock:
+      // a 23:00–01:00 shift is that evening's work, and a Pakistan check-out at
+      // 1 am must not be filed under the previous UTC date.
+      const entryDate = dateKeyInTimeZone(last.occurredAt, timeZone) as IsoDate;
       // A clock-generated entry must not land in a period whose timesheet is
       // already locked; the shared advisory lock keeps this check and the lock
       // step from interleaving.

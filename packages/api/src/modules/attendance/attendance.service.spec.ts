@@ -5,6 +5,8 @@ import type { DataSource, EntityManager } from 'typeorm';
 import type { TenantContextService } from '../../core/tenancy/tenant-context.service';
 import type { TenantScopedRepository } from '../../core/tenancy/tenant-scoped.repository';
 
+import type { OrganizationService } from '../organization/organization.service';
+
 import { AttendanceService } from './attendance.service';
 import type { ClockEvent } from './entities/clock-event.entity';
 import type { TimeEntry } from './entities/time-entry.entity';
@@ -14,7 +16,7 @@ const EMPLOYEE = toId<EmployeeId>('emp-1');
 
 const buildService = (
   lastEvent: Partial<ClockEvent> | null,
-  options: { lockedTimesheet?: unknown } = {},
+  options: { lockedTimesheet?: unknown; timeZone?: string } = {},
 ) => {
   const manager = {
     findOne: jest.fn((entity: unknown) =>
@@ -39,6 +41,9 @@ const buildService = (
     {} as unknown as TenantScopedRepository<TimeEntry>,
     dataSource,
     tenantContext,
+    {
+      getTimeZone: jest.fn().mockResolvedValue(options.timeZone ?? 'UTC'),
+    } as unknown as OrganizationService,
   );
   return { service, manager };
 };
@@ -92,6 +97,27 @@ describe('AttendanceService.clockOut', () => {
 
     expect(entry.hours).toBe('8.50');
     expect(entry.date).toBe('2026-06-15');
+  });
+
+  it("files the session on the workspace's local date, not the UTC date", async () => {
+    // 00:30–02:00 on 18 Nov in Karachi is still 17 Nov in UTC.
+    const openIn = { type: 'in', occurredAt: new Date('2026-11-17T19:30:00Z') } as ClockEvent;
+    const { service } = buildService(openIn, { timeZone: 'Asia/Karachi' });
+
+    const entry = await service.clockOut(EMPLOYEE, '2026-11-17T21:00:00Z');
+
+    expect(entry.date).toBe('2026-11-18');
+  });
+
+  it('files a session that crosses midnight on the day it started', async () => {
+    // 23:30 on 17 Nov to 01:00 on 18 Nov, Karachi time.
+    const openIn = { type: 'in', occurredAt: new Date('2026-11-17T18:30:00Z') } as ClockEvent;
+    const { service } = buildService(openIn, { timeZone: 'Asia/Karachi' });
+
+    const entry = await service.clockOut(EMPLOYEE, '2026-11-17T20:00:00Z');
+
+    expect(entry.date).toBe('2026-11-17');
+    expect(entry.hours).toBe('1.50');
   });
 
   it('throws when there is no open clock-in to close', async () => {
