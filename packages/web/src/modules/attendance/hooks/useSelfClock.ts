@@ -11,7 +11,7 @@ import {
 
 import { recordServerTimestamp, serverNow } from './serverClock';
 
-type MyTimeEntry = {
+export type MyTimeEntry = {
   readonly id: string;
   readonly date: string;
   readonly hours: number;

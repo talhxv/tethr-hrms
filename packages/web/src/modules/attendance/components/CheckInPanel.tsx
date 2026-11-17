@@ -6,6 +6,8 @@ import { useTheme } from '../../../providers/theme/useTheme';
 import { serverNow } from '../hooks/serverClock';
 import type { SelfClock } from '../hooks/useSelfClock';
 
+import { formatDuration, formatHours } from './attendanceFormat';
+
 const SECONDS_PER_HOUR = 3600;
 
 const formatTime = (iso: string): string =>
@@ -28,13 +30,6 @@ const formatStopwatch = (totalSeconds: number): string => {
   const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / 60);
   const seconds = totalSeconds % 60;
   return `${hours}:${pad(minutes)}:${pad(seconds)}`;
-};
-
-/** 3h 12m — for totals, where seconds are noise. */
-const formatDuration = (totalSeconds: number): string => {
-  const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
-  const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / 60);
-  return hours > 0 ? `${hours}h ${pad(minutes)}m` : `${minutes}m`;
 };
 
 /** Seconds since `since` on the server's clock, ticking once a second while a
@@ -76,7 +71,7 @@ export const CheckInPanel = ({ clock }: CheckInPanelProps) => {
     : clock.todayHours > 0
       ? `${formatDuration(todaySeconds)} worked today`
       : clock.latestEntry
-        ? `Last recorded ${clock.latestEntry.hours.toFixed(2)} hours on ${formatDate(clock.latestEntry.date)}`
+        ? `Last recorded ${formatHours(clock.latestEntry.hours)} on ${formatDate(clock.latestEntry.date)}`
         : 'No hours recorded yet';
 
   return (
