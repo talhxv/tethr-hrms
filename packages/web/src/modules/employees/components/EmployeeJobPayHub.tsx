@@ -9,6 +9,7 @@ import {
 import { Link } from 'react-router-dom';
 
 import { downloadBase64File } from '../../../app/download';
+import { StatusChip } from '../../../components/chip/StatusChip';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { BenefitEnrollmentsSection } from '../../benefits/components/BenefitEnrollmentsSection';
 import { TaxProfileSection } from '../../finance/compensation/components/TaxProfileSection';
@@ -223,13 +224,14 @@ export const EmployeeJobPayHub = ({
             <ul className="record-list">
               {readinessEntry.blockers.map((blocker) => (
                 <li className="record-item" key={blocker.code}>
-                  <span>
-                    <IconAlertTriangle aria-hidden="true" size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />{' '}
-                    {blocker.message}
-                  </span>
-                  <span className="employee-secondary">
-                    {blocker.severity === 'hard' ? 'blocks payroll' : 'warning'}
-                  </span>
+                  <IconAlertTriangle aria-hidden="true" size={theme.icon.size.sm} stroke={theme.icon.stroke.sm} />
+                  <div className="record-item-split">
+                    <span className="employee-primary">{blocker.message}</span>
+                    <StatusChip
+                      color={blocker.severity === 'hard' ? 'red' : 'amber'}
+                      label={blocker.severity === 'hard' ? 'Blocks payroll' : 'Warning'}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -250,17 +252,18 @@ export const EmployeeJobPayHub = ({
             <ul className="record-list">
               {revisions.map((revision) => (
                 <li className="record-item" key={revision.id}>
-                  <span>
-                    <strong>{formatMoney(revision.annualAmount, revision.currency)}</strong>
+                  <div className="record-item-split">
+                    <div>
+                      <div className="employee-primary">
+                        <strong>{formatMoney(revision.annualAmount, revision.currency)}</strong> / year
+                      </div>
+                      {revision.reason ? <div className="employee-secondary">{revision.reason}</div> : null}
+                    </div>
                     <span className="employee-secondary">
-                      {' '}
-                      / year · {revision.reason}
+                      {formatDate(revision.validFrom)}
+                      {revision.validTo ? ` – ${formatDate(revision.validTo)}` : ' – current'}
                     </span>
-                  </span>
-                  <span className="employee-secondary">
-                    from {revision.validFrom}
-                    {revision.validTo ? ` to ${revision.validTo}` : ' · current'}
-                  </span>
+                  </div>
                 </li>
               ))}
             </ul>

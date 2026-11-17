@@ -3096,6 +3096,23 @@ button,
   border-radius: var(--hrms-radius-sm);
 }
 
+/* The 20px column is for a leading icon. A row without one (a single content
+   block) takes the full width instead of being squeezed into the icon slot. */
+.record-item > :only-child {
+  grid-column: 1 / -1;
+}
+
+/* Content on the left, a status or date on the right; wraps under on narrow
+   screens rather than overlapping. */
+.record-item-split {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrms-space-1) var(--hrms-space-3);
+  min-width: 0;
+}
+
 .record-inline-actions {
   display: flex;
   flex-wrap: wrap;

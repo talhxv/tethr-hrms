@@ -1478,7 +1478,11 @@ export const EmployeeProfilePage = () => {
                 className={`profile-tab${tab === entry.key ? ' is-active' : ''}`}
                 key={entry.key}
                 type="button"
-                onClick={() => setTab(entry.key)}
+                onClick={() => {
+                  // An error belongs to the tab where it happened; don't carry it over.
+                  setDetailError(null);
+                  setTab(entry.key);
+                }}
               >
                 {entry.label}
               </button>
