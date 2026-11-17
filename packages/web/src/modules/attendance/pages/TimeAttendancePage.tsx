@@ -92,8 +92,8 @@ export const TimeAttendancePage = () => {
 
   const canApprove = Boolean(
     user?.roleKeys.includes('tethrAdmin') ||
-      user?.roleKeys.includes('tethrHr') ||
-      user?.roleKeys.includes('clientAdmin'),
+    user?.roleKeys.includes('tethrHr') ||
+    user?.roleKeys.includes('clientAdmin'),
   );
 
   const {
@@ -337,8 +337,12 @@ export const TimeAttendancePage = () => {
                         entries.map((entry) => (
                           <tr key={entry.id}>
                             <td data-label="Date">{formatDate(entry.date)}</td>
-                            <td className="cell-numeric" data-label="Hours">{entry.hours.toFixed(2)}</td>
-                            <td className="truncate" data-label="Source">{entry.source}</td>
+                            <td className="cell-numeric" data-label="Hours">
+                              {entry.hours.toFixed(2)}
+                            </td>
+                            <td className="truncate" data-label="Source">
+                              {entry.source}
+                            </td>
                           </tr>
                         ))
                       )}
@@ -358,7 +362,11 @@ export const TimeAttendancePage = () => {
                     setOpenForm('entry');
                   }}
                 >
-                  <IconDeviceFloppy aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                  <IconDeviceFloppy
+                    aria-hidden="true"
+                    size={theme.icon.size.md}
+                    stroke={theme.icon.stroke.md}
+                  />
                   Record hours
                 </button>
               </div>
@@ -426,7 +434,8 @@ export const TimeAttendancePage = () => {
                                       type="button"
                                       onClick={() => void timesheetAction(timesheet.id, 'submit')}
                                     >
-                                      <IconSend aria-hidden="true"
+                                      <IconSend
+                                        aria-hidden="true"
                                         size={theme.icon.size.sm}
                                         stroke={theme.icon.stroke.sm}
                                       />
@@ -439,7 +448,8 @@ export const TimeAttendancePage = () => {
                                       type="button"
                                       onClick={() => void timesheetAction(timesheet.id, 'approve')}
                                     >
-                                      <IconCheck aria-hidden="true"
+                                      <IconCheck
+                                        aria-hidden="true"
                                         size={theme.icon.size.sm}
                                         stroke={theme.icon.stroke.sm}
                                       />
@@ -452,7 +462,8 @@ export const TimeAttendancePage = () => {
                                       type="button"
                                       onClick={() => void timesheetAction(timesheet.id, 'lock')}
                                     >
-                                      <IconLock aria-hidden="true"
+                                      <IconLock
+                                        aria-hidden="true"
                                         size={theme.icon.size.sm}
                                         stroke={theme.icon.stroke.sm}
                                       />
@@ -486,7 +497,11 @@ export const TimeAttendancePage = () => {
                     setOpenForm('period');
                   }}
                 >
-                  <IconCalendarPlus aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                  <IconCalendarPlus
+                    aria-hidden="true"
+                    size={theme.icon.size.md}
+                    stroke={theme.icon.stroke.md}
+                  />
                   Open timesheet
                 </button>
               </div>
@@ -554,7 +569,11 @@ export const TimeAttendancePage = () => {
             />
           </div>
           <button className="button button-primary button-full" disabled={recording} type="submit">
-            <IconDeviceFloppy aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+            <IconDeviceFloppy
+              aria-hidden="true"
+              size={theme.icon.size.md}
+              stroke={theme.icon.stroke.md}
+            />
             {recording ? 'Recording…' : 'Record hours'}
           </button>
         </form>
@@ -604,7 +623,11 @@ export const TimeAttendancePage = () => {
             </div>
           </div>
           <button className="button button-primary button-full" disabled={opening} type="submit">
-            <IconCalendarPlus aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+            <IconCalendarPlus
+              aria-hidden="true"
+              size={theme.icon.size.md}
+              stroke={theme.icon.stroke.md}
+            />
             {opening ? 'Opening…' : 'Open timesheet'}
           </button>
         </form>

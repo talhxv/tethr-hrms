@@ -55,6 +55,7 @@ type CheckInPanelProps = { readonly clock: SelfClock };
  * One state, one action. Checked out: a single "Check in". Checked in: a
  * running timer from the server's clock-in time and a single "Check out" —
  * the action you cannot take is not offered, rather than refused after a tap.
+ * The flip happens on tap (optimistic), and rolls back if the server refuses.
  */
 export const CheckInPanel = ({ clock }: CheckInPanelProps) => {
   const { theme } = useTheme();
@@ -78,7 +79,9 @@ export const CheckInPanel = ({ clock }: CheckInPanelProps) => {
 
   return (
     <div className="check-in-panel">
-      <div className="check-in-status">
+      {/* Polite live region: the state flip is the confirmation, so screen
+          readers hear "Checked in since 9:02 AM" instead of a separate banner. */}
+      <div className="check-in-status" aria-live="polite">
         <span aria-hidden="true" className={`check-in-dot${isOpen ? ' check-in-dot-on' : ''}`} />
         <span>
           {!clock.statusKnown
@@ -102,11 +105,6 @@ export const CheckInPanel = ({ clock }: CheckInPanelProps) => {
           hours.
         </p>
       ) : null}
-      {clock.notice ? (
-        <p className="form-success" role="status">
-          {clock.notice}
-        </p>
-      ) : null}
       {clock.error ? (
         <p className="auth-error" role="alert">
           {clock.error}
@@ -125,7 +123,7 @@ export const CheckInPanel = ({ clock }: CheckInPanelProps) => {
             size={theme.icon.size.md}
             stroke={theme.icon.stroke.md}
           />
-          {clock.clockingOut ? 'Checking out…' : 'Check out'}
+          Check out
         </button>
       ) : (
         <button
@@ -139,7 +137,7 @@ export const CheckInPanel = ({ clock }: CheckInPanelProps) => {
             size={theme.icon.size.md}
             stroke={theme.icon.stroke.md}
           />
-          {clock.clockingIn ? 'Checking in…' : 'Check in'}
+          Check in
         </button>
       )}
     </div>

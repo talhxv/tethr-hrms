@@ -17,8 +17,16 @@ type MyTimeEntry = {
 };
 
 type MyTimeEntriesData = { readonly myTimeEntries: readonly MyTimeEntry[] };
+type ClockInMeData = {
+  readonly clockInMe: { readonly id: string; readonly occurredAt: string };
+};
+type ClockOutMeData = { readonly clockOutMe: MyTimeEntry & { readonly __typename?: string } };
 type MyOpenClockInData = {
-  readonly myOpenClockIn: { readonly id: string; readonly occurredAt: string } | null;
+  readonly myOpenClockIn: {
+    readonly __typename?: 'ClockEvent';
+    readonly id: string;
+    readonly occurredAt: string;
+  } | null;
 };
 
 export type SelfClock = {
@@ -33,7 +41,6 @@ export type SelfClock = {
   readonly openSince: string | null;
   /** False until the server has said whether a session is open. */
   readonly statusKnown: boolean;
-  readonly notice: string | null;
   readonly error: string | null;
   readonly clockingIn: boolean;
   readonly clockingOut: boolean;
@@ -45,6 +52,8 @@ export type SelfClock = {
  *  transition can never land on the neighbouring date. */
 const daysAgo = (days: number): string => dateKeyDaysAgo(days);
 
+const MILLISECONDS_PER_HOUR = 3_600_000;
+
 /**
  * Self-service clocking. Both mutations resolve the employee from the session on
  * the server, so nothing here ever sends an employee id — there is no way to
@@ -55,7 +64,6 @@ const daysAgo = (days: number): string => dateKeyDaysAgo(days);
  * right action shows after a refresh or when checking in on another device.
  */
 export const useSelfClock = (historyDays = 7): SelfClock => {
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const { data, refetch } = useQuery<MyTimeEntriesData>(MY_TIME_ENTRIES_QUERY, {
@@ -84,19 +92,95 @@ export const useSelfClock = (historyDays = 7): SelfClock => {
     .filter((entry) => entry.date >= weekStart)
     .reduce((sum, entry) => sum + entry.hours, 0);
 
-  const run = async (action: () => Promise<unknown>, message: string): Promise<void> => {
+  const entriesVariables = { from: daysAgo(historyDays), to: todayDateKey() };
+
+  const run = async (action: () => Promise<unknown>): Promise<void> => {
     setError(null);
-    setNotice(null);
     try {
       await action();
-      setNotice(message);
     } catch (caught) {
+      // Apollo has already rolled the optimistic flip back by now.
       setError(caught instanceof Error ? caught.message : 'That did not go through');
-    } finally {
-      // Refresh on failure too: a refused punch usually means this screen was
-      // out of date (e.g. checked in from the phone), and the refetch fixes it.
-      await Promise.allSettled([refetch(), refetchOpen()]);
     }
+    // Reconcile in the background, never blocking the button: a refused punch
+    // usually means this screen was stale (e.g. checked in on the phone).
+    void Promise.allSettled([refetch(), refetchOpen()]);
+  };
+
+  // The card flips the moment you tap: the open session is written to the cache
+  // optimistically, then replaced by the server's answer (or rolled back).
+  const clockIn = () =>
+    run(() =>
+      clockInMe({
+        optimisticResponse: {
+          clockInMe: {
+            __typename: 'ClockEvent',
+            id: 'optimistic-clock-in',
+            employeeId: '',
+            type: 'in',
+            occurredAt: new Date().toISOString(),
+            source: 'web',
+          },
+        },
+        update: (cache, result) => {
+          const event = (result.data as ClockInMeData | null | undefined)?.clockInMe;
+          if (!event) return;
+          cache.writeQuery<MyOpenClockInData>({
+            query: MY_OPEN_CLOCK_IN_QUERY,
+            data: {
+              myOpenClockIn: {
+                __typename: 'ClockEvent',
+                id: event.id,
+                occurredAt: event.occurredAt,
+              },
+            },
+          });
+        },
+      }),
+    );
+
+  const openSince = openData?.myOpenClockIn?.occurredAt ?? null;
+
+  const clockOut = () => {
+    const workedHours = openSince
+      ? Math.max(0, (Date.now() - new Date(openSince).getTime()) / MILLISECONDS_PER_HOUR)
+      : 0;
+    return run(() =>
+      clockOutMe({
+        optimisticResponse: {
+          clockOutMe: {
+            __typename: 'TimeEntry',
+            id: 'optimistic-clock-out',
+            employeeId: '',
+            date: todayDateKey(),
+            hours: Math.round(workedHours * 100) / 100,
+            source: 'clock',
+          },
+        },
+        update: (cache, result) => {
+          const entry = (result.data as ClockOutMeData | null | undefined)?.clockOutMe;
+          if (!entry) return;
+          cache.writeQuery<MyOpenClockInData>({
+            query: MY_OPEN_CLOCK_IN_QUERY,
+            data: { myOpenClockIn: null },
+          });
+          // Add the closed session so today's total does not dip while the
+          // background refetch is in flight.
+          cache.updateQuery<MyTimeEntriesData>(
+            { query: MY_TIME_ENTRIES_QUERY, variables: entriesVariables },
+            (current) =>
+              current
+                ? {
+                    myTimeEntries: [
+                      ...current.myTimeEntries.filter((existing) => existing.id !== entry.id),
+                      entry,
+                    ],
+                  }
+                : current,
+          );
+        },
+      }),
+    );
   };
 
   return {
@@ -105,15 +189,14 @@ export const useSelfClock = (historyDays = 7): SelfClock => {
     latestEntry: entries[0] ?? null,
     todayHours,
     weekHours,
-    openSince: openData?.myOpenClockIn?.occurredAt ?? null,
+    openSince,
     // If the status query fails, fall back to offering "Check in" rather than
     // leaving the button disabled; the server still refuses a double check-in.
     statusKnown: openData !== undefined || openError !== undefined,
-    notice,
     error,
     clockingIn,
     clockingOut,
-    clockIn: () => run(() => clockInMe(), 'Checked in'),
-    clockOut: () => run(() => clockOutMe(), 'Checked out'),
+    clockIn,
+    clockOut,
   };
 };
