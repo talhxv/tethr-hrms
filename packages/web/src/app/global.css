@@ -1365,9 +1365,14 @@ button,
   padding: var(--hrms-space-5);
 }
 
+/* The modal is already the card; a form inside it is bare, not a box within a
+   box. */
 .modal-body .config-form {
-  padding-top: 0;
-  border-top: 0;
+  margin-bottom: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .modal-footer {
@@ -5304,10 +5309,20 @@ label.record-field-label {
   font-size: var(--hrms-font-size-xs);
 }
 
+/* min-width: 0 lets a field (and its control) shrink to its grid column;
+   otherwise an input's built-in width pushes two-up groups past a narrow
+   container such as a modal. */
 .field {
   display: grid;
   gap: var(--hrms-space-1);
+  min-width: 0;
   margin-bottom: var(--hrms-space-3);
+}
+
+.field input,
+.field select,
+.field textarea {
+  min-width: 0;
 }
 
 .field label {

@@ -108,12 +108,15 @@ export const WorkspaceUsersPage = () => {
     UPDATE_WORKSPACE_USER_ROLE_MUTATION,
   );
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
+  // Employee is the login people add most often, and the safest default; the
+  // effect below swaps it for the first assignable role if it isn't allowed.
+  const emptyForm = {
     email: '',
     password: '',
-    roleKey: 'clientMember' as SystemRoleKey,
+    roleKey: 'employee' as SystemRoleKey,
     employeeId: '',
-  });
+  };
+  const [form, setForm] = useState(emptyForm);
   const [roleDrafts, setRoleDrafts] = useState<Record<string, SystemRoleKey>>({});
   const [employeeLinkDrafts, setEmployeeLinkDrafts] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -238,7 +241,11 @@ export const WorkspaceUsersPage = () => {
     try {
       const result = await resetPassword({ variables: { input: { userId: workspaceUser.id } } });
       const issued = result.data?.resetWorkspaceUserPassword;
-      if (issued) setIssuedPassword({ email: issued.user.email, temporaryPassword: issued.temporaryPassword });
+      if (issued)
+        setIssuedPassword({
+          email: issued.user.email,
+          temporaryPassword: issued.temporaryPassword,
+        });
       await refetch();
     } catch (caught) {
       setRoleError(caught instanceof Error ? caught.message : 'Could not reset this password');
@@ -255,7 +262,11 @@ export const WorkspaceUsersPage = () => {
           onClick={() => void onResetPassword(workspaceUser)}
           type="button"
         >
-          <IconLockOpen aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+          <IconLockOpen
+            aria-hidden="true"
+            size={theme.icon.size.md}
+            stroke={theme.icon.stroke.md}
+          />
         </button>
       </Tooltip>
     );
@@ -361,7 +372,12 @@ export const WorkspaceUsersPage = () => {
           },
         },
       });
-      setForm({ email: '', password: '', roleKey: 'clientMember', employeeId: '' });
+      setForm({
+        ...emptyForm,
+        roleKey: assignableRoles.includes('employee')
+          ? 'employee'
+          : (firstAssignableRole ?? 'employee'),
+      });
       setShowForm(false);
       await refetch();
     } catch (caught) {
@@ -449,79 +465,65 @@ export const WorkspaceUsersPage = () => {
             </p>
           ) : null}
           <form className="config-form" onSubmit={onCreate}>
-            <div className="field-group">
-              <div className="field">
-                <label htmlFor="workspace-user-email">Email</label>
-                <input
-                  id="workspace-user-email"
-                  name="workspace-user-email"
-                  autoComplete="email"
-                  spellCheck={false}
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, email: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="workspace-user-password">Initial password</label>
-                <input
-                  id="workspace-user-password"
-                  name="workspace-user-password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  type="password"
-                  value={form.password}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, password: event.target.value }))
-                  }
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="workspace-user-role">Access role</label>
-                <select
-                  id="workspace-user-role"
-                  name="workspace-user-role"
-                  disabled={assignableRoles.length === 0}
-                  value={form.roleKey}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      roleKey: event.target.value as SystemRoleKey,
-                      employeeId: '',
-                    }))
-                  }
-                >
-                  {assignableRoles.length === 0 ? (
-                    <option value={form.roleKey}>
-                      {loadingAssignableRoles ? 'Loading roles…' : 'No assignable roles'}
-                    </option>
-                  ) : null}
-                  {assignableRoles.map((role) => (
-                    <option key={role} value={role}>
-                      {roleLabels[role]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            {/* One column: a modal is too narrow for paired fields, and the
+                order follows the decision (who → what access → which record). */}
+            <div className="field">
+              <label htmlFor="workspace-user-email">Email</label>
+              <input
+                id="workspace-user-email"
+                name="workspace-user-email"
+                autoComplete="off"
+                inputMode="email"
+                placeholder="name@company.com…"
+                spellCheck={false}
+                required
+                type="email"
+                value={form.email}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, email: event.target.value }))
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="workspace-user-role">Access role</label>
+              <select
+                id="workspace-user-role"
+                name="workspace-user-role"
+                disabled={assignableRoles.length === 0}
+                value={form.roleKey}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    roleKey: event.target.value as SystemRoleKey,
+                    employeeId: '',
+                  }))
+                }
+              >
+                {assignableRoles.length === 0 ? (
+                  <option value={form.roleKey}>
+                    {loadingAssignableRoles ? 'Loading roles…' : 'No assignable roles'}
+                  </option>
+                ) : null}
+                {assignableRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {roleLabels[role]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {form.roleKey === 'employee' ? (
               <div className="field">
                 <label htmlFor="workspace-user-employee">Employee record</label>
                 <select
                   id="workspace-user-employee"
                   name="workspace-user-employee"
-                  required={form.roleKey === 'employee'}
-                  disabled={form.roleKey !== 'employee'}
+                  required
                   value={form.employeeId}
                   onChange={(event) =>
                     setForm((current) => ({ ...current, employeeId: event.target.value }))
                   }
                 >
-                  <option value="">
-                    {form.roleKey === 'employee' ? 'Select employee' : 'Not required'}
-                  </option>
+                  <option value="">Select employee</option>
                   {(employeeData?.employees ?? []).map((employee) => (
                     <option key={employee.id} value={employee.id}>
                       {employee.firstName} {employee.lastName} ({employee.employeeNumber})
@@ -529,6 +531,26 @@ export const WorkspaceUsersPage = () => {
                   ))}
                 </select>
               </div>
+            ) : null}
+            <div className="field">
+              <label htmlFor="workspace-user-password">Initial password</label>
+              <input
+                aria-describedby="workspace-user-password-hint"
+                id="workspace-user-password"
+                name="workspace-user-password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                type="password"
+                value={form.password}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, password: event.target.value }))
+                }
+              />
+              <p className="field-hint" id="workspace-user-password-hint">
+                At least 8 characters. Share it privately; they’ll choose their own at first
+                sign-in.
+              </p>
             </div>
             <div className="page-actions">
               <button
@@ -536,7 +558,11 @@ export const WorkspaceUsersPage = () => {
                 disabled={creating || assignableRoles.length === 0}
                 type="submit"
               >
-                <IconKey aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                <IconKey
+                  aria-hidden="true"
+                  size={theme.icon.size.md}
+                  stroke={theme.icon.stroke.md}
+                />
                 {creating ? 'Adding…' : 'Add user'}
               </button>
             </div>
@@ -552,8 +578,8 @@ export const WorkspaceUsersPage = () => {
           {issuedPassword ? (
             <div aria-live="polite">
               <p className="page-subtitle">
-                Share this privately with {issuedPassword.email}. It won’t be shown again, and they’ll
-                choose their own password when they sign in.
+                Share this privately with {issuedPassword.email}. It won’t be shown again, and
+                they’ll choose their own password when they sign in.
               </p>
               <dl className="field-list">
                 <div className="field-row">
@@ -581,7 +607,11 @@ export const WorkspaceUsersPage = () => {
                 >
                   {passwordCopied ? 'Copied' : 'Copy credentials'}
                 </button>
-                <button className="button button-primary" onClick={() => setIssuedPassword(null)} type="button">
+                <button
+                  className="button button-primary"
+                  onClick={() => setIssuedPassword(null)}
+                  type="button"
+                >
                   Done
                 </button>
               </div>
@@ -605,7 +635,11 @@ export const WorkspaceUsersPage = () => {
                   onClick={() => void refetch()}
                   type="button"
                 >
-                  <IconRefresh aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
+                  <IconRefresh
+                    aria-hidden="true"
+                    size={theme.icon.size.md}
+                    stroke={theme.icon.stroke.md}
+                  />
                 </button>
               </Tooltip>
             }
