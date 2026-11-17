@@ -3,6 +3,7 @@ import { IconPlayerPlay, IconPlayerStop } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
+import { serverNow } from '../hooks/serverClock';
 import type { SelfClock } from '../hooks/useSelfClock';
 
 const SECONDS_PER_HOUR = 3600;
@@ -36,13 +37,14 @@ const formatDuration = (totalSeconds: number): string => {
   return hours > 0 ? `${hours}h ${pad(minutes)}m` : `${minutes}m`;
 };
 
-/** Seconds since `since`, ticking once a second while a session is open. */
+/** Seconds since `since` on the server's clock, ticking once a second while a
+ *  session is open (see serverClock: device drift would otherwise stall it). */
 const useElapsedSeconds = (since: string | null): number => {
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => serverNow());
   useEffect(() => {
     if (!since) return undefined;
-    setNow(Date.now());
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    setNow(serverNow());
+    const timer = window.setInterval(() => setNow(serverNow()), 1000);
     return () => window.clearInterval(timer);
   }, [since]);
   if (!since) return 0;

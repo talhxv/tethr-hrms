@@ -9,6 +9,8 @@ import {
   MY_TIME_ENTRIES_QUERY,
 } from '../graphql/attendance.operations';
 
+import { recordServerTimestamp, serverNow } from './serverClock';
+
 type MyTimeEntry = {
   readonly id: string;
   readonly date: string;
@@ -53,6 +55,7 @@ export type SelfClock = {
 const daysAgo = (days: number): string => dateKeyDaysAgo(days);
 
 const MILLISECONDS_PER_HOUR = 3_600_000;
+const OPTIMISTIC_CLOCK_IN_ID = 'optimistic-clock-in';
 
 /**
  * Self-service clocking. Both mutations resolve the employee from the session on
@@ -109,22 +112,28 @@ export const useSelfClock = (historyDays = 7): SelfClock => {
 
   // The card flips the moment you tap: the open session is written to the cache
   // optimistically, then replaced by the server's answer (or rolled back).
-  const clockIn = () =>
-    run(() =>
+  const clockIn = () => {
+    const requestStartedAt = Date.now();
+    return run(() =>
       clockInMe({
         optimisticResponse: {
           clockInMe: {
             __typename: 'ClockEvent',
-            id: 'optimistic-clock-in',
+            id: OPTIMISTIC_CLOCK_IN_ID,
             employeeId: '',
             type: 'in',
-            occurredAt: new Date().toISOString(),
+            occurredAt: new Date(serverNow()).toISOString(),
             source: 'web',
           },
         },
         update: (cache, result) => {
           const event = (result.data as ClockInMeData | null | undefined)?.clockInMe;
           if (!event) return;
+          // The real response (not the optimistic one): measure clock drift
+          // before the cache write re-renders the timer against it.
+          if (event.id !== OPTIMISTIC_CLOCK_IN_ID) {
+            recordServerTimestamp(event.occurredAt, requestStartedAt);
+          }
           cache.writeQuery<MyOpenClockInData>({
             query: MY_OPEN_CLOCK_IN_QUERY,
             data: {
@@ -138,12 +147,13 @@ export const useSelfClock = (historyDays = 7): SelfClock => {
         },
       }),
     );
+  };
 
   const openSince = openData?.myOpenClockIn?.occurredAt ?? null;
 
   const clockOut = () => {
     const workedHours = openSince
-      ? Math.max(0, (Date.now() - new Date(openSince).getTime()) / MILLISECONDS_PER_HOUR)
+      ? Math.max(0, (serverNow() - new Date(openSince).getTime()) / MILLISECONDS_PER_HOUR)
       : 0;
     return run(() =>
       clockOutMe({
