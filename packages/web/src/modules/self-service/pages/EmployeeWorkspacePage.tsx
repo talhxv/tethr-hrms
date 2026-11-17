@@ -9,8 +9,6 @@ import {
   IconClock,
   IconMessageCircle,
   IconPlaneDeparture,
-  IconPlayerPlay,
-  IconPlayerStop,
   IconSpeakerphone,
   type TablerIcon,
 } from '@tabler/icons-react';
@@ -20,6 +18,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { downloadBase64File } from '../../../app/download';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useTheme } from '../../../providers/theme/useTheme';
+import { CheckInPanel } from '../../attendance/components/CheckInPanel';
 import { ClockInOutCard } from '../../attendance/components/ClockInOutCard';
 import { useSelfClock } from '../../attendance/hooks/useSelfClock';
 import { SUBMIT_MY_FEEDBACK_MUTATION } from '../../engagement/graphql/engagement.operations';
@@ -233,53 +232,14 @@ type EmployeeHomeHeroProps = { readonly firstName: string };
 // The check-in card doubles as the greeting: the one thing an employee opens the
 // app to do sits above everything else, the way a phone HR app puts it.
 const EmployeeHomeHero = ({ firstName }: EmployeeHomeHeroProps) => {
-  const { theme } = useTheme();
   const clock = useSelfClock();
-
-  const status = clock.todayEntry
-    ? `${clock.todayEntry.hours.toFixed(2)} hours recorded today`
-    : clock.latestEntry
-      ? `Last recorded ${clock.latestEntry.hours.toFixed(2)} hours on ${formatDate(clock.latestEntry.date)}`
-      : 'No hours recorded yet';
 
   return (
     <section className="me-hero">
       <h1 className="me-hero-title" id="employee-workspace-title">
         Hey, {firstName}
       </h1>
-      <p className="me-hero-status">{status}</p>
-
-      {clock.notice ? (
-        <p className="form-success" role="status">
-          {clock.notice}
-        </p>
-      ) : null}
-      {clock.error ? (
-        <p className="auth-error" role="alert">
-          {clock.error}
-        </p>
-      ) : null}
-
-      <div className="me-hero-actions">
-        <button
-          className="me-hero-button"
-          disabled={clock.clockingIn}
-          type="button"
-          onClick={() => void clock.clockIn()}
-        >
-          <IconPlayerPlay aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-          {clock.clockingIn ? 'Checking in…' : 'Check in'}
-        </button>
-        <button
-          className="me-hero-button"
-          disabled={clock.clockingOut}
-          type="button"
-          onClick={() => void clock.clockOut()}
-        >
-          <IconPlayerStop aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-          {clock.clockingOut ? 'Checking out…' : 'Check out'}
-        </button>
-      </div>
+      <CheckInPanel clock={clock} />
     </section>
   );
 };
@@ -491,7 +451,7 @@ export const EmployeeWorkspacePage = () => {
           {view === 'attendance' ? <ClockInOutCard /> : null}
 
           {view === 'leave' ? (
-            <>
+            <div className="me-leave-stack">
           <section className="table-shell employee-form-card">
             <div className="panel-title-row">
               <div>
@@ -598,7 +558,9 @@ export const EmployeeWorkspacePage = () => {
                     {data.myLeaveBalances.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="table-empty">
-                          Your balances will appear once leave policies are assigned.
+                          <p className="table-empty">
+                            Your balances will appear once leave policies are assigned.
+                          </p>
                         </td>
                       </tr>
                     ) : null}
@@ -652,7 +614,7 @@ export const EmployeeWorkspacePage = () => {
                   {sortedRequests.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="table-empty">
-                        No leave requests yet.
+                        <p className="table-empty">No leave requests yet.</p>
                       </td>
                     </tr>
                   ) : null}
@@ -660,7 +622,7 @@ export const EmployeeWorkspacePage = () => {
               </table>
             </div>
           </section>
-            </>
+            </div>
           ) : null}
 
           {view === 'payslips' ? <MyPayslipsSection /> : null}

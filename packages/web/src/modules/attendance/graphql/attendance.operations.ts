@@ -91,6 +91,16 @@ export const LOCK_TIMESHEET_MUTATION = gql`
   }
 `;
 
+// Null when checked out; otherwise the punch the running session started with.
+export const MY_OPEN_CLOCK_IN_QUERY = gql`
+  query MyOpenClockIn {
+    myOpenClockIn {
+      id
+      occurredAt
+    }
+  }
+`;
+
 export const CLOCK_IN_ME_MUTATION = gql`
   mutation ClockInMe {
     clockInMe {

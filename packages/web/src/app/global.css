@@ -2360,6 +2360,7 @@ button,
   font-size: var(--hrms-layout-table-font-size);
   font-weight: var(--hrms-font-weight-medium);
   text-transform: none;
+  white-space: nowrap;
   border-bottom: 1px solid var(--hrms-color-border-medium);
 }
 
@@ -3281,56 +3282,87 @@ button,
   line-height: var(--hrms-line-height-md);
 }
 
-.me-hero-status {
-  margin: var(--hrms-space-2) 0 0;
+/* Check-in panel (home hero and the Attendance page). One action at a time:
+   the server says whether a session is open, so the other button is not shown. */
+.check-in-panel {
+  display: grid;
+  gap: var(--hrms-space-2);
+  margin-top: var(--hrms-space-2);
+}
+
+.check-in-status {
+  display: flex;
+  align-items: center;
+  gap: var(--hrms-space-2);
+  color: var(--hrms-color-text-secondary);
+  font-size: var(--hrms-font-size-sm);
+}
+
+.check-in-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hrms-color-border-strong);
+}
+
+.check-in-dot-on {
+  background: var(--hrms-color-tag-green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--hrms-color-tag-green) 24%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .check-in-dot-on {
+    animation: check-in-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes check-in-pulse {
+  50% {
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--hrms-color-tag-green) 10%, transparent);
+  }
+}
+
+.check-in-timer {
+  color: var(--hrms-color-text-primary);
+  font-size: var(--hrms-font-size-xxl);
+  font-weight: var(--hrms-font-weight-semi-bold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--hrms-line-height-md);
+}
+
+.check-in-summary {
+  margin: 0;
   color: var(--hrms-color-text-tertiary);
+  font-size: var(--hrms-font-size-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.check-in-warning {
+  margin: 0;
+  padding: var(--hrms-space-2) var(--hrms-space-3);
+  color: var(--hrms-color-text-primary);
+  background: color-mix(in srgb, var(--hrms-color-tag-amber) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--hrms-color-tag-amber) 40%, transparent);
+  border-radius: var(--hrms-radius-sm);
   font-size: var(--hrms-font-size-xs);
 }
 
-/* A grid, not a flex row: with flex the two buttons size from their own labels,
-   so "Check in" and "Check out" came out a few pixels apart on a narrow phone. */
-.me-hero-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--hrms-space-2);
-  margin-top: var(--hrms-space-4);
+.check-in-panel .form-success,
+.check-in-panel .auth-error {
+  margin: 0;
 }
 
-/* One tap target per action, both the same weight: without a query for open
-   clock events the app cannot know which one you need next, so it does not
-   pretend to. */
-.me-hero-button {
-  display: flex;
-  align-items: center;
+.check-in-button {
   justify-content: center;
-  gap: var(--hrms-space-2);
+  width: 100%;
   min-height: 44px;
-  padding: 0 var(--hrms-space-4);
-  color: var(--hrms-color-text-primary);
-  background: var(--hrms-color-background-tertiary);
-  border: 1px solid var(--hrms-color-border-light);
-  border-radius: var(--hrms-radius-md);
-  cursor: pointer;
-  font-size: var(--hrms-font-size-sm);
-  font-weight: var(--hrms-font-weight-medium);
-  /* Two words is enough to wrap "Check out" onto a second line at 360px, which
-     leaves the pair ragged and unequal. The label holds one line and the button
-     takes whatever width that needs. */
+  margin-top: var(--hrms-space-2);
   white-space: nowrap;
-  transition: var(--hrms-animation-clickable-background-transition);
 }
 
-.me-hero-button svg {
-  flex-shrink: 0;
-}
-
-.me-hero-button:hover:not(:disabled) {
-  background: var(--hrms-color-background-quaternary);
-}
-
-.me-hero-button:disabled {
-  color: var(--hrms-color-text-tertiary);
-  cursor: not-allowed;
+.check-in-figures {
+  margin-top: var(--hrms-space-4);
 }
 
 .me-section {
@@ -3464,6 +3496,26 @@ button,
 .employee-form-card {
   padding: var(--hrms-space-5);
   margin-bottom: var(--hrms-space-4);
+}
+
+/* The form already sits in a card, so it drops its own box rather than
+   rendering as a card inside a card. */
+.employee-form-card .config-form {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+/* Leave view: request form, balance and requests share one 16px gap. */
+.me-leave-stack {
+  display: grid;
+  gap: var(--hrms-space-4);
+  min-width: 0;
+}
+
+.me-leave-stack > .employee-form-card {
+  margin-bottom: 0;
 }
 
 /* Clock in / out is the first thing on the employee landing page, so it sits in

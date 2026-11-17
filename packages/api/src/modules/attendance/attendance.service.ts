@@ -180,6 +180,18 @@ export class AttendanceService {
     });
   }
 
+  // The open clock-in, if the employee's latest punch is an `in`; null when
+  // they are checked out. Lets the UI show which action comes next instead of
+  // finding out from a refused punch.
+  async findOpenClockIn(employeeId: EmployeeId): Promise<ClockEvent | null> {
+    const organizationId = this.tenantContext.getOrganizationId();
+    const last = await this.dataSource.getRepository(ClockEvent).findOne({
+      where: { organizationId, employeeId },
+      order: { occurredAt: 'DESC' },
+    });
+    return last?.type === 'in' ? last : null;
+  }
+
   listEntries(employeeId: EmployeeId, from: IsoDate, to: IsoDate): Promise<TimeEntry[]> {
     return this.timeEntries.find({
       where: { employeeId, date: Between(from, to) } as FindOptionsWhere<TimeEntry>,

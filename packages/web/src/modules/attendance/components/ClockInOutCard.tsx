@@ -1,7 +1,9 @@
-import { IconClock, IconPlayerPlay, IconPlayerStop } from '@tabler/icons-react';
+import { IconClock } from '@tabler/icons-react';
 
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useSelfClock } from '../hooks/useSelfClock';
+
+import { CheckInPanel } from './CheckInPanel';
 
 const formatDate = (value: string): string =>
   new Intl.DateTimeFormat('en', { day: '2-digit', month: 'short' }).format(
@@ -12,9 +14,10 @@ const formatWeekday = (value: string): string =>
   new Intl.DateTimeFormat('en', { weekday: 'long' }).format(new Date(`${value}T00:00:00`));
 
 /**
- * The employee attendance screen: today's total, the running week, the two clock
- * actions, and the days already recorded. Everything resolves the employee from
- * the session server-side, so this card never sends an employee id.
+ * The employee attendance screen: the check-in panel (status, running timer,
+ * the one action that applies), the running week, and the days already
+ * recorded. Everything resolves the employee from the session server-side, so
+ * this card never sends an employee id.
  */
 export const ClockInOutCard = () => {
   const { theme } = useTheme();
@@ -25,51 +28,13 @@ export const ClockInOutCard = () => {
       {/* No card heading: the page header above already says what this is, and a
           second title inside the card only repeats it. */}
       <section className="table-shell clock-card">
-        {clock.notice ? (
-          <p className="form-success" role="status">
-            {clock.notice}
-          </p>
-        ) : null}
-        {clock.error ? (
-          <p className="auth-error" role="alert">
-            {clock.error}
-          </p>
-        ) : null}
+        <CheckInPanel clock={clock} />
 
-        <div className="field-list">
-          <div className="field-row">
-            <span className="field-label">Today</span>
-            <span className="field-value">
-              {clock.todayEntry
-                ? `${clock.todayEntry.hours.toFixed(2)} hours recorded`
-                : 'Nothing yet'}
-            </span>
-          </div>
+        <div className="field-list check-in-figures">
           <div className="field-row">
             <span className="field-label">Last 7 days</span>
             <span className="field-value">{clock.weekHours.toFixed(2)} hours</span>
           </div>
-        </div>
-
-        <div className="page-actions clock-actions">
-          <button
-            className="button button-primary"
-            disabled={clock.clockingIn}
-            type="button"
-            onClick={() => void clock.clockIn()}
-          >
-            <IconPlayerPlay aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-            {clock.clockingIn ? 'Checking in…' : 'Check in'}
-          </button>
-          <button
-            className="button button-secondary"
-            disabled={clock.clockingOut}
-            type="button"
-            onClick={() => void clock.clockOut()}
-          >
-            <IconPlayerStop aria-hidden="true" size={theme.icon.size.md} stroke={theme.icon.stroke.md} />
-            {clock.clockingOut ? 'Checking out…' : 'Check out'}
-          </button>
         </div>
       </section>
 

@@ -30,6 +30,7 @@ const buildService = (
   } as unknown as EntityManager;
   const dataSource = {
     transaction: jest.fn((callback: (m: EntityManager) => Promise<unknown>) => callback(manager)),
+    getRepository: jest.fn(() => ({ findOne: jest.fn().mockResolvedValue(lastEvent) })),
   } as unknown as DataSource;
   const tenantContext = {
     getOrganizationId: jest.fn().mockReturnValue(ORG),
@@ -61,6 +62,24 @@ describe('AttendanceService.clockIn', () => {
       'SELECT pg_advisory_xact_lock(hashtext($1))',
       [expect.stringContaining('attendance:')],
     );
+  });
+});
+
+describe('AttendanceService.findOpenClockIn', () => {
+  it('returns the latest punch when it is a clock-in', async () => {
+    const occurredAt = new Date('2026-11-17T04:00:00Z');
+    const { service } = buildService({ type: 'in', occurredAt });
+    await expect(service.findOpenClockIn(EMPLOYEE)).resolves.toMatchObject({ type: 'in', occurredAt });
+  });
+
+  it('returns null when the latest punch is a clock-out', async () => {
+    const { service } = buildService({ type: 'out', occurredAt: new Date() });
+    await expect(service.findOpenClockIn(EMPLOYEE)).resolves.toBeNull();
+  });
+
+  it('returns null when the employee has never clocked', async () => {
+    const { service } = buildService(null);
+    await expect(service.findOpenClockIn(EMPLOYEE)).resolves.toBeNull();
   });
 });
 

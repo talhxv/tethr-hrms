@@ -78,6 +78,15 @@ export class AttendanceResolver {
     return toTimeEntryView(await this.attendanceService.clockOut(await this.currentEmployeeId()));
   }
 
+  // Null when checked out; otherwise the punch the running session started with.
+  @Query(() => ClockEventView, { nullable: true })
+  @UseGuards(PermissionsGuard)
+  @RequirePermissions(PERMISSIONS.attendanceOwnRead)
+  async myOpenClockIn(): Promise<ClockEventView | null> {
+    const open = await this.attendanceService.findOpenClockIn(await this.currentEmployeeId());
+    return open ? toClockEventView(open) : null;
+  }
+
   @Query(() => [TimeEntryView])
   @UseGuards(PermissionsGuard)
   @RequirePermissions(PERMISSIONS.attendanceOwnRead)
