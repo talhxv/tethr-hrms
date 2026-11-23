@@ -3837,9 +3837,24 @@ button.activity-cell:focus-visible {
 }
 
 .profile-identity-facts {
+  grid-template-columns: minmax(0, 1fr);
   margin-top: var(--hrms-space-4);
   padding-top: var(--hrms-space-4);
   border-top: 1px solid var(--hrms-color-border-light);
+}
+
+/* The identity card is narrow: stack label over value so a long work email
+   wraps inside the card instead of pushing the row past its edge. */
+.profile-identity-facts .field-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.profile-identity-facts .field-value {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* A grid, not a block: the cards carry no margin of their own — the onboarding

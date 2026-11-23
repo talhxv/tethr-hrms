@@ -386,7 +386,11 @@ export const MyProfilePage = () => {
               <div className="field-row">
                 <span className="field-label">Days left in probation</span>
                 <span className="field-value">
-                  {employee?.probationEndDate ? daysUntil(employee.probationEndDate) : 'Not set'}
+                  {employee?.probationEndDate
+                    ? daysUntil(employee.probationEndDate) > 0
+                      ? daysUntil(employee.probationEndDate)
+                      : 'Completed'
+                    : 'Not set'}
                 </span>
               </div>
               <div className="field-row">
