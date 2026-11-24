@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatDate } from '@hrms/shared';
 import { IconAdjustments, IconAlertTriangle, IconCalendarStats, IconPlus, IconRefresh } from '@tabler/icons-react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { StatusChip } from '../../../../components/chip/StatusChip';
 import { EmptyState } from '../../../../components/empty-state/EmptyState';
 import { Modal } from '../../../../components/modal/Modal';

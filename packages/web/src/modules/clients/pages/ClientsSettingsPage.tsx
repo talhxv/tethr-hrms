@@ -1,8 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatDate } from '@hrms/shared';
 import { IconAlertTriangle, IconBuildingCommunity, IconPlus, IconRefresh } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import {
   DataTable,

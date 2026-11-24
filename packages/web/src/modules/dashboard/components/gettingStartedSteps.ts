@@ -1,4 +1,4 @@
-import { gql, useQuery } from '@apollo/client';
+import { gql } from '@apollo/client';
 import {
   IconBriefcase,
   IconBuildingCommunity,
@@ -7,6 +7,7 @@ import {
   type TablerIcon,
 } from '@tabler/icons-react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { useAuth } from '../../auth/hooks/useAuth';
 
 // A single "explore the product" step: a titled, linked action whose completion

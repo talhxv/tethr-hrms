@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatDate, todayDateKey } from '@hrms/shared';
 import {
   IconArrowLeft,
@@ -9,6 +9,7 @@ import {
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { OnboardingCard } from '../../../components/onboarding/OnboardingFlow';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { BankDetailsCard } from '../components/BankDetailsCard';

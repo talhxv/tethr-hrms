@@ -1,5 +1,4 @@
-import { useQuery } from '@apollo/client';
-
+import { useQuery } from '../../../app/apollo-hooks';
 import { MY_ORGANIZATION_QUERY } from '../../organization/graphql/organization.operations';
 
 import type { WidgetData, WidgetFieldDefinition } from './types';

@@ -1,4 +1,4 @@
-import { useLazyQuery, useQuery } from '@apollo/client';
+import { useLazyQuery } from '@apollo/client';
 import { formatDate, formatMoney, type EmploymentStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
@@ -17,19 +17,20 @@ import {
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { downloadBase64File } from '../../../app/download';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import { SkeletonRows } from '../../../components/skeleton/Skeleton';
 import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { DashboardWidgetBoard } from '../../dashboard/components/DashboardWidgetBoard';
 import {
   CLIENT_COST_BREAKDOWN_QUERY,
   CLIENT_INVOICES_QUERY,
   CLIENT_INVOICE_ADDENDUM_PDF_QUERY,
   CLIENT_INVOICE_PDF_QUERY,
 } from '../../finance/billing/graphql/billing.operations';
-import { DashboardWidgetBoard } from '../../dashboard/components/DashboardWidgetBoard';
 import { CLIENT_WORKSPACE_QUERY } from '../graphql/client-workspace.operations';
 
 type EmployeeRecord = {

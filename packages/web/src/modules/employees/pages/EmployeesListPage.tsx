@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { todayDateKey, type WorkerType } from '@hrms/shared';
 import {
   IconAlertTriangle,
@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import { FilterBar } from '../../../components/filter-bar/FilterBar';

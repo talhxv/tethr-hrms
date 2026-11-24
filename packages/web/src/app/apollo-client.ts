@@ -40,7 +40,17 @@ const sessionExpiryLink = onError(({ graphQLErrors, networkError }) => {
 
 // The GraphQL/HTTP cache. Server data lives here — never duplicated into atoms
 // (architecture.md §5.2).
+//
+// Queries show cached data at once and refresh it in the background on every
+// mount (`cache-and-network`), so revisiting a screen is instant and still
+// current: a leave request submitted elsewhere appears without a reload. Within
+// one mount, re-renders read the cache (`nextFetchPolicy`) instead of refetching.
+// Screen queries use the `useQuery` wrapper in apollo-hooks.ts, which keeps the
+// loading skeleton off data that is already on screen.
 export const apolloClient = new ApolloClient({
   link: sessionExpiryLink.concat(authLink.concat(httpLink)),
   cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: { fetchPolicy: 'cache-and-network', nextFetchPolicy: 'cache-first' },
+  },
 });

@@ -1,4 +1,4 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation } from '@apollo/client';
 import {
   formatDate,
   formatDateTime,
@@ -27,6 +27,7 @@ import {
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { uploadToSignedUrl } from '../../../app/upload';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useConfirm } from '../../../components/confirm/ConfirmProvider';

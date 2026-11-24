@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import type { FormFieldType } from '@hrms/shared';
 import { IconFileText, IconLoader2, IconUpload } from '@tabler/icons-react';
 import { useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { uploadToSignedUrl } from '../../../app/upload';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useTheme } from '../../../providers/theme/useTheme';

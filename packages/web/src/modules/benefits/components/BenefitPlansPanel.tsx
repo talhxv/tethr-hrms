@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { IconHeartHandshake, IconPlus } from '@tabler/icons-react';
 import { useRef, useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import { focusFirstByName } from '../../../components/form/validation';
 import { Modal } from '../../../components/modal/Modal';

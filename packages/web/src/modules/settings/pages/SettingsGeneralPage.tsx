@@ -1,8 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { WORKSPACE_BRAND_COLORS, type WorkspaceBrandColor } from '@hrms/shared';
 import { IconLock, IconSearch } from '@tabler/icons-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import { useAuth } from '../../auth/hooks/useAuth';
 import {

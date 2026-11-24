@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatMoney, type InvoiceStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
@@ -13,6 +13,7 @@ import {
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { StatusChip } from '../../../../components/chip/StatusChip';
 import { useConfirm } from '../../../../components/confirm/ConfirmProvider';
 import { EmptyState } from '../../../../components/empty-state/EmptyState';

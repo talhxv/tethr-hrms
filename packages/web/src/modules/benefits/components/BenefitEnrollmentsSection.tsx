@@ -1,8 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { todayDateKey } from '@hrms/shared';
 import { IconPlus } from '@tabler/icons-react';
 import { useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useConfirm } from '../../../components/confirm/ConfirmProvider';
 import { Modal } from '../../../components/modal/Modal';

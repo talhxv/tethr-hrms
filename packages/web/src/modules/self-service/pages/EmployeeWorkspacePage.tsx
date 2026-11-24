@@ -1,4 +1,4 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation } from '@apollo/client';
 import { formatDate, formatDateTime, todayDateKey, type ApprovalStatus } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import {
@@ -15,6 +15,7 @@ import {
 import { Fragment, useMemo, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { downloadBase64File } from '../../../app/download';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useTheme } from '../../../providers/theme/useTheme';

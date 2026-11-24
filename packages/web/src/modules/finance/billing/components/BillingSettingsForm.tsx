@@ -1,6 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import {
   BILLING_PAGE_DATA_QUERY,
   UPDATE_BILLING_CONFIG_MUTATION,

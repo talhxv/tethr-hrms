@@ -1,8 +1,9 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation } from '@apollo/client';
 import { IconAlertTriangle, IconLock, IconRefresh, IconTable, IconX } from '@tabler/icons-react';
 import { Fragment, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { downloadBase64File } from '../../../../app/download';
 import { StatusChip } from '../../../../components/chip/StatusChip';
 import { useConfirm } from '../../../../components/confirm/ConfirmProvider';

@@ -99,6 +99,71 @@ describe('AuthorizationService', () => {
     );
   });
 
+  it('reuses resolved access for the same user instead of querying again', async () => {
+    const roles = {
+      find: jest.fn().mockResolvedValue([role(EMPLOYEE_ROLE, 'employee', [])]),
+    } as unknown as Repository<Role>;
+    const assignments = {
+      find: jest.fn().mockResolvedValue([{ userId: USER, roleId: EMPLOYEE_ROLE }]),
+    } as unknown as Repository<UserRoleAssignment>;
+    const service = new AuthorizationService(roles, assignments, {} as TenantContextService);
+
+    await service.getAccessForUserInOrganization(USER, ORGANIZATION);
+    const second = await service.getAccessForUserInOrganization(USER, ORGANIZATION);
+
+    expect(second.roleKeys).toEqual(['employee']);
+    expect(assignments.find).toHaveBeenCalledTimes(1);
+    expect(roles.find).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps cached access separate per organization', async () => {
+    const roles = {
+      find: jest.fn().mockResolvedValue([role(EMPLOYEE_ROLE, 'employee', [])]),
+    } as unknown as Repository<Role>;
+    const assignments = {
+      find: jest.fn().mockResolvedValue([{ userId: USER, roleId: EMPLOYEE_ROLE }]),
+    } as unknown as Repository<UserRoleAssignment>;
+    const service = new AuthorizationService(roles, assignments, {} as TenantContextService);
+
+    await service.getAccessForUserInOrganization(USER, ORGANIZATION);
+    await service.getAccessForUserInOrganization(USER, toId<OrganizationId>('org-2'));
+
+    expect(assignments.find).toHaveBeenCalledTimes(2);
+  });
+
+  it('re-reads access after the user is given a different role', async () => {
+    const roles = {
+      findOne: jest.fn().mockResolvedValue(role(TETHR_ROLE, 'tethrHr', [])),
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([role(EMPLOYEE_ROLE, 'employee', [])])
+        .mockResolvedValueOnce([role(TETHR_ROLE, 'tethrHr', [])])
+        .mockResolvedValueOnce([role(TETHR_ROLE, 'tethrHr', [])]),
+    } as unknown as Repository<Role>;
+    const assignments = {
+      find: jest
+        .fn()
+        .mockResolvedValueOnce([{ userId: USER, roleId: EMPLOYEE_ROLE }])
+        .mockResolvedValueOnce([{ userId: USER, roleId: TETHR_ROLE }]),
+      delete: jest.fn().mockResolvedValue(undefined),
+      create: jest.fn((value: unknown) => value),
+      save: jest.fn().mockResolvedValue(undefined),
+    } as unknown as Repository<UserRoleAssignment>;
+    const tenantContext = {
+      getOrganizationId: jest.fn().mockReturnValue(ORGANIZATION),
+    } as unknown as TenantContextService;
+    const service = new AuthorizationService(roles, assignments, tenantContext);
+
+    expect((await service.getAccessForUserInOrganization(USER, ORGANIZATION)).roleKeys).toEqual([
+      'employee',
+    ]);
+    await service.replaceSystemRole(USER, 'tethrHr');
+
+    expect((await service.getAccessForUserInOrganization(USER, ORGANIZATION)).roleKeys).toEqual([
+      'tethrHr',
+    ]);
+  });
+
   it('lets Tethr Admin assign every V1 system role', async () => {
     const roles = {
       find: jest.fn().mockResolvedValue([role(TETHR_ROLE, 'tethrAdmin', [])]),

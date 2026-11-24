@@ -1,4 +1,4 @@
-import { useApolloClient, useLazyQuery, useQuery } from '@apollo/client';
+import { useApolloClient, useLazyQuery } from '@apollo/client';
 import type { PortalKind, WorkspaceBrandColor } from '@hrms/shared';
 import {
   IconArrowsRightLeft,
@@ -50,6 +50,7 @@ import { MY_ORGANIZATION_QUERY } from '../modules/organization/graphql/organizat
 import { visibleSettingsTabs } from '../modules/settings/settingsTabs';
 import { useTheme } from '../providers/theme/useTheme';
 
+import { useQuery } from './apollo-hooks';
 import { portalHome, portalLabel } from './portal';
 
 type NavigationItem = {

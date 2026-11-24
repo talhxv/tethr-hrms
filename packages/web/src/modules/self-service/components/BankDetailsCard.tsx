@@ -1,6 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { OnboardingCard } from '../../../components/onboarding/OnboardingFlow';
 import {
   MY_BANK_DETAILS_QUERY,

@@ -1,8 +1,9 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatDate, todayDateKey } from '@hrms/shared';
 import { IconPencil } from '@tabler/icons-react';
 import { useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { Modal } from '../../../../components/modal/Modal';
 import { useTheme } from '../../../../providers/theme/useTheme';
 import { useAuth } from '../../../auth/hooks/useAuth';

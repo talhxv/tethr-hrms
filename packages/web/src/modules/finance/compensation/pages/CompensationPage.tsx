@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import {
   formatDate,
   todayDateKey,
@@ -9,6 +9,7 @@ import { IconAlertTriangle, IconCurrencyDollar, IconRefresh, IconSettings } from
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { EmptyState } from '../../../../components/empty-state/EmptyState';
 import { Modal } from '../../../../components/modal/Modal';
 import { SkeletonRows } from '../../../../components/skeleton/Skeleton';

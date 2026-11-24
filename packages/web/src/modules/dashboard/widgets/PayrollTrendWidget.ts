@@ -1,5 +1,7 @@
-import { gql, useApolloClient, useQuery } from '@apollo/client';
+import { gql, useApolloClient } from '@apollo/client';
 import { useEffect, useState } from 'react';
+
+import { useQuery } from '../../../app/apollo-hooks';
 
 import type { WidgetData, WidgetFieldDefinition } from './types';
 

@@ -1,4 +1,4 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation } from '@apollo/client';
 import { formatDate, todayDateKey } from '@hrms/shared';
 import {
   IconAlertTriangle,
@@ -8,6 +8,7 @@ import {
 } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { downloadBase64File } from '../../../app/download';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useTheme } from '../../../providers/theme/useTheme';

@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatMoney, todayDateKey } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import { IconPlus, IconReceipt, IconTrash } from '@tabler/icons-react';
 import { useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { uploadToSignedUrl } from '../../../app/upload';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { useConfirm } from '../../../components/confirm/ConfirmProvider';

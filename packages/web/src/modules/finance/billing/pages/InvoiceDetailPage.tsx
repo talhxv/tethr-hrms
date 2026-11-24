@@ -1,9 +1,10 @@
-import { useLazyQuery, useMutation, useQuery } from '@apollo/client';
+import { useLazyQuery, useMutation } from '@apollo/client';
 import { formatDate, formatMoney } from '@hrms/shared';
 import { IconCheck, IconFileInvoice, IconLock, IconPlus, IconX } from '@tabler/icons-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { downloadBase64File } from '../../../../app/download';
 import { StatusChip } from '../../../../components/chip/StatusChip';
 import { useConfirm } from '../../../../components/confirm/ConfirmProvider';

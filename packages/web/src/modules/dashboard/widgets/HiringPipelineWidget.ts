@@ -1,5 +1,7 @@
-import { gql, useQuery } from '@apollo/client';
+import { gql } from '@apollo/client';
 import { HIRING_REQUEST_STATUSES, type HiringRequestStatus } from '@hrms/shared';
+
+import { useQuery } from '../../../app/apollo-hooks';
 
 import type { WidgetData, WidgetFieldDefinition } from './types';
 

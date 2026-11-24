@@ -1,6 +1,6 @@
-import { useQuery } from '@apollo/client';
 import { formatDate } from '@hrms/shared';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { MY_PAYSLIPS_QUERY } from '../../finance/payroll/graphql/payroll.operations';
 
 import type { WidgetData, WidgetFieldDefinition } from './types';

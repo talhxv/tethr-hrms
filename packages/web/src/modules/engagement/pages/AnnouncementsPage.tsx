@@ -1,9 +1,10 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { formatDate, formatDateTime, type AnnouncementAudience } from '@hrms/shared';
 import type { MainColorName } from '@hrms/ui';
 import { IconDeviceFloppy, IconFilterOff, IconPin, IconPlus, IconSpeakerphone } from '@tabler/icons-react';
 import { useMemo, useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { StatusChip } from '../../../components/chip/StatusChip';
 import { EmptyState } from '../../../components/empty-state/EmptyState';
 import { FilterBar } from '../../../components/filter-bar/FilterBar';

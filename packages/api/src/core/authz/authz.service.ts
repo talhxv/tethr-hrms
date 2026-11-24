@@ -24,11 +24,24 @@ export type EffectiveAccess = {
   readonly portal: PortalKind;
 };
 
+// Every guarded request resolves the caller's access, which costs two database
+// round trips. Each one is slow when the API and database sit in different
+// regions. A short per-instance cache removes those trips from almost every
+// request. Role changes made through this service clear the entry at once; a
+// change made on another instance, or by an offline script, applies within the
+// TTL.
+const ACCESS_CACHE_TTL_MS = 30_000;
+const ACCESS_CACHE_MAX_ENTRIES = 5_000;
+
+type CachedAccess = { readonly access: EffectiveAccess; readonly expiresAt: number };
+
 // Resolves role assignments into the effective access used by both GraphQL
 // guards and the frontend portal selector. Reads are explicitly organization
 // scoped because this is the core authorization ownership boundary.
 @Injectable()
 export class AuthorizationService {
+  private readonly accessCache = new Map<string, CachedAccess>();
+
   constructor(
     @InjectRepository(Role) private readonly roles: Repository<Role>,
     @InjectRepository(UserRoleAssignment)
@@ -45,6 +58,27 @@ export class AuthorizationService {
   }
 
   async getAccessForUserInOrganization(
+    userId: UserId | string,
+    organizationId: OrganizationId | string,
+  ): Promise<EffectiveAccess> {
+    const cacheKey = accessCacheKey(organizationId, userId);
+    const cached = this.accessCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.access;
+    }
+    const access = await this.loadAccess(userId, organizationId);
+    if (this.accessCache.size >= ACCESS_CACHE_MAX_ENTRIES) {
+      this.accessCache.clear();
+    }
+    this.accessCache.set(cacheKey, { access, expiresAt: Date.now() + ACCESS_CACHE_TTL_MS });
+    return access;
+  }
+
+  private forgetAccess(organizationId: OrganizationId | string, userId: UserId | string): void {
+    this.accessCache.delete(accessCacheKey(organizationId, userId));
+  }
+
+  private async loadAccess(
     userId: UserId | string,
     organizationId: OrganizationId | string,
   ): Promise<EffectiveAccess> {
@@ -79,6 +113,7 @@ export class AuthorizationService {
     await this.assignments.save(
       this.assignments.create({ organizationId, userId, roleId: toId<RoleId>(role.id) }),
     );
+    this.forgetAccess(organizationId, userId);
   }
 
   async replaceSystemRole(userId: UserId, roleKey: SystemRoleKey): Promise<void> {
@@ -88,6 +123,9 @@ export class AuthorizationService {
       where: { organizationId, key: In(Object.keys(SYSTEM_ROLES)) },
     });
     const systemRoleIds = systemRoles.map((systemRole) => toId<RoleId>(systemRole.id));
+    // Forget before and after the write: a request that lands between the delete
+    // and the save must not leave a cached "no roles" behind.
+    this.forgetAccess(organizationId, userId);
     if (systemRoleIds.length > 0) {
       await this.assignments.delete({
         organizationId,
@@ -98,6 +136,7 @@ export class AuthorizationService {
     await this.assignments.save(
       this.assignments.create({ organizationId, userId, roleId: toId<RoleId>(role.id) }),
     );
+    this.forgetAccess(organizationId, userId);
   }
 
   async assertCurrentUserCanAssign(roleKey: SystemRoleKey): Promise<void> {
@@ -140,3 +179,6 @@ export class AuthorizationService {
     );
   }
 }
+
+const accessCacheKey = (organizationId: OrganizationId | string, userId: UserId | string): string =>
+  `${organizationId}:${userId}`;

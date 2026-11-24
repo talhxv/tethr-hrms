@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { dateKeyDaysAgo, todayDateKey } from '@hrms/shared';
 import { useState } from 'react';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import {
   CLOCK_IN_ME_MUTATION,
   CLOCK_OUT_ME_MUTATION,

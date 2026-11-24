@@ -1,7 +1,8 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { type FormEvent, type ReactElement, type ReactNode, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { useQuery } from '../../../app/apollo-hooks';
 import { uploadToSignedUrl } from '../../../app/upload';
 import { useConfirm } from '../../../components/confirm/ConfirmProvider';
 import {

@@ -1,6 +1,7 @@
-import { useMutation, useQuery } from '@apollo/client';
+import { useMutation } from '@apollo/client';
 import { useState, type FormEvent } from 'react';
 
+import { useQuery } from '../../../../app/apollo-hooks';
 import { StatusChip } from '../../../../components/chip/StatusChip';
 import {
   ACTIVATE_TAX_SLAB_GROUP_MUTATION,
