@@ -74,6 +74,58 @@ export class AuthorizationService {
     return access;
   }
 
+  // Resolves access for many users at once with two queries in total, however
+  // many users there are, instead of two per user. Use it for lists of users.
+  async getAccessForUsersInOrganization(
+    userIds: readonly (UserId | string)[],
+    organizationId: OrganizationId | string,
+  ): Promise<ReadonlyMap<string, EffectiveAccess>> {
+    const now = Date.now();
+    const result = new Map<string, EffectiveAccess>();
+    const missing: string[] = [];
+    for (const userId of new Set(userIds.map(String))) {
+      const cached = this.accessCache.get(accessCacheKey(organizationId, userId));
+      if (cached && cached.expiresAt > now) result.set(userId, cached.access);
+      else missing.push(userId);
+    }
+    if (missing.length === 0) return result;
+
+    const scopedOrganizationId = toId<OrganizationId>(organizationId);
+    const assignments = await this.assignments.find({
+      where: {
+        organizationId: scopedOrganizationId,
+        userId: In(missing.map((userId) => toId<UserId>(userId))),
+      },
+    });
+    const roleIds = [...new Set(assignments.map((assignment) => assignment.roleId))];
+    const roles =
+      roleIds.length === 0
+        ? []
+        : await this.roles.find({
+            where: { organizationId: scopedOrganizationId, id: In(roleIds) },
+          });
+    const rolesById = new Map(roles.map((role) => [String(role.id), role]));
+
+    if (this.accessCache.size + missing.length > ACCESS_CACHE_MAX_ENTRIES) {
+      this.accessCache.clear();
+    }
+    for (const userId of missing) {
+      const userRoles = assignments
+        .filter((assignment) => String(assignment.userId) === userId)
+        .flatMap((assignment) => {
+          const role = rolesById.get(String(assignment.roleId));
+          return role ? [role] : [];
+        });
+      const access = accessFromRoles(userRoles);
+      result.set(userId, access);
+      this.accessCache.set(accessCacheKey(organizationId, userId), {
+        access,
+        expiresAt: Date.now() + ACCESS_CACHE_TTL_MS,
+      });
+    }
+    return result;
+  }
+
   private forgetAccess(organizationId: OrganizationId | string, userId: UserId | string): void {
     this.accessCache.delete(accessCacheKey(organizationId, userId));
   }
@@ -97,9 +149,7 @@ export class AuthorizationService {
         id: In(assignments.map((assignment) => assignment.roleId)),
       },
     });
-    const roleKeys = roles.flatMap((role) => (role.key ? [role.key] : []));
-    const permissions = [...new Set(roles.flatMap((role) => role.permissions))] as Permission[];
-    return { roleKeys, permissions, portal: portalForRoleKeys(roleKeys) };
+    return accessFromRoles(roles);
   }
 
   async assignSystemRole(userId: UserId, roleKey: SystemRoleKey): Promise<void> {
@@ -180,5 +230,12 @@ export class AuthorizationService {
   }
 }
 
-const accessCacheKey = (organizationId: OrganizationId | string, userId: UserId | string): string =>
+const accessFromRoles = (roles: readonly Role[]): EffectiveAccess => {
+  if (roles.length === 0) return { roleKeys: [], permissions: [], portal: 'none' };
+  const roleKeys = roles.flatMap((role) => (role.key ? [role.key] : []));
+  const permissions = [...new Set(roles.flatMap((role) => role.permissions))] as Permission[];
+  return { roleKeys, permissions, portal: portalForRoleKeys(roleKeys) };
+};
+
+const accessCacheKey =(organizationId: OrganizationId | string, userId: UserId | string): string =>
   `${organizationId}:${userId}`;

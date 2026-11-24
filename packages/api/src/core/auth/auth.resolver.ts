@@ -65,12 +65,33 @@ export class AuthResolver {
   @RequirePermissions(PERMISSIONS.userManage)
   async workspaceUsers(): Promise<CurrentUserView[]> {
     const users = await this.authService.listUsers();
-    return Promise.all(
-      users.map(async (user) =>
-        toCurrentUserView(
-          user,
-          await this.authorization.getAccessForUserInOrganization(user.id, user.organizationId),
+    // One batched access lookup per workspace, not two queries per user: each
+    // query is a slow cross-region round trip.
+    const organizationIds = [...new Set(users.map((user) => String(user.organizationId)))];
+    const accessByOrganization = new Map(
+      await Promise.all(
+        organizationIds.map(
+          async (organizationId) =>
+            [
+              organizationId,
+              await this.authorization.getAccessForUsersInOrganization(
+                users
+                  .filter((user) => String(user.organizationId) === organizationId)
+                  .map((user) => user.id),
+                organizationId,
+              ),
+            ] as const,
         ),
+      ),
+    );
+    return users.map((user) =>
+      toCurrentUserView(
+        user,
+        accessByOrganization.get(String(user.organizationId))?.get(String(user.id)) ?? {
+          roleKeys: [],
+          permissions: [],
+          portal: 'none',
+        },
       ),
     );
   }

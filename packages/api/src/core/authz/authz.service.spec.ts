@@ -164,6 +164,64 @@ describe('AuthorizationService', () => {
     ]);
   });
 
+  it('resolves access for many users with two queries in total', async () => {
+    const OTHER_USER = toId<UserId>('user-2');
+    const NO_ROLE_USER = toId<UserId>('user-3');
+    const roles = {
+      find: jest
+        .fn()
+        .mockResolvedValue([
+          role(CLIENT_ROLE, 'clientAdmin', [PERMISSIONS.employeeRead]),
+          role(EMPLOYEE_ROLE, 'employee', [PERMISSIONS.leaveOwnRead]),
+        ]),
+    } as unknown as Repository<Role>;
+    const assignments = {
+      find: jest.fn().mockResolvedValue([
+        { userId: USER, roleId: CLIENT_ROLE },
+        { userId: USER, roleId: EMPLOYEE_ROLE },
+        { userId: OTHER_USER, roleId: EMPLOYEE_ROLE },
+      ]),
+    } as unknown as Repository<UserRoleAssignment>;
+    const service = new AuthorizationService(roles, assignments, {} as TenantContextService);
+
+    const access = await service.getAccessForUsersInOrganization(
+      [USER, OTHER_USER, NO_ROLE_USER],
+      ORGANIZATION,
+    );
+
+    expect(assignments.find).toHaveBeenCalledTimes(1);
+    expect(roles.find).toHaveBeenCalledTimes(1);
+    expect(access.get(USER)?.portal).toBe('client');
+    expect(access.get(USER)?.roleKeys).toEqual(['clientAdmin', 'employee']);
+    expect(access.get(OTHER_USER)?.roleKeys).toEqual(['employee']);
+    expect(access.get(NO_ROLE_USER)).toEqual({ roleKeys: [], permissions: [], portal: 'none' });
+
+    // The batch fills the per-user cache, so a single lookup needs no query.
+    await service.getAccessForUserInOrganization(OTHER_USER, ORGANIZATION);
+    expect(assignments.find).toHaveBeenCalledTimes(1);
+  });
+
+  it('only queries users missing from the cache in a batch', async () => {
+    const OTHER_USER = toId<UserId>('user-2');
+    const roles = {
+      find: jest.fn().mockResolvedValue([role(EMPLOYEE_ROLE, 'employee', [])]),
+    } as unknown as Repository<Role>;
+    const assignments = {
+      find: jest.fn().mockResolvedValue([{ userId: USER, roleId: EMPLOYEE_ROLE }]),
+    } as unknown as Repository<UserRoleAssignment>;
+    const service = new AuthorizationService(roles, assignments, {} as TenantContextService);
+
+    await service.getAccessForUserInOrganization(USER, ORGANIZATION);
+    await service.getAccessForUsersInOrganization([USER], ORGANIZATION);
+    expect(assignments.find).toHaveBeenCalledTimes(1);
+
+    (assignments.find as jest.Mock).mockResolvedValueOnce([]);
+    const access = await service.getAccessForUsersInOrganization([USER, OTHER_USER], ORGANIZATION);
+    expect(assignments.find).toHaveBeenCalledTimes(2);
+    expect(access.get(USER)?.roleKeys).toEqual(['employee']);
+    expect(access.get(OTHER_USER)?.portal).toBe('none');
+  });
+
   it('lets Tethr Admin assign every V1 system role', async () => {
     const roles = {
       find: jest.fn().mockResolvedValue([role(TETHR_ROLE, 'tethrAdmin', [])]),
