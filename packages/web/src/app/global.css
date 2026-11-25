@@ -3181,6 +3181,67 @@ button,
   min-height: 64px;
 }
 
+/* Onboarding automation: the run row (what the next run acts on + the button),
+   the manual stage picker, then the run history. */
+.onboarding-automation {
+  display: grid;
+  gap: var(--hrms-space-3);
+}
+
+.onboarding-automation-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hrms-space-3);
+  padding: var(--hrms-space-3);
+  background: var(--hrms-color-background-secondary);
+  border: 1px solid var(--hrms-color-border-light);
+  border-radius: var(--hrms-radius-md);
+}
+
+.onboarding-automation-run > div {
+  display: grid;
+  gap: var(--hrms-space-1);
+  min-width: 0;
+  max-width: 60ch;
+}
+
+.onboarding-automation-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--hrms-space-2);
+}
+
+.onboarding-automation-stage .field {
+  flex: 1 1 220px;
+  max-width: 320px;
+  margin-bottom: 0;
+}
+
+/* The explanation and run messages are sentences, not table cells: wrap them. */
+.onboarding-automation .employee-secondary {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.automation-callback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--hrms-space-2);
+}
+
+.automation-callback code {
+  font-family: var(--hrms-font-family-code);
+  font-size: var(--hrms-font-size-xs);
+  padding: var(--hrms-space-1) var(--hrms-space-2);
+  background: var(--hrms-color-background-tertiary);
+  border-radius: var(--hrms-radius-sm);
+  overflow-wrap: anywhere;
+}
+
 .config-form {
   display: grid;
   gap: var(--hrms-space-2);

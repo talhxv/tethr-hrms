@@ -29,6 +29,7 @@ import { ExpensesModule } from './modules/expenses/expenses.module';
 import { FinanceModule } from './modules/finance';
 import { FormsModule } from './modules/forms/forms.module';
 import { LeaveModule } from './modules/leave/leave.module';
+import { OnboardingAutomationModule } from './modules/onboarding-automation/onboarding-automation.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { PositionModule } from './modules/position/position.module';
 import { RecruitmentModule } from './modules/recruitment/recruitment.module';
@@ -78,6 +79,7 @@ import { RecruitmentModule } from './modules/recruitment/recruitment.module';
     AccountModule,
     ExpensesModule,
     BenefitsModule,
+    OnboardingAutomationModule,
   ],
   providers: [HealthResolver],
 })

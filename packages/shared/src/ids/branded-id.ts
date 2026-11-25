@@ -78,6 +78,9 @@ export type EmployeeFeedbackId = Brand<string, 'EmployeeFeedbackId'>;
 // --- Platform infrastructure ---
 export type DocumentId = Brand<string, 'DocumentId'>;
 
+// --- Onboarding automation ---
+export type OnboardingAutomationRunId = Brand<string, 'OnboardingAutomationRunId'>;
+
 // Cast a raw string (from the DB, GraphQL input, or a URL param) into a branded
 // id. This is a deliberate trust-boundary escape hatch — only call it where a
 // value enters the system, never to paper over a type error mid-pipeline.

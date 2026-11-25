@@ -31,6 +31,7 @@ import { InterviewsPage } from '../modules/recruitment/pages/InterviewsPage';
 import { ShortlistsPage } from '../modules/recruitment/pages/ShortlistsPage';
 import { EmployeeWorkspacePage } from '../modules/self-service/pages/EmployeeWorkspacePage';
 import { MyProfilePage } from '../modules/self-service/pages/MyProfilePage';
+import { SettingsAutomationsPage } from '../modules/settings/pages/SettingsAutomationsPage';
 import { SettingsBillingPage } from '../modules/settings/pages/SettingsBillingPage';
 import { SettingsGeneralPage } from '../modules/settings/pages/SettingsGeneralPage';
 import { SettingsIndexRedirect, SettingsLayout } from '../modules/settings/pages/SettingsLayout';
@@ -61,6 +62,7 @@ const SETTINGS_PAGES: Record<SettingsTabKey, ReactElement> = {
   payroll: <SettingsPayrollPage />,
   pay: <SettingsPayPage />,
   clients: <ClientsSettingsPage />,
+  automations: <SettingsAutomationsPage />,
 };
 
 // Thin routing: public auth routes, then the authenticated app behind RequireAuth

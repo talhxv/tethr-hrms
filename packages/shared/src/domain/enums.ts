@@ -203,3 +203,32 @@ export type ExitInterviewDecision = 'retained' | 'exitConfirmed';
 export type PaymentMode = 'bank' | 'cash' | 'cheque';
 
 export type EmployeeOffboardingTaskStatus = EmployeeOnboardingTaskStatus;
+
+// Onboarding automation (n8n). The stages mirror the Status tags the Notion
+// automation already branches on: each document has a Review step (drafted, HR
+// checks it) and a Sent step (delivered to the person). The external workflow
+// decides what a run does at each stage; the HRMS records where a person is.
+export const ONBOARDING_AUTOMATION_STAGES = [
+  'preOnboard',
+  'offerLetterReview',
+  'offerLetterSent',
+  'employeeRecordReview',
+  'employeeRecordSent',
+  'contractLetterReview',
+  'contractLetterSent',
+  'salaryLetterReview',
+  'salaryLetterGenerated',
+  'completed',
+] as const;
+export type OnboardingAutomationStage = (typeof ONBOARDING_AUTOMATION_STAGES)[number];
+
+// queued: recorded, waiting for the outbox relay. delivered: the workflow
+// accepted the webhook. succeeded/failed: the workflow reported back (or the
+// delivery itself failed).
+export const ONBOARDING_AUTOMATION_RUN_STATUSES = [
+  'queued',
+  'delivered',
+  'succeeded',
+  'failed',
+] as const;
+export type OnboardingAutomationRunStatus = (typeof ONBOARDING_AUTOMATION_RUN_STATUSES)[number];

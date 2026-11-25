@@ -40,6 +40,15 @@ const configObjectSchema = z.object({
   EMAIL_FROM: z.string().email().optional(),
   SLACK_WEBHOOK_URL: z.string().url().optional(),
 
+  // Onboarding automation (n8n). The shared secret signs every webhook the HRMS
+  // sends and authenticates the workflow's callback; without it "Run automation"
+  // stays switched off. The callback address sent to the workflow is built from
+  // PUBLIC_API_URL (below).
+  ONBOARDING_AUTOMATION_SECRET: z
+    .string()
+    .min(32, 'ONBOARDING_AUTOMATION_SECRET must be at least 32 characters')
+    .optional(),
+
   // A weak JWT secret is a security hole; require real entropy.
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.coerce.number().int().positive().default(3600),

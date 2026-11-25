@@ -1,5 +1,6 @@
 import type { PortalKind, SystemRoleKey } from '@hrms/shared';
 import {
+  IconBolt,
   IconBuildingCommunity,
   IconCurrencyDollar,
   IconFileInvoice,
@@ -15,7 +16,8 @@ export type SettingsTabKey =
   | 'billing'
   | 'payroll'
   | 'pay'
-  | 'clients';
+  | 'clients'
+  | 'automations';
 
 type SettingsPortal = Exclude<PortalKind, 'none' | 'employee'>;
 
@@ -37,6 +39,7 @@ export type SettingsTab = {
 //   pay      compensation:write   (tethrAdmin, tethrHr, clientAdmin)
 //   clients  client:manage        (tethrAdmin) — rarely used, so it lives here
 //            rather than in the daily navigation
+//   automations organization:manage (tethrAdmin) — the n8n onboarding workflow
 export const SETTINGS_TABS: readonly SettingsTab[] = [
   {
     key: 'general',
@@ -77,6 +80,13 @@ export const SETTINGS_TABS: readonly SettingsTab[] = [
     key: 'clients',
     label: 'Clients & workspaces',
     icon: IconBuildingCommunity,
+    portals: ['tethr'],
+    roleKeys: ['tethrAdmin'],
+  },
+  {
+    key: 'automations',
+    label: 'Automations',
+    icon: IconBolt,
     portals: ['tethr'],
     roleKeys: ['tethrAdmin'],
   },

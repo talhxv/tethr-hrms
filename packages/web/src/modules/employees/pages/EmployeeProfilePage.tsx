@@ -36,6 +36,7 @@ import { CREATE_WORKSPACE_USER_MUTATION } from '../../auth/graphql/auth.operatio
 import { useAuth } from '../../auth/hooks/useAuth';
 import { DetailSection } from '../components/DetailSection';
 import { EmployeeJobPayHub } from '../components/EmployeeJobPayHub';
+import { OnboardingAutomationSection } from '../components/OnboardingAutomationSection';
 import {
   ADD_EMPLOYEE_DOCUMENT_VERSION_MUTATION,
   ATTACH_EMPLOYEE_DOCUMENT_MUTATION,
@@ -2642,6 +2643,12 @@ export const EmployeeProfilePage = () => {
 
           {tab === 'onboarding' ? (
             <>
+            {canEditHrRecord && employeeId ? (
+              <OnboardingAutomationSection
+                employeeId={employeeId}
+                employeeName={`${detailEmployee.firstName} ${detailEmployee.lastName}`}
+              />
+            ) : null}
             {canEditHrRecord ? (
               <DetailSection
                 badge={

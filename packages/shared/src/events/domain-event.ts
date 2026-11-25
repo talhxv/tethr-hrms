@@ -7,6 +7,7 @@ import type {
   FormTarget,
   HiringRequestStatus,
   InvoiceType,
+  OnboardingAutomationStage,
   SeparationType,
 } from '../domain/enums';
 import type {
@@ -33,6 +34,7 @@ import type {
   InvoiceId,
   LeaveRequestId,
   LeaveTypeId,
+  OnboardingAutomationRunId,
   OrganizationId,
   PayrollRunId,
   PositionId,
@@ -84,6 +86,7 @@ export const DOMAIN_EVENT_NAMES = [
   'bonus.awarded',
   'payroll.finalized',
   'invoice.issued',
+  'onboarding.automationRequested',
 ] as const;
 
 export type DomainEventName = (typeof DOMAIN_EVENT_NAMES)[number];
@@ -292,6 +295,13 @@ export type DomainEventPayloads = {
     readonly totalAmount: number;
     readonly issueDate: string;
     readonly dueDate: string;
+  };
+  // HR pressed "Run automation": the relay hands the run to the external
+  // workflow (n8n) outside the request, so a slow webhook never blocks the UI.
+  'onboarding.automationRequested': {
+    readonly onboardingAutomationRunId: OnboardingAutomationRunId;
+    readonly employeeId: EmployeeId;
+    readonly stage: OnboardingAutomationStage;
   };
 };
 
