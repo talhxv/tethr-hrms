@@ -22,6 +22,7 @@ import { useTheme } from '../../../providers/theme/useTheme';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { formatDate, fullName, type EmployeesData } from '../../employees/employee.shared';
 import { EMPLOYEES_QUERY } from '../../employees/graphql/employee.operations';
+import { formatHours } from '../components/attendanceFormat';
 import {
   APPROVE_TIMESHEET_MUTATION,
   LOCK_TIMESHEET_MUTATION,
@@ -262,7 +263,7 @@ export const TimeAttendancePage = () => {
             />
           </div>
           <span className="directory-count">
-            {entriesLoading ? 'Loading…' : `${totalHours.toFixed(2)} hours in range`}
+            {entriesLoading ? 'Loading…' : `${formatHours(totalHours)} in range`}
           </span>
         </div>
 
@@ -339,7 +340,7 @@ export const TimeAttendancePage = () => {
                           <tr key={entry.id}>
                             <td data-label="Date">{formatDate(entry.date)}</td>
                             <td className="cell-numeric" data-label="Hours">
-                              {entry.hours.toFixed(2)}
+                              {formatHours(entry.hours)}
                             </td>
                             <td className="truncate" data-label="Source">
                               {entry.source}
@@ -418,7 +419,7 @@ export const TimeAttendancePage = () => {
                               {formatDate(timesheet.periodEnd)}
                             </td>
                             <td className="cell-numeric" data-label="Total hours">
-                              {timesheet.totalHours.toFixed(2)}
+                              {formatHours(timesheet.totalHours)}
                             </td>
                             <td data-label="Status">
                               <StatusChip
