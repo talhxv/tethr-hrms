@@ -26,6 +26,13 @@ const configObjectSchema = z.object({
   // Managed Postgres providers (Supabase, RDS, etc.) require TLS; local Docker
   // Postgres does not speak TLS at all, so this must stay opt-in per environment.
   DATABASE_SSL: envBoolean(false),
+  // Connections each API process may hold. Supabase's session pooler caps the
+  // whole project (15 on the current plan), and every API copy that points at
+  // it (production, local dev, scripts) shares that cap, so keep this small.
+  DATABASE_POOL_MAX: z.coerce.number().int().positive().default(5),
+  // Idle connections are handed back after this long, so a quiet process
+  // (an idle dev server) does not sit on slots other copies need.
+  DATABASE_POOL_IDLE_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
 
   REDIS_HOST: z.string().min(1).default('localhost'),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),

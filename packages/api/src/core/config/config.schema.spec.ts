@@ -14,6 +14,14 @@ describe('loadConfig', () => {
     expect(config.PORT).toBe(3000);
     expect(config.NODE_ENV).toBe('development');
     expect(config.DATABASE_PORT).toBe(5432);
+    // Small by default: the hosted pooler's connection cap is shared by every API copy.
+    expect(config.DATABASE_POOL_MAX).toBe(5);
+    expect(config.DATABASE_POOL_IDLE_TIMEOUT_MS).toBe(10000);
+  });
+
+  it('reads an explicit connection pool size', () => {
+    const config = loadConfig({ ...validEnv, DATABASE_POOL_MAX: '3' } as NodeJS.ProcessEnv);
+    expect(config.DATABASE_POOL_MAX).toBe(3);
   });
 
   it('fails fast when a required variable is missing', () => {

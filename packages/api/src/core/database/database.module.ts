@@ -21,6 +21,12 @@ import { ConfigService } from '../config/config.service';
         synchronize: config.get('DATABASE_SYNCHRONIZE'),
         logging: config.get('DATABASE_LOGGING'),
         ssl: config.get('DATABASE_SSL') ? { rejectUnauthorized: false } : false,
+        // node-postgres pool limits (see DATABASE_POOL_MAX in config.schema.ts).
+        extra: {
+          max: config.get('DATABASE_POOL_MAX'),
+          idleTimeoutMillis: config.get('DATABASE_POOL_IDLE_TIMEOUT_MS'),
+          connectionTimeoutMillis: 10000,
+        },
         autoLoadEntities: true,
         migrationsRun: false,
       }),

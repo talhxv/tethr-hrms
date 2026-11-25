@@ -20,6 +20,7 @@ export const buildDataSourceOptions = (config: AppConfig = loadConfig()): DataSo
   synchronize: config.DATABASE_SYNCHRONIZE,
   logging: config.DATABASE_LOGGING,
   ssl: config.DATABASE_SSL ? { rejectUnauthorized: false } : false,
+  extra: { max: config.DATABASE_POOL_MAX, idleTimeoutMillis: config.DATABASE_POOL_IDLE_TIMEOUT_MS },
   entities: [`${toGlob(__dirname, '..', '..')}/**/*.entity.{ts,js}`],
   migrations: [`${toGlob(__dirname, 'migrations')}/*.{ts,js}`],
 });
